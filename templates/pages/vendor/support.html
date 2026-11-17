@@ -1,0 +1,248 @@
+{% extends 'layouts/vendor_base.html' %}
+
+{% block vendor_title %}Vendor Support & Helpdesk{% endblock %}
+
+{% block vendor_content %}
+<div class="container-fluid px-0">
+    <!-- Breadcrumbs -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb small">
+            <li class="breadcrumb-item"><a href="/vendor/" class="text-decoration-none text-muted">Dashboard</a></li>
+            <li class="breadcrumb-item active fw-semibold text-dark" aria-current="page">Support &amp; Helpdesk</li>
+        </ol>
+    </nav>
+
+    <!-- Header Section -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <h3 class="fw-bold text-dark mb-1">Procurement Support &amp; Helpdesk</h3>
+            <p class="text-muted mb-0 small">Direct communication channel with your assigned buyers, finance officers, and technical helpdesk.</p>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Left Column: Submit Ticket & Recent Inquiries -->
+        <div class="col-12 col-lg-7">
+            <!-- Submit Support Inquiry Form -->
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-header bg-transparent border-0 pt-3 pb-2">
+                    <h5 class="fw-bold text-dark mb-0">
+                        <i class="fa-solid fa-headset text-primary me-2"></i> Log a Support Inquiry
+                    </h5>
+                    <span class="text-muted small">Our procurement and finance teams typically respond within 24 business hours.</span>
+                </div>
+                <div class="card-body pt-2">
+                    <form method="post" action="{% url 'vendor_support' %}">
+                        {% csrf_token %}
+                        <div class="row g-3">
+                            <div class="col-12 col-sm-6">
+                                <label class="form-label small fw-semibold text-secondary">Inquiry Category *</label>
+                                <select name="category" class="form-select form-select-sm" required>
+                                    <option value="INVOICE_BILLING">Invoicing &amp; 3-Way Match</option>
+                                    <option value="PAYMENT_DISBURSEMENT">Payment &amp; Remittance</option>
+                                    <option value="PURCHASE_ORDER">Purchase Order &amp; Delivery</option>
+                                    <option value="SOURCING_BID">Sourcing Event &amp; Bidding</option>
+                                    <option value="KYC_PROFILE">Profile, Bank &amp; KYC Verification</option>
+                                    <option value="TECHNICAL">Portal Access &amp; Technical Support</option>
+                                    <option value="GENERAL">General Operational Inquiry</option>
+                                </select>
+                            </div>
+
+                            <div class="col-12 col-sm-6">
+                                <label class="form-label small fw-semibold text-secondary">Priority Level *</label>
+                                <select name="priority" class="form-select form-select-sm" required>
+                                    <option value="NORMAL">Normal &mdash; Standard response</option>
+                                    <option value="HIGH">High &mdash; Delivery / Invoicing blocker</option>
+                                    <option value="URGENT">Urgent &mdash; Critical timeline</option>
+                                </select>
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label small fw-semibold text-secondary">Reference Number (Optional)</label>
+                                <input type="text" name="reference_no" class="form-control form-control-sm" placeholder="e.g. PO-2026-0042, INV-9910, RFQ-0012">
+                                <span class="text-muted" style="font-size:0.75rem;">Associate with a specific PO, Invoice, or RFQ if applicable.</span>
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label small fw-semibold text-secondary">Subject *</label>
+                                <input type="text" name="subject" class="form-control form-control-sm" placeholder="Brief summary of your inquiry..." required>
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label small fw-semibold text-secondary">Detailed Message *</label>
+                                <textarea name="message" rows="4" class="form-control form-control-sm" placeholder="Provide complete details including batch numbers, discrepancy details, or technical specifics..." required></textarea>
+                            </div>
+
+                            <div class="col-12 text-end">
+                                <button type="submit" class="btn btn-primary btn-sm rounded-pill px-4 shadow-sm">
+                                    <i class="fa-solid fa-paper-plane me-1"></i> Submit Inquiry
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Recent Inquiries Table -->
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-header bg-transparent border-0 pt-3 pb-2 d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold text-dark mb-0">
+                        <i class="fa-solid fa-clock-rotate-left text-secondary me-2"></i> Recent Inquiry History
+                    </h5>
+                    <span class="badge bg-light text-dark border rounded-pill px-3">{{ inquiries|length }} Inquiries Logged</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th class="text-secondary small fw-semibold text-uppercase ps-4 py-3">Ticket #</th>
+                                    <th class="text-secondary small fw-semibold text-uppercase py-3">Category</th>
+                                    <th class="text-secondary small fw-semibold text-uppercase py-3">Subject</th>
+                                    <th class="text-secondary small fw-semibold text-uppercase py-3">Priority</th>
+                                    <th class="text-secondary small fw-semibold text-uppercase pe-4 py-3">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in inquiries %}
+                                <tr>
+                                    <td class="ps-4 fw-bold font-monospace text-primary small">{{ item.ticket_ref }}</td>
+                                    <td class="small text-muted">{{ item.category }}</td>
+                                    <td>
+                                        <div class="fw-semibold text-dark small">{{ item.subject }}</div>
+                                        {% if item.reference_no %}
+                                            <span class="text-muted" style="font-size:0.72rem;">Ref: {{ item.reference_no }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if item.priority == 'URGENT' %}
+                                            <span class="badge bg-danger bg-opacity-25 text-danger border border-danger rounded-pill px-2 py-0" style="font-size:0.72rem;">Urgent</span>
+                                        {% elif item.priority == 'HIGH' %}
+                                            <span class="badge bg-warning bg-opacity-25 text-dark border border-warning rounded-pill px-2 py-0" style="font-size:0.72rem;">High</span>
+                                        {% else %}
+                                            <span class="badge bg-light text-muted border rounded-pill px-2 py-0" style="font-size:0.72rem;">Normal</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="pe-4">
+                                        <span class="badge bg-info bg-opacity-25 text-primary border border-info rounded-pill px-2 py-1">
+                                            <i class="fa-solid fa-envelope-circle-check me-1"></i> Logged
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center py-4 text-muted small">
+                                        <i class="fa-solid fa-headset opacity-25 me-1"></i> No past support tickets logged. Submit inquiries using the form above.
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Assigned Contacts & FAQs -->
+        <div class="col-12 col-lg-5">
+            <!-- Assigned Procurement Officers -->
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-header bg-transparent border-0 pt-3 pb-2">
+                    <h5 class="fw-bold text-dark mb-0">
+                        <i class="fa-solid fa-address-book text-primary me-2"></i> Assigned Procurement Contacts
+                    </h5>
+                    <span class="text-muted small">Officers directly linked to your orders &amp; contracts</span>
+                </div>
+                <div class="card-body pt-2">
+                    {% for contact in procurement_contacts %}
+                    <div class="d-flex align-items-center gap-3 p-3 bg-light rounded-3 mb-2">
+                        <div class="rounded-circle bg-primary bg-opacity-10 p-2 text-primary">
+                            <i class="fa-solid fa-user-tie fa-lg"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <h6 class="fw-bold text-dark mb-0 small">{{ contact.name }}</h6>
+                            <span class="badge bg-light text-secondary border rounded-pill px-2 py-0 mb-1" style="font-size:0.7rem;">{{ contact.role }}</span>
+                            <div>
+                                <a href="mailto:{{ contact.email }}" class="small text-muted text-decoration-none">
+                                    <i class="fa-regular fa-envelope me-1"></i>{{ contact.email }}
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="p-3 bg-light rounded-3 text-center text-muted small">
+                        <i class="fa-solid fa-building-circle-check opacity-25 me-1"></i> General Procurement Desk: <a href="mailto:procurement@procuresphere.com" class="fw-semibold text-decoration-none">procurement@procuresphere.com</a>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Supplier FAQs Accordion -->
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-header bg-transparent border-0 pt-3 pb-2">
+                    <h5 class="fw-bold text-dark mb-0">
+                        <i class="fa-solid fa-circle-question text-info me-2"></i> Supplier FAQs &amp; Guidelines
+                    </h5>
+                    <span class="text-muted small">Standard operating procedures and policy rules</span>
+                </div>
+                <div class="card-body pt-2">
+                    <div class="accordion accordion-flush" id="faqAccordion">
+                        <div class="accordion-item border-0 mb-2 rounded-3 overflow-hidden bg-light">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed bg-light py-2 fw-semibold text-dark small" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+                                    When can I submit an invoice for payment?
+                                </button>
+                            </h2>
+                            <div id="faq1" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body small text-muted pt-0">
+                                    Invoices can only be created against purchase orders after the goods or services have been received and inspected via an approved Goods Receipt Note (GRN). You cannot invoice quantities exceeding the accepted GRN count.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion-item border-0 mb-2 rounded-3 overflow-hidden bg-light">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed bg-light py-2 fw-semibold text-dark small" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+                                    How does the 3-Way Match validation work?
+                                </button>
+                            </h2>
+                            <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body small text-muted pt-0">
+                                    ProcureSphere 360 automatically reconciles your invoice line prices and quantities against the Purchase Order and GRN. Variances within configured tolerances (e.g. &plusmn;5%) pass automatically; larger discrepancies trigger an exception for buyer review.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion-item border-0 mb-2 rounded-3 overflow-hidden bg-light">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed bg-light py-2 fw-semibold text-dark small" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
+                                    What file types are permitted for KYC documents?
+                                </button>
+                            </h2>
+                            <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body small text-muted pt-0">
+                                    Per corporate compliance and anti-fraud standards, only PDF, DOC, DOCX, XLSX, and CSV documents are accepted. Image formats (PNG, JPG, JPEG) are prohibited to ensure verifiable document integrity.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion-item border-0 rounded-3 overflow-hidden bg-light">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed bg-light py-2 fw-semibold text-dark small" type="button" data-bs-toggle="collapse" data-bs-target="#faq4">
+                                    What is the standard payment settlement cycle?
+                                </button>
+                            </h2>
+                            <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body small text-muted pt-0">
+                                    Once an invoice achieves "Ready For Payment" status post-match approval, disbursement is processed via NEFT / RTGS / ACH within the net payment terms agreed in your contract (typically 30 to 45 calendar days).
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

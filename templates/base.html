@@ -1,0 +1,1728 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProcureSphere 360 - {% block title %}ERP Dashboard{% endblock %}</title>
+    <!-- Favicon Suite -->
+    <link rel="icon" type="image/x-icon" href="{% static 'icons/favicon.ico' %}">
+    <link rel="icon" type="image/webp" sizes="32x32" href="{% static 'icons/favicon-32x32.webp' %}">
+    <link rel="icon" type="image/webp" sizes="16x16" href="{% static 'icons/favicon-16x16.webp' %}">
+    <link rel="icon" type="image/webp" href="{% static 'icons/favicon.webp' %}">
+    <link rel="apple-touch-icon" href="{% static 'icons/apple-touch-icon.webp' %}">
+    <link rel="manifest" href="{% static 'icons/site.webmanifest' %}">
+    <!-- CDN Preconnects for Faster Handshakes -->
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="preconnect" href="https://unpkg.com" crossorigin>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <!-- Google Fonts: Inter & Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Custom Design System Styles -->
+    <link href="/static/css/style.css?v=ps_checkbox_focus_v1" rel="stylesheet">
+    <!-- HTMX Library -->
+    <script src="https://unpkg.com/htmx.org@1.9.10/dist/htmx.min.js"></script>
+    <!-- Chart.js 4.4 JS (deferred to prevent render-blocking) -->
+    <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script>
+        // Forward navigation & bfcache anti-tamper guard: if user backed out / exited, block dashboard restoration
+        (function() {
+            try {
+                var hasSubpageHistory = (
+                    sessionStorage.getItem('ps_visited_subpage') === 'true' ||
+                    sessionStorage.getItem('ps360_active_subpage') ||
+                    sessionStorage.getItem('ps_last_subpage_path') ||
+                    sessionStorage.getItem('ps_is_internal_navigation') === 'true'
+                );
+                if (hasSubpageHistory) {
+                    sessionStorage.removeItem('ps_is_internal_navigation');
+                    sessionStorage.removeItem('ps360_user_signed_out');
+                    localStorage.removeItem('ps360_user_signed_out');
+                    document.cookie = "ps360_user_signed_out=; path=/; max-age=0";
+                    document.cookie = "ps360_just_logged_out=; path=/; max-age=0";
+                    return;
+                }
+                if (sessionStorage.getItem('ps360_user_signed_out') === 'true' ||
+                    localStorage.getItem('ps360_user_signed_out') ||
+                    document.cookie.indexOf('ps360_user_signed_out=1') !== -1 ||
+                    document.cookie.indexOf('ps360_just_logged_out=1') !== -1) {
+                    window.location.replace('/login/?reason=signed_out');
+                }
+            } catch(e) {}
+        })();
+    </script>
+    <style>
+        /* ========================================================================= */
+        /* GLOBAL LIGHT BLUE ENTERPRISE NAVBAR & SIDEBAR THEME                       */
+        /* Enforced across ALL dashboards and role-based portals globally            */
+        /* ========================================================================= */
+        
+        /* 1. TOP NAVBAR DESIGN EVERYWHERE */
+        nav.navbar,
+        .enterprise-topbar,
+        .sa-topbar,
+        .proc-exec-topbar,
+        header nav.navbar,
+        .global-enterprise-navbar {
+            background: #D6E4FF !important;
+            border-bottom: 1px solid #AFC6ED !important;
+            box-shadow: 0 3px 10px rgba(30, 64, 120, 0.12) !important;
+            color: #1B2A4A !important;
+            min-height: 84px !important;
+            padding: 7px 16px !important;
+            z-index: 1030 !important;
+        }
+
+        /* 2. LOGO SIZING & TRANSPARENCY EVERYWHERE */
+        .dashboard-brand-badge,
+        .sa-top-brand,
+        .approver-top-brand,
+        .finance-top-brand,
+        .legal-top-brand,
+        .requester-top-brand,
+        .stores-top-brand,
+        .vendor-top-brand,
+        .auditor-top-brand,
+        .manager-top-brand,
+        .proc-exec-top-brand,
+        a.dashboard-brand-badge,
+        nav a.navbar-brand {
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: flex-start !important;
+            background: transparent !important;
+            background-color: transparent !important;
+            border: none !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+            text-decoration: none !important;
+            width: auto !important;
+            max-width: 320px !important;
+            height: 64px !important;
+            max-height: 64px !important;
+            flex-shrink: 0 !important;
+        }
+
+        .dashboard-brand-logo,
+        .sa-brand-logo,
+        .approver-brand-logo,
+        img.dashboard-brand-logo {
+            width: auto !important;
+            max-width: 300px !important;
+            height: 58px !important;
+            max-height: 58px !important;
+            object-fit: contain !important;
+            display: block !important;
+            filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.45)) !important;
+            background: transparent !important;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-brand-badge,
+            a.dashboard-brand-badge,
+            nav a.navbar-brand {
+                width: auto !important;
+                max-width: 200px !important;
+                height: 48px !important;
+            }
+            .dashboard-brand-logo,
+            img.dashboard-brand-logo {
+                width: auto !important;
+                max-width: 190px !important;
+                height: 46px !important;
+            }
+        }
+
+        /* Top Navbar Mobile & Collapsed Brand Logo */
+        .global-navbar-mobile-brand {
+            display: inline-flex !important;
+            align-items: center !important;
+            text-decoration: none !important;
+        }
+        .global-navbar-mobile-brand img {
+            height: 46px !important;
+            max-height: 48px !important;
+            width: auto !important;
+            max-width: 200px !important;
+            object-fit: contain !important;
+            display: block !important;
+            filter: drop-shadow(0 1px 2px rgba(30, 64, 120, 0.08)) !important;
+        }
+        @media (max-width: 991.98px) {
+            nav.navbar,
+            .enterprise-topbar,
+            .sa-topbar,
+            .proc-exec-topbar,
+            header nav.navbar,
+            .global-enterprise-navbar {
+                min-height: 64px !important;
+                height: 64px !important;
+                padding: 6px 12px !important;
+            }
+            .tooltip {
+                display: none !important;
+            }
+            /* Safeguard: ensure every table is horizontally scrollable on mobile */
+            .table:not(.table-responsive .table) {
+                display: block !important;
+                width: 100% !important;
+                overflow-x: auto !important;
+                -webkit-overflow-scrolling: touch !important;
+            }
+        }
+        @media (max-width: 768px) {
+            .dashboard-brand-badge,
+            a.dashboard-brand-badge,
+            nav a.navbar-brand {
+                width: auto !important;
+                max-width: 180px !important;
+                height: 44px !important;
+            }
+            .dashboard-brand-logo,
+            img.dashboard-brand-logo,
+            .global-brand-logo,
+            .global-navbar-mobile-brand img {
+                width: auto !important;
+                max-width: 170px !important;
+                height: 40px !important;
+                max-height: 40px !important;
+            }
+            .global-navbar-right-actions {
+                gap: 12px !important;
+            }
+        }
+        @media (max-width: 576px) {
+            nav.navbar,
+            .enterprise-topbar,
+            .sa-topbar,
+            .proc-exec-topbar,
+            header nav.navbar,
+            .global-enterprise-navbar {
+                min-height: 60px !important;
+                height: 60px !important;
+                padding: 4px 10px !important;
+            }
+            .dashboard-brand-logo,
+            img.dashboard-brand-logo,
+            .global-brand-logo,
+            .global-navbar-mobile-brand img {
+                height: 36px !important;
+                max-height: 36px !important;
+                max-width: 145px !important;
+            }
+            .global-navbar-right-actions {
+                gap: 10px !important;
+            }
+        }
+        @media (max-width: 380px) {
+            .dashboard-brand-logo,
+            img.dashboard-brand-logo,
+            .global-brand-logo,
+            .global-navbar-mobile-brand img {
+                height: 32px !important;
+                max-height: 32px !important;
+                max-width: 125px !important;
+            }
+            .global-navbar-right-actions {
+                gap: 6px !important;
+            }
+            .global-nav-action-btn,
+            .sa-nav-action-btn,
+            .global-profile-btn,
+            .sa-profile-btn {
+                width: 34px !important;
+                height: 34px !important;
+                min-width: 34px !important;
+            }
+        }
+        @media (min-width: 992px) {
+            .global-navbar-mobile-brand {
+                display: none !important;
+            }
+            body.sidebar-collapsed .global-navbar-mobile-brand {
+                display: inline-flex !important;
+            }
+        }
+
+        /* Brand wrapper sizing for 300px logo + 38px toggle button */
+        .proc-exec-brand-wrapper,
+        .auditor-brand-wrapper,
+        .approver-brand-wrapper,
+        .finance-brand-wrapper,
+        .legal-brand-wrapper,
+        .requester-brand-wrapper,
+        .stores-brand-wrapper,
+        .sa-brand-wrapper,
+        .vendor-brand-wrapper,
+        .manager-brand-wrapper {
+            width: auto !important;
+            min-width: 260px !important;
+            max-width: none !important;
+            display: flex !important;
+            align-items: center !important;
+            flex-shrink: 0 !important;
+            gap: 0 !important;
+        }
+
+        /* 3. NAVBAR ACTION CONTROLS & ICONS */
+        .sidebar-toggle-btn {
+            width: 38px !important;
+            height: 38px !important;
+            min-width: 38px !important;
+            background: #DCE8FA !important;
+            border: 1px solid #B6C9E8 !important;
+            color: #183153 !important;
+            border-radius: 9px !important;
+            margin-left: 2px !important;
+            margin-right: 6px !important;
+            transition: all 0.2s ease !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 0 !important;
+            flex-shrink: 0 !important;
+            box-shadow: 0 1px 3px rgba(24, 49, 83, 0.06) !important;
+        }
+        .sidebar-toggle-btn:hover {
+            background: #CEDBFA !important;
+            border-color: #98B8E8 !important;
+            color: #0E1D33 !important;
+            box-shadow: 0 2px 6px rgba(24, 49, 83, 0.12) !important;
+            transform: translateY(-1px);
+        }
+        .sidebar-toggle-btn svg {
+            stroke: #183153 !important;
+        }
+        .sidebar-toggle-btn:hover svg {
+            stroke: #1677FF !important;
+        }
+
+        /* Navbar action buttons: Search, Help, Bell, etc. */
+        .global-nav-action-btn:not(.global-profile-btn),
+        .sa-nav-action-btn:not(.sa-profile-btn),
+        nav.navbar .btn-outline-secondary,
+        nav.navbar a[href*="notification"] {
+            width: 38px !important;
+            height: 38px !important;
+            min-width: 38px !important;
+            background: #DCE8FA !important;
+            border: 1px solid #B6C9E8 !important;
+            color: #183153 !important;
+            border-radius: 9px !important;
+            transition: all 0.2s ease !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 0 !important;
+            text-decoration: none !important;
+            box-shadow: 0 1px 3px rgba(24, 49, 83, 0.06) !important;
+        }
+        .global-nav-action-btn:not(.global-profile-btn):hover,
+        .sa-nav-action-btn:not(.sa-profile-btn):hover,
+        nav.navbar .btn-outline-secondary:hover,
+        nav.navbar a[href*="notification"]:hover {
+            background: #CEDBFA !important;
+            border-color: #98B8E8 !important;
+            color: #0E1D33 !important;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 6px rgba(24, 49, 83, 0.12) !important;
+        }
+
+        /* Dedicated User Profile Avatar Button (High-Contrast White on Royal Blue) */
+        .global-profile-btn,
+        .sa-profile-btn {
+            width: 38px !important;
+            height: 38px !important;
+            min-width: 38px !important;
+            border-radius: 50% !important;
+            background: #1677FF !important;
+            border: 2px solid #91CAFF !important;
+            color: #FFFFFF !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 0 !important;
+            box-shadow: 0 2px 6px rgba(22, 119, 255, 0.28) !important;
+            transition: all 0.2s ease !important;
+        }
+        .global-profile-btn:hover,
+        .global-profile-btn[aria-expanded="true"],
+        .sa-profile-btn:hover,
+        .sa-profile-btn[aria-expanded="true"] {
+            background: #0958D9 !important;
+            border-color: #BAE0FF !important;
+            color: #FFFFFF !important;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(22, 119, 255, 0.38) !important;
+        }
+
+        .global-nav-action-btn:not(.global-profile-btn) i,
+        .sa-nav-action-btn:not(.sa-profile-btn) i,
+        nav.navbar i.fa-bell,
+        nav.navbar i.fa-magnifying-glass,
+        nav.navbar i.fa-circle-question {
+            color: #183153 !important;
+        }
+        .global-profile-btn i,
+        .sa-profile-btn i {
+            color: #FFFFFF !important;
+            font-size: 1.1rem !important;
+        }
+
+        /* Clean Context Badge (Translucent Light Enterprise) */
+        .global-context-badge {
+            display: inline-flex;
+            align-items: center;
+            background: rgba(24, 49, 83, 0.05);
+            border: 1px solid rgba(182, 201, 232, 0.85);
+            border-radius: 9999px;
+            padding: 5px 14px;
+            color: #183153;
+            font-size: 0.8rem;
+            box-shadow: 0 1px 3px rgba(24, 49, 83, 0.04);
+        }
+
+        /* Navbar profile dropdown */
+        nav.navbar .dropdown-menu,
+        .global-profile-menu,
+        .sa-profile-menu {
+            background: #ffffff !important;
+            border: 1px solid #AFC7EB !important;
+            border-radius: 12px !important;
+            box-shadow: 0 12px 28px rgba(24, 49, 83, 0.12) !important;
+            z-index: 1060 !important;
+        }
+        nav.navbar .dropdown-menu .fw-semibold,
+        nav.navbar .dropdown-menu a:not(.text-danger) {
+            color: #183153 !important;
+        }
+        nav.navbar .dropdown-menu .text-white-50 {
+            color: #526789 !important;
+        }
+
+        /* 4. SIDEBAR & TOP NAVBAR POSITIONING EVERYWHERE */
+        @media (min-width: 992px) {
+            aside.offcanvas-lg,
+            aside.bg-dark,
+            aside.enterprise-sidebar,
+            aside[id$="Sidebar"],
+            .vendor-sidebar-desktop,
+            .unified-sidebar-desktop,
+            .approver-sidebar-desktop,
+            .requester-sidebar-desktop,
+            .stores-desk-nav,
+            .finance-sidebar-desktop,
+            .legal-sidebar-desktop,
+            .manager-sidebar-desktop,
+            .auditor-sidebar,
+            .sa-sidebar-desktop,
+            .proc-exec-sidebar,
+            .proc-exec-sidebar-desktop,
+            aside.sa-sidebar {
+                width: 260px !important;
+                min-width: 260px !important;
+                max-width: 260px !important;
+                flex-shrink: 0 !important;
+                position: fixed !important;
+                top: 0 !important;
+                left: 0 !important;
+                bottom: 0 !important;
+                height: 100vh !important;
+                max-height: 100vh !important;
+                overflow: hidden !important;
+                overflow-x: hidden !important;
+                overflow-y: hidden !important;
+                scrollbar-width: none !important;
+                -ms-overflow-style: none !important;
+                box-sizing: border-box !important;
+                background: #DFEAFF !important;
+                border-right: 1px solid #B4C8E8 !important;
+                box-shadow: 3px 0 10px rgba(30, 64, 120, 0.08) !important;
+                color: #1B2A4A !important;
+                z-index: 1040 !important;
+                align-self: flex-start !important;
+                display: flex !important;
+                flex-direction: column !important;
+                transition: width 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+                            min-width 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+                            max-width 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+                            transform 0.28s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            }
+
+            /* Completely remove scrollbar next to logo across all dashboards */
+            aside.offcanvas-lg::-webkit-scrollbar,
+            aside.bg-dark::-webkit-scrollbar,
+            aside.enterprise-sidebar::-webkit-scrollbar,
+            aside[id$="Sidebar"]::-webkit-scrollbar,
+            .vendor-sidebar-desktop::-webkit-scrollbar,
+            .unified-sidebar-desktop::-webkit-scrollbar,
+            .approver-sidebar-desktop::-webkit-scrollbar,
+            .requester-sidebar-desktop::-webkit-scrollbar,
+            .stores-desk-nav::-webkit-scrollbar,
+            .finance-sidebar-desktop::-webkit-scrollbar,
+            .legal-sidebar-desktop::-webkit-scrollbar,
+            .manager-sidebar-desktop::-webkit-scrollbar,
+            .auditor-sidebar::-webkit-scrollbar,
+            .sa-sidebar-desktop::-webkit-scrollbar,
+            .proc-exec-sidebar::-webkit-scrollbar,
+            .proc-exec-sidebar-desktop::-webkit-scrollbar,
+            aside.sa-sidebar::-webkit-scrollbar,
+            aside::-webkit-scrollbar,
+            .sidebar-brand-box::-webkit-scrollbar {
+                display: none !important;
+                width: 0 !important;
+                height: 0 !important;
+            }
+
+            .sidebar-brand-box {
+                overflow: hidden !important;
+                overflow-y: hidden !important;
+                overflow-x: hidden !important;
+                flex-shrink: 0 !important;
+            }
+
+            /* Inner Sidebar Content stays strictly at 260px width */
+            aside.offcanvas-lg > *,
+            aside.bg-dark > *,
+            aside.enterprise-sidebar > *,
+            aside[id$="Sidebar"] > *,
+            .vendor-sidebar-desktop > *,
+            .unified-sidebar-desktop > *,
+            .approver-sidebar-desktop > *,
+            .requester-sidebar-desktop > *,
+            .stores-desk-nav > *,
+            .finance-sidebar-desktop > *,
+            .legal-sidebar-desktop > *,
+            .manager-sidebar-desktop > *,
+            .auditor-sidebar > *,
+            .sa-sidebar-desktop > *,
+            .proc-exec-sidebar > *,
+            .proc-exec-sidebar-desktop > *,
+            aside.offcanvas-lg nav,
+            aside.bg-dark nav,
+            aside[id$="Sidebar"] nav,
+            .sidebar-nav-container,
+            .sa-nav-scroll {
+                width: 260px !important;
+                min-width: 260px !important;
+                max-width: 260px !important;
+                flex-shrink: 0 !important;
+                box-sizing: border-box !important;
+                overflow-x: hidden !important;
+                transition: opacity 0.2s ease !important;
+            }
+
+            /* Top Navbar starts from the right edge of sidebar, horizontally aligned with logo */
+            nav.global-enterprise-navbar,
+            nav.sa-topbar,
+            nav.enterprise-topbar {
+                position: sticky !important;
+                top: 0 !important;
+                margin-left: 260px !important;
+                width: calc(100% - 260px) !important;
+                max-width: calc(100% - 260px) !important;
+                min-height: 70px !important;
+                height: 70px !important;
+                background: #D6E4FF !important;
+                border-bottom: 1px solid #AFC6ED !important;
+                box-shadow: 0 3px 10px rgba(30, 64, 120, 0.12) !important;
+                z-index: 1030 !important;
+                transition: margin-left 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+                            width 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+                            max-width 0.28s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            }
+
+            /* Main Layout Containers shift by 260px */
+            div.d-flex.align-items-start.w-100,
+            .legal-layout-container,
+            body > div.d-flex.flex-column > div.d-flex.align-items-start {
+                margin-left: 260px !important;
+                width: calc(100% - 260px) !important;
+                max-width: calc(100% - 260px) !important;
+                min-height: calc(100vh - 70px) !important;
+                transition: margin-left 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+                            width 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+                            max-width 0.28s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            }
+
+            /* Main Content Container matching 70px header */
+            main.flex-grow-1,
+            main,
+            .main-content,
+            .stores-main-content,
+            .auditor-main-content {
+                width: 100% !important;
+                max-width: 100% !important;
+                min-height: calc(100vh - 70px) !important;
+                flex: 1 1 auto !important;
+                min-width: 0 !important;
+            }
+
+            /* Desktop Collapsed State */
+            body.sidebar-collapsed aside.offcanvas-lg,
+            body.sidebar-collapsed aside.bg-dark,
+            body.sidebar-collapsed aside.enterprise-sidebar,
+            body.sidebar-collapsed aside[id$="Sidebar"],
+            body.sidebar-collapsed aside#saSidebar,
+            body.sidebar-collapsed aside#approverSidebar,
+            body.sidebar-collapsed aside#financeSidebar,
+            body.sidebar-collapsed aside#legalSidebar,
+            body.sidebar-collapsed aside#requesterSidebar,
+            body.sidebar-collapsed aside#storesSidebar,
+            body.sidebar-collapsed aside#vendorSidebar,
+            body.sidebar-collapsed aside#auditorSidebar,
+            body.sidebar-collapsed aside#managerSidebar,
+            body.sidebar-collapsed aside#procExecSidebar,
+            body.sidebar-collapsed .vendor-sidebar-desktop,
+            body.sidebar-collapsed .unified-sidebar-desktop,
+            body.sidebar-collapsed .approver-sidebar-desktop,
+            body.sidebar-collapsed .requester-sidebar-desktop,
+            body.sidebar-collapsed .stores-desk-nav,
+            body.sidebar-collapsed .finance-sidebar-desktop,
+            body.sidebar-collapsed .legal-sidebar-desktop,
+            body.sidebar-collapsed .manager-sidebar-desktop,
+            body.sidebar-collapsed .auditor-sidebar,
+            body.sidebar-collapsed .sa-sidebar-desktop,
+            body.sidebar-collapsed .proc-exec-sidebar,
+            body.sidebar-collapsed .proc-exec-sidebar-desktop,
+            body.sidebar-collapsed aside.sa-sidebar {
+                width: 0 !important;
+                min-width: 0 !important;
+                max-width: 0 !important;
+                transform: translateX(-100%) !important;
+                opacity: 0 !important;
+                pointer-events: none !important;
+                overflow: hidden !important;
+            }
+
+            body.sidebar-collapsed nav.global-enterprise-navbar,
+            body.sidebar-collapsed nav.sa-topbar,
+            body.sidebar-collapsed nav.enterprise-topbar {
+                margin-left: 0 !important;
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+
+            body.sidebar-collapsed div.d-flex.align-items-start.w-100,
+            body.sidebar-collapsed .legal-layout-container,
+            body.sidebar-collapsed body > div.d-flex.flex-column > div.d-flex.align-items-start {
+                margin-left: 0 !important;
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+        }
+
+        /* 5. SIDEBAR MENU LABELS & TYPOGRAPHY */
+        .vendor-navlink,
+        .unified-navlink,
+        .sa-nav-link,
+        .approver-navlink,
+        .req-navlink,
+        .proc-navlink,
+        .finance-navlink,
+        .manager-nav-link,
+        .auditor-navlink,
+        .sidebar-link,
+        aside nav a,
+        aside .sidebar-nav-container a,
+        aside a.nav-link {
+            display: flex !important;
+            align-items: center !important;
+            min-height: 38px !important;
+            padding: 0.5rem 0.75rem !important;
+            border-radius: 9px !important;
+            font-size: 13.5px !important;
+            font-weight: 500 !important;
+            color: #1E293B !important;
+            text-decoration: none !important;
+            transition: all 0.15s ease !important;
+            margin-bottom: 4px !important;
+            white-space: nowrap !important;
+            background: transparent !important;
+            cursor: pointer !important;
+        }
+        .vendor-navlink span,
+        .unified-navlink span,
+        .sa-nav-link span,
+        .approver-navlink span,
+        .req-navlink span,
+        .proc-navlink span,
+        .finance-navlink span,
+        .manager-nav-link span,
+        .auditor-navlink span,
+        .sidebar-link span,
+        aside nav a span,
+        aside nav a div,
+        aside .sidebar-nav-container a span,
+        aside a.nav-link span {
+            color: #1E293B !important;
+            font-weight: 500 !important;
+            transition: color 0.15s ease !important;
+        }
+
+        .vendor-navlink:hover,
+        .vendor-navlink:focus,
+        .unified-navlink:hover,
+        .unified-navlink:focus,
+        .sa-nav-link:hover,
+        .sa-nav-link:focus,
+        .approver-navlink:hover,
+        .approver-navlink:focus,
+        .req-navlink:hover,
+        .req-navlink:focus,
+        .proc-navlink:hover,
+        .proc-navlink:focus,
+        .finance-navlink:hover,
+        .finance-navlink:focus,
+        .manager-nav-link:hover,
+        .manager-nav-link:focus,
+        .auditor-navlink:hover,
+        .auditor-navlink:focus,
+        .sidebar-link:hover,
+        .sidebar-link:focus,
+        aside nav a:hover,
+        aside nav a:focus,
+        aside .sidebar-nav-container a:hover,
+        aside .sidebar-nav-container a:focus,
+        aside a.nav-link:hover,
+        aside a.nav-link:focus {
+            background: rgba(22, 119, 255, 0.08) !important;
+            color: #0F172A !important;
+            text-decoration: none !important;
+            border-radius: 9px !important;
+        }
+        .vendor-navlink:hover span,
+        .unified-navlink:hover span,
+        .sa-nav-link:hover span,
+        .approver-navlink:hover span,
+        .req-navlink:hover span,
+        .proc-navlink:hover span,
+        .finance-navlink:hover span,
+        .manager-nav-link:hover span,
+        .auditor-navlink:hover span,
+        .sidebar-link:hover span,
+        aside nav a:hover span,
+        aside .sidebar-nav-container a:hover span,
+        aside a.nav-link:hover span {
+            color: #0F172A !important;
+        }
+
+        /* ========================================================================= */
+        /* 6. GLOBAL ACTIVE SIDEBAR MENU ITEM - WHITE TEXT + WHITE ICON (ALL ROLES)  */
+        /* ========================================================================= */
+        .sidebar-menu-item.active,
+        .sidebar-menu-item[aria-current="page"],
+        .sidebar-menu-item.active-nav-item,
+        .vendor-navlink.active-nav-item,
+        .vendor-navlink.active,
+        .vendor-navlink[aria-current="page"],
+        .proc-navlink.active-nav-item,
+        .proc-navlink.active,
+        .proc-navlink[aria-current="page"],
+        .approver-navlink.active-nav-item,
+        .approver-navlink.active,
+        .approver-navlink[aria-current="page"],
+        .finance-navlink.active-nav-item,
+        .finance-navlink.active,
+        .finance-navlink[aria-current="page"],
+        .unified-navlink.active-nav-item,
+        .unified-navlink.active,
+        .unified-navlink[aria-current="page"],
+        .req-navlink.active-nav-item,
+        .req-navlink.active,
+        .req-navlink[aria-current="page"],
+        .manager-nav-link.active,
+        .manager-nav-link.active-nav-item,
+        .manager-nav-link[aria-current="page"],
+        .auditor-navlink.active,
+        .auditor-navlink.active-nav-item,
+        .auditor-navlink[aria-current="page"],
+        .sa-nav-link.active,
+        .sa-nav-link.active-nav-item,
+        .sa-nav-link[aria-current="page"],
+        aside nav a.active-nav-item,
+        aside nav a.active,
+        aside nav a[aria-current="page"],
+        aside .sidebar-nav-container a.active,
+        aside .sidebar-nav-container a.active-nav-item,
+        aside a.nav-link.active,
+        aside a.nav-link.active-nav-item,
+        aside a.active,
+        aside a.active-nav-item,
+        aside a[aria-current="page"],
+        [id$="Sidebar"] a.active,
+        [id$="Sidebar"] a.active-nav-item,
+        [id$="Sidebar"] a[aria-current="page"],
+        [id$="Nav"] a.active,
+        [id$="Nav"] a.active-nav-item,
+        [id$="Nav"] a[aria-current="page"] {
+            background: linear-gradient(135deg, #1677FF 0%, #0866E8 100%) !important;
+            color: #FFFFFF !important;
+            -webkit-text-fill-color: #FFFFFF !important;
+            border-radius: 10px !important;
+            box-shadow: 0 4px 10px rgba(22, 119, 255, 0.22) !important;
+            font-weight: 600 !important;
+            text-decoration: none !important;
+        }
+
+        /* Active Text: Pure White #FFFFFF */
+        .sidebar-menu-item.active .menu-label,
+        .sidebar-menu-item[aria-current="page"] .menu-label,
+        .sidebar-menu-item.active-nav-item .menu-label,
+        .vendor-navlink.active span,
+        .vendor-navlink.active-nav-item span,
+        .proc-navlink.active span,
+        .proc-navlink.active-nav-item span,
+        .approver-navlink.active span,
+        .approver-navlink.active-nav-item span,
+        .finance-navlink.active span,
+        .finance-navlink.active-nav-item span,
+        .unified-navlink.active span,
+        .unified-navlink.active-nav-item span,
+        .req-navlink.active span,
+        .req-navlink.active-nav-item span,
+        .manager-nav-link.active span,
+        .manager-nav-link.active-nav-item span,
+        .sa-nav-link.active span,
+        .sa-nav-link.active-nav-item span,
+        aside nav a.active span,
+        aside nav a.active-nav-item span,
+        aside .sidebar-nav-container a.active span,
+        aside .sidebar-nav-container a.active-nav-item span,
+        aside a.nav-link.active span,
+        aside a.nav-link.active-nav-item span,
+        aside a.active span,
+        aside a.active-nav-item span,
+        aside a.active .menu-label,
+        aside a.active-nav-item .menu-label,
+        aside a.active .nav-text,
+        aside a.active-nav-item .nav-text,
+        [id$="Sidebar"] a.active span,
+        [id$="Sidebar"] a.active-nav-item span,
+        [id$="Sidebar"] a.active .menu-label,
+        [id$="Sidebar"] a.active-nav-item .menu-label,
+        [id$="Nav"] a.active span,
+        [id$="Nav"] a.active-nav-item span {
+            color: #FFFFFF !important;
+            -webkit-text-fill-color: #FFFFFF !important;
+            font-weight: 600 !important;
+        }
+
+        /* Active Icons: Pure White #FFFFFF (Beating .text-cyan, .text-info, .text-warning, .text-success, .text-danger, .text-primary, .text-secondary, inline styles) */
+        .sidebar-menu-item.active .menu-icon,
+        .sidebar-menu-item[aria-current="page"] .menu-icon,
+        .sidebar-menu-item.active-nav-item .menu-icon,
+        .vendor-navlink.active i,
+        .vendor-navlink.active-nav-item i,
+        .proc-navlink.active i,
+        .proc-navlink.active-nav-item i,
+        .approver-navlink.active i,
+        .approver-navlink.active-nav-item i,
+        .finance-navlink.active i,
+        .finance-navlink.active-nav-item i,
+        .unified-navlink.active i,
+        .unified-navlink.active-nav-item i,
+        .req-navlink.active i,
+        .req-navlink.active-nav-item i,
+        .manager-nav-link.active i,
+        .manager-nav-link.active-nav-item i,
+        .sa-nav-link.active i,
+        .sa-nav-link.active-nav-item i,
+        aside nav a.active i,
+        aside nav a.active-nav-item i,
+        aside .sidebar-nav-container a.active i,
+        aside .sidebar-nav-container a.active-nav-item i,
+        aside a.nav-link.active i,
+        aside a.nav-link.active-nav-item i,
+        aside a.active i,
+        aside a.active-nav-item i,
+        [id$="Sidebar"] a.active i,
+        [id$="Sidebar"] a.active-nav-item i,
+        [id$="Nav"] a.active i,
+        [id$="Nav"] a.active-nav-item i,
+        aside a.active i[class*="text-"],
+        aside a.active-nav-item i[class*="text-"],
+        aside a.active i[style],
+        aside a.active-nav-item i[style],
+        [id$="Sidebar"] a.active i[class*="text-"],
+        [id$="Sidebar"] a.active-nav-item i[class*="text-"],
+        [id$="Sidebar"] a.active i[style],
+        [id$="Sidebar"] a.active-nav-item i[style],
+        [id$="Nav"] a.active i[class*="text-"],
+        [id$="Nav"] a.active-nav-item i[class*="text-"],
+        [id$="Nav"] a.active i[style],
+        [id$="Nav"] a.active-nav-item i[style],
+        .sa-nav-link.active i[class*="text-"],
+        .sa-nav-link.active-nav-item i[class*="text-"],
+        .vendor-navlink.active i[class*="text-"],
+        .vendor-navlink.active-nav-item i[class*="text-"],
+        .proc-navlink.active i[class*="text-"],
+        .proc-navlink.active-nav-item i[class*="text-"],
+        .approver-navlink.active i[class*="text-"],
+        .approver-navlink.active-nav-item i[class*="text-"],
+        .finance-navlink.active i[class*="text-"],
+        .finance-navlink.active-nav-item i[class*="text-"],
+        .unified-navlink.active i[class*="text-"],
+        .unified-navlink.active-nav-item i[class*="text-"],
+        .req-navlink.active i[class*="text-"],
+        .req-navlink.active-nav-item i[class*="text-"],
+        .manager-nav-link.active i[class*="text-"],
+        .manager-nav-link.active-nav-item i[class*="text-"],
+        .sidebar-menu-item.active i[class*="text-"],
+        .sidebar-menu-item[aria-current="page"] i[class*="text-"],
+        .sidebar-menu-item.active-nav-item i[class*="text-"] {
+            color: #FFFFFF !important;
+            -webkit-text-fill-color: #FFFFFF !important;
+        }
+
+        /* Active SVG Icons: White */
+        .sidebar-menu-item.active svg,
+        .sidebar-menu-item[aria-current="page"] svg,
+        .sidebar-menu-item.active-nav-item svg,
+        .sa-nav-link.active svg,
+        .sa-nav-link.active-nav-item svg,
+        .vendor-navlink.active svg,
+        .vendor-navlink.active-nav-item svg,
+        .proc-navlink.active svg,
+        .proc-navlink.active-nav-item svg,
+        .unified-navlink.active svg,
+        .unified-navlink.active-nav-item svg,
+        aside nav a.active svg,
+        aside nav a.active-nav-item svg,
+        aside a.active svg,
+        aside a.active-nav-item svg,
+        [id$="Sidebar"] a.active svg,
+        [id$="Sidebar"] a.active-nav-item svg,
+        [id$="Nav"] a.active svg,
+        [id$="Nav"] a.active-nav-item svg {
+            color: #FFFFFF !important;
+            stroke: #FFFFFF !important;
+        }
+
+        aside a.active svg path,
+        aside a.active-nav-item svg path,
+        [id$="Sidebar"] a.active svg path,
+        [id$="Sidebar"] a.active-nav-item svg path,
+        [id$="Nav"] a.active svg path,
+        [id$="Nav"] a.active-nav-item svg path,
+        aside a.active svg circle,
+        aside a.active-nav-item svg circle,
+        [id$="Sidebar"] a.active svg circle,
+        [id$="Sidebar"] a.active-nav-item svg circle,
+        aside a.active svg rect,
+        aside a.active-nav-item svg rect,
+        [id$="Sidebar"] a.active svg rect,
+        [id$="Sidebar"] a.active-nav-item svg rect {
+            stroke: #FFFFFF !important;
+        }
+
+        /* Active Hover State - Retain Pure White */
+        aside a.active:hover,
+        aside a.active-nav-item:hover,
+        [id$="Sidebar"] a.active:hover,
+        [id$="Sidebar"] a.active-nav-item:hover,
+        [id$="Nav"] a.active:hover,
+        [id$="Nav"] a.active-nav-item:hover {
+            background: linear-gradient(135deg, #1677FF 0%, #0866E8 100%) !important;
+            color: #FFFFFF !important;
+            -webkit-text-fill-color: #FFFFFF !important;
+        }
+        aside a.active:hover span,
+        aside a.active-nav-item:hover span,
+        aside a.active:hover i,
+        aside a.active-nav-item:hover i,
+        aside a.active:hover svg,
+        aside a.active-nav-item:hover svg,
+        [id$="Sidebar"] a.active:hover span,
+        [id$="Sidebar"] a.active-nav-item:hover span,
+        [id$="Sidebar"] a.active:hover i,
+        [id$="Sidebar"] a.active-nav-item:hover i,
+        [id$="Nav"] a.active:hover span,
+        [id$="Nav"] a.active-nav-item:hover span,
+        [id$="Nav"] a.active:hover i,
+        [id$="Nav"] a.active-nav-item:hover i {
+            color: #FFFFFF !important;
+            -webkit-text-fill-color: #FFFFFF !important;
+        }
+
+        /* 7. WORKSPACE HEADINGS — ROLE IDENTIFICATION HEADER */
+        .workspace-heading,
+        .sa-workspace-header {
+            display: flex !important;
+            align-items: center !important;
+            font-size: 11.5px !important;
+            font-weight: 800 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.8px !important;
+            color: #163A70 !important;
+            background: #D4E5FF !important;
+            border-left: 3px solid #1677FF !important;
+            border-radius: 6px !important;
+            padding: 0.42rem 0.65rem !important;
+            margin-top: 4px !important;
+            margin-bottom: 7px !important;
+            line-height: 1.2 !important;
+            user-select: none !important;
+            cursor: default !important;
+            box-shadow: 0 1px 2px rgba(22, 58, 112, 0.05) !important;
+        }
+
+        .workspace-heading i,
+        .sa-workspace-header i {
+            color: #1677FF !important;
+            font-size: 12.5px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            margin-right: 6px !important;
+            flex-shrink: 0 !important;
+        }
+
+        .workspace-heading span,
+        .sa-workspace-header span {
+            color: #163A70 !important;
+            font-weight: 800 !important;
+        }
+
+        .workspace-heading::before,
+        .sa-workspace-header::before {
+            display: none !important;
+        }
+
+        /* 7b. SECTION GROUP HEADINGS — LOGICAL NAVIGATION CATEGORIES */
+        .nav-section-label,
+        .sa-nav-label,
+        .sidebar-heading,
+        aside .nav-section-label,
+        aside .sa-nav-label,
+        aside .sidebar-heading,
+        aside div.text-uppercase,
+        aside div[style*="uppercase"] {
+            display: flex !important;
+            align-items: center !important;
+            font-size: 11px !important;
+            font-weight: 800 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.75px !important;
+            color: #1E3A66 !important;
+            background: rgba(212, 229, 255, 0.65) !important;
+            border-left: 2.5px solid #2563EB !important;
+            border-radius: 5px !important;
+            padding: 0.35rem 0.65rem !important;
+            margin-top: 10px !important;
+            margin-bottom: 4px !important;
+            line-height: 1.2 !important;
+            user-select: none !important;
+            cursor: default !important;
+        }
+
+        .nav-section-label span,
+        .sa-nav-label span,
+        .sidebar-heading span,
+        aside .nav-section-label span,
+        aside .sa-nav-label span,
+        aside .sidebar-heading span,
+        aside div.text-uppercase span,
+        aside div[style*="uppercase"] span {
+            color: #1E3A66 !important;
+            font-weight: 800 !important;
+        }
+
+        /* Completely remove small square/grid icons and separators from all section & workspace headings */
+        .nav-section-label::before,
+        .sa-nav-label::before,
+        .sidebar-heading::before,
+        .workspace-heading::before,
+        .sa-workspace-header::before,
+        aside .nav-section-label::before,
+        aside .sa-nav-label::before,
+        aside .sidebar-heading::before,
+        aside .workspace-heading::before,
+        aside .sa-workspace-header::before,
+        aside div.text-uppercase::before,
+        aside div[style*="uppercase"]::before {
+            content: none !important;
+            display: none !important;
+            width: 0 !important;
+            height: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            border: none !important;
+            background: none !important;
+        }
+
+        /* 8. SECTION SEPARATORS */
+        .nav-separator,
+        .sa-nav-separator,
+        aside hr {
+            height: 1px !important;
+            background: #C5D8F5 !important;
+            border: none !important;
+            margin: 0.55rem 0.4rem 0.3rem !important;
+        }
+
+        /* 8a. NAVIGATION BADGES */
+        aside nav a .badge,
+        aside .sidebar-nav-container a .badge,
+        aside a.nav-link .badge,
+        .sa-nav-link .badge,
+        .vendor-navlink .badge,
+        .approver-navlink .badge,
+        .proc-navlink .badge,
+        .req-navlink .badge,
+        .finance-navlink .badge,
+        .manager-nav-link .badge,
+        .auditor-navlink .badge {
+            margin-left: auto !important;
+            font-size: 0.7rem !important;
+            font-weight: 600 !important;
+            padding: 0.25em 0.55em !important;
+            border-radius: 6px !important;
+            flex-shrink: 0 !important;
+        }
+
+        /* 8b. HIDE ALL EMOJIS & ICONS IN LEFT SIDEBAR (USER REQUIREMENT) */
+        aside nav a i,
+        aside nav a svg,
+        aside nav a .nav-icon,
+        aside nav a .menu-icon,
+        aside .sidebar-nav-container a i,
+        aside .sidebar-nav-container a svg,
+        .sa-sidebar-desktop nav a i,
+        .sa-sidebar-desktop nav a svg,
+        .vendor-sidebar-desktop nav a i,
+        .vendor-sidebar-desktop nav a svg,
+        .unified-sidebar-desktop nav a i,
+        .unified-sidebar-desktop nav a svg,
+        .approver-sidebar-desktop nav a i,
+        .approver-sidebar-desktop nav a svg,
+        .requester-sidebar-desktop nav a i,
+        .requester-sidebar-desktop nav a svg,
+        .finance-sidebar-desktop nav a i,
+        .finance-sidebar-desktop nav a svg,
+        .legal-sidebar-desktop nav a i,
+        .legal-sidebar-desktop nav a svg,
+        .stores-desk-nav a i,
+        .stores-desk-nav a svg,
+        .manager-sidebar-desktop nav a i,
+        .manager-sidebar-desktop nav a svg,
+        .auditor-sidebar nav a i,
+        .auditor-sidebar nav a svg,
+        .sa-nav-link i,
+        .sa-nav-link svg,
+        .vendor-navlink i,
+        .vendor-navlink svg,
+        .proc-navlink i,
+        .proc-navlink svg,
+        .approver-navlink i,
+        .approver-navlink svg,
+        .finance-navlink i,
+        .finance-navlink svg,
+        .unified-navlink i,
+        .unified-navlink svg,
+        .req-navlink i,
+        .req-navlink svg,
+        .manager-nav-link i,
+        .manager-nav-link svg,
+        .sidebar-link i,
+        .sidebar-link svg,
+        [id$="Sidebar"] nav a i,
+        [id$="Sidebar"] nav a svg,
+        [id$="Nav"] a i,
+        [id$="Nav"] a svg {
+            display: none !important;
+        }
+
+        /* 9. SCROLLBARS */
+        html {
+            scrollbar-width: thin !important;
+            scrollbar-color: #2456D6 #f1f5f9 !important;
+        }
+        body::-webkit-scrollbar,
+        html::-webkit-scrollbar {
+            width: 10px !important;
+            height: 10px !important;
+            display: block !important;
+        }
+        body::-webkit-scrollbar-track,
+        html::-webkit-scrollbar-track {
+            background: #f1f5f9 !important;
+        }
+        body::-webkit-scrollbar-thumb,
+        html::-webkit-scrollbar-thumb {
+            background: #2456D6 !important;
+            border-radius: 6px !important;
+            border: 2px solid #f1f5f9 !important;
+        }
+        body::-webkit-scrollbar-thumb:hover,
+        html::-webkit-scrollbar-thumb:hover {
+            background: #1b47cb !important;
+        }
+
+        aside,
+        aside nav,
+        aside .sidebar-nav-container,
+        .sa-nav-scroll {
+            scrollbar-width: thin !important;
+            scrollbar-color: rgba(27, 42, 74, 0.18) transparent !important;
+        }
+        aside::-webkit-scrollbar,
+        aside nav::-webkit-scrollbar,
+        aside .sidebar-nav-container::-webkit-scrollbar {
+            width: 4px !important;
+            height: 4px !important;
+        }
+        aside::-webkit-scrollbar-thumb,
+        aside nav::-webkit-scrollbar-thumb,
+        aside .sidebar-nav-container::-webkit-scrollbar-thumb {
+            background: rgba(27, 42, 74, 0.18) !important;
+            border-radius: 4px !important;
+        }
+        aside::-webkit-scrollbar-thumb:hover,
+        aside nav::-webkit-scrollbar-thumb:hover,
+        aside .sidebar-nav-container::-webkit-scrollbar-thumb:hover {
+            background: rgba(27, 42, 74, 0.3) !important;
+        }
+
+        /* 10. MOBILE DRAWER */
+        @media (max-width: 991.98px) {
+            aside.offcanvas-lg,
+            aside[id$="Sidebar"] {
+                background: #DFEAFF !important;
+                border-right: 1px solid #B4C8E8 !important;
+                box-shadow: 3px 0 10px rgba(30, 64, 120, 0.08) !important;
+            }
+            aside .sidebar-brand-box {
+                border-bottom: 1px solid #B8CCED !important;
+                background: transparent !important;
+            }
+            aside .sidebar-brand-box .text-white {
+                color: #1B2A4A !important;
+            }
+            aside .sidebar-brand-box .btn-close-white,
+            aside .btn-close-white {
+                filter: none !important;
+            }
+        }
+
+        /* ========================================================================= */
+        /* Vendor Navbar Profile Avatar & Dropdown (Matching Reference UI)           */
+        /* ========================================================================= */
+        .vendor-profile-avatar-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            position: relative;
+        }
+        .vendor-profile-avatar-btn::after {
+            display: none !important;
+        }
+        .vendor-profile-avatar-btn:focus,
+        .vendor-profile-avatar-btn:active {
+            outline: none !important;
+            box-shadow: none !important;
+        }
+        .vendor-avatar-ring {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background-color: #1e2634;
+            border: 2px solid #2563eb;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+        }
+        .vendor-profile-avatar-btn:hover .vendor-avatar-ring,
+        .vendor-profile-avatar-btn[aria-expanded="true"] .vendor-avatar-ring {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.35);
+        }
+        .vendor-avatar-ring i {
+            font-size: 1.6rem;
+            color: #06b6d4 !important;
+            line-height: 1;
+        }
+
+        /* Dark navy profile dropdown menu */
+        .vendor-profile-dropdown {
+            background-color: #1b2332 !important;
+            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+            border-radius: 12px !important;
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55), 0 4px 10px rgba(0, 0, 0, 0.35) !important;
+            min-width: 240px !important;
+            max-width: 320px !important;
+            padding: 14px 18px 12px 18px !important;
+            margin-top: 8px !important;
+        }
+        .vendor-dropdown-header {
+            padding: 0 !important;
+            margin-bottom: 6px !important;
+            list-style: none;
+        }
+        .vendor-email-text {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #ffffff !important;
+            word-break: break-all;
+            line-height: 1.35;
+            letter-spacing: -0.01em;
+        }
+        .vendor-dropdown-divider {
+            border: 0 !important;
+            border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+            margin: 8px 0 10px 0 !important;
+            opacity: 1 !important;
+        }
+        .vendor-dropdown-signout {
+            display: inline-flex;
+            align-items: center;
+            color: #ef4444 !important;
+            font-size: 0.92rem;
+            font-weight: 500;
+            text-decoration: none;
+            padding: 4px 0 !important;
+            background: transparent !important;
+            transition: color 0.15s ease, opacity 0.15s ease;
+        }
+        .vendor-dropdown-signout i {
+            color: #ef4444 !important;
+            font-size: 0.95rem;
+        }
+        .vendor-dropdown-signout:hover,
+        .vendor-dropdown-signout:focus {
+            color: #f87171 !important;
+        }
+
+        /* Prominent SVG Dropdown Caret Chevron across all select and filter controls */
+        select, .form-select, .modal select {
+            background-color: #ffffff !important;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23475569' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") !important;
+            background-repeat: no-repeat !important;
+            background-position: right 0.85rem center !important;
+            background-size: 16px 12px !important;
+            padding-right: 2.25rem !important;
+            color: #1e293b !important;
+            -webkit-text-fill-color: #1e293b !important;
+            border: 1px solid #cbd5e1 !important;
+            appearance: none !important;
+            -webkit-appearance: none !important;
+            -moz-appearance: none !important;
+        }
+
+        select:focus, .form-select:focus, .modal select:focus {
+            background-color: #ffffff !important;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%231677FF' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") !important;
+            background-repeat: no-repeat !important;
+            background-position: right 0.85rem center !important;
+            background-size: 16px 12px !important;
+            padding-right: 2.25rem !important;
+            color: #0f172a !important;
+            border-color: #3b82f6 !important;
+            box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.15) !important;
+        }
+    </style>
+
+</head>
+<body class="bg-light app-body" {% if user.is_authenticated %}data-user-authenticated="true" data-user-role="{{ user.role_code }}"{% endif %}>
+    {% block navbar %}
+    {% if user.is_authenticated and user.role_code == 'PROC_EXEC' %}
+        {% include 'partials/global_navbar.html' with sidebar_id='procExecSidebar' dashboard_url='/procurement/' %}
+    {% elif user.is_authenticated %}
+        {% include 'partials/global_navbar.html' %}
+    {% endif %}
+    {% endblock navbar %}
+
+    {% block layout %}
+    <div class="{% if user.is_authenticated and user.role_code == 'PROC_EXEC' %}d-flex align-items-start w-100{% else %}container-fluid p-0{% endif %}" style="{% if user.is_authenticated and user.role_code == 'PROC_EXEC' %}min-height: calc(100vh - 79px); max-width: 100vw;{% endif %}">
+        {% if user.is_authenticated and user.role_code == 'PROC_EXEC' %}
+        {% include 'partials/proc_exec_sidebar.html' %}
+        {% endif %}
+
+        <!-- Main Page Content Area -->
+        <main class="{% if user.is_authenticated and user.role_code == 'PROC_EXEC' %}flex-grow-1 p-2 p-sm-3 p-md-4 w-100{% else %}container-fluid p-3 p-md-4 overflow-auto{% endif %}" style="min-width: 0; background-color: #F5F7FA; {% if user.is_authenticated and user.role_code == 'PROC_EXEC' %}max-width: 100vw; overflow-x: hidden;{% endif %}">
+            <!-- Alert Messages -->
+            {% if messages %}
+            <div class="mb-4 ps-flash-messages">
+                {% for message in messages %}
+                <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags|default:'info' }}{% endif %} alert-dismissible fade show shadow-sm border-0 d-flex align-items-center py-2 px-3" role="alert">
+                    <i class="fa-solid {% if 'success' in message.tags %}fa-circle-check text-success{% elif 'error' in message.tags or 'danger' in message.tags %}fa-circle-exclamation text-danger{% else %}fa-circle-info text-primary{% endif %} me-2 fs-5"></i>
+                    <div class="flex-grow-1">{{ message }}</div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {% endfor %}
+            </div>
+            <script>
+            (function() {
+                setTimeout(function() {
+                    document.querySelectorAll('.ps-flash-messages .alert-success, .ps-flash-messages .alert-info').forEach(function(el) {
+                        try {
+                            if (window.bootstrap && window.bootstrap.Alert) {
+                                window.bootstrap.Alert.getOrCreateInstance(el).close();
+                            } else {
+                                el.classList.remove('show');
+                                setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 250);
+                            }
+                        } catch (e) {
+                            el.remove();
+                        }
+                    });
+                    setTimeout(function() {
+                        document.querySelectorAll('.ps-flash-messages').forEach(function(wrap) {
+                            if (!wrap.querySelector('.alert')) wrap.remove();
+                        });
+                    }, 350);
+                }, 4000);
+            })();
+            </script>
+            {% endif %}
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+    {% endblock layout %}
+
+    <!-- HTMX Modal Container -->
+    <div id="modal-container" class="modal fade" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content glass-card" id="modal-content-body">
+                <!-- HTMX partial loaded dynamically here -->
+            </div>
+        </div>
+    </div>
+
+    {% if user.is_authenticated %}
+    <!-- Back Navigation Sign Out Confirmation Modal with Auto-Dismiss Timer -->
+    <div class="modal fade" id="signout-confirm-modal" tabindex="-1" aria-labelledby="signoutConfirmModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered modal-sm" style="max-width: 380px;">
+            <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden position-relative">
+                <!-- Auto-dismiss Countdown Progress Bar -->
+                <div class="progress position-absolute top-0 start-0 end-0" style="height: 3px; border-radius: 0; background: rgba(0,0,0,0.05); z-index: 10;">
+                    <div id="signout-progress-bar" class="progress-bar bg-danger" style="width: 100%; transition: width 0.1s linear;"></div>
+                </div>
+                <div class="modal-body p-4 text-center pt-4">
+                    <div class="mb-3 mx-auto d-flex align-items-center justify-content-center bg-danger bg-opacity-10 text-danger rounded-circle" style="width: 56px; height: 56px;">
+                        <i class="fa-solid fa-arrow-right-from-bracket fs-4"></i>
+                    </div>
+                    <h5 class="fw-bold text-dark mb-2" id="signoutConfirmModalLabel">Sign Out Confirmation</h5>
+                    <p class="text-secondary small mb-3">You are currently signed into ProcureSphere 360. Do you want to sign out of your session, or stay on your dashboard?</p>
+                    <div class="d-flex flex-column gap-2">
+                        <button type="button" class="btn btn-outline-secondary rounded-pill py-2 fw-semibold" id="stay-signed-in-btn" data-bs-dismiss="modal">Stay on Dashboard</button>
+                        <form method="POST" action="/logout/" id="signout-confirm-form" class="m-0 p-0">
+                            {% csrf_token %}
+                            <input type="hidden" name="reason" value="signed_out">
+                            <button type="submit" class="btn btn-danger rounded-pill py-2 w-100 fw-bold text-white border-0 shadow-sm" id="signout-confirm-action-btn" href="/logout/">Sign Out</button>
+                        </form>
+                    </div>
+                    <span id="signout-modal-timer" class="text-muted small mt-3 d-block" style="font-size: 11.5px;">
+                        <i class="fa-regular fa-clock me-1"></i>Closing automatically in <strong id="signout-countdown-sec">6</strong>s
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom Application JS -->
+    <script src="/static/js/app.js?v=ps_nav_v18"></script>
+    {% if request.user.is_authenticated %}
+    <script>
+      window.PS360_SESSION_CONFIG = {
+        idleTimeoutSeconds: {{ session_idle_timeout_seconds|default:300 }},
+        warningSeconds: 30,
+        keepAliveUrl: "/api/v1/auth/session-keepalive/",
+        logoutUrl: "/logout/?reason=inactivity",
+        loginUrl: "/login/?session_expired=1"
+      };
+    </script>
+    <script src="/static/js/session_timeout.js?v=1"></script>
+    {% endif %}
+    <script>
+        // Setup HTMX CSRF Token globally
+        document.body.addEventListener('htmx:configRequest', (event) => {
+            const csrfToken = document.cookie.match(/csrftoken=([\w-]+)/);
+            if (csrfToken) {
+                event.detail.headers['X-CSRFToken'] = csrfToken[1];
+            }
+        });
+
+        // Intercept HTMX responses to prevent login page from being injected into modal containers
+        function isLoginResponse(xhr) {
+            if (!xhr) return false;
+            var respUrl = xhr.responseURL || '';
+            var respText = xhr.responseText || '';
+            return (
+                respUrl.indexOf('/login') !== -1 ||
+                respText.indexOf('login-char-img') !== -1 ||
+                respText.indexOf('normal.webp') !== -1 ||
+                respText.indexOf('Sign In') !== -1 ||
+                xhr.status === 401 ||
+                xhr.status === 403
+            );
+        }
+
+        document.body.addEventListener('htmx:beforeSwap', function(evt) {
+            if (isLoginResponse(evt.detail.xhr)) {
+                evt.detail.shouldSwap = false;
+                window.location.href = '/login/?session_expired=1';
+            } else if (evt.detail.xhr && evt.detail.xhr.status === 400) {
+                // Allow 400 validation error responses to swap into modals/forms so inline errors are visible
+                evt.detail.shouldSwap = true;
+                evt.detail.isError = false;
+            }
+        });
+
+        document.body.addEventListener('htmx:beforeOnLoad', function(evt) {
+            if (isLoginResponse(evt.detail.xhr)) {
+                evt.preventDefault();
+                evt.detail.shouldSwap = false;
+                window.location.href = '/login/?session_expired=1';
+            }
+        });
+
+        document.body.addEventListener('htmx:responseError', function(evt) {
+            if (evt.detail.xhr && (evt.detail.xhr.status === 401 || evt.detail.xhr.status === 403)) {
+                evt.detail.shouldSwap = false;
+                window.location.href = '/login/?session_expired=1';
+            }
+        });
+
+        // Track logout clicks to cleanly bypass intro video on landing page
+        document.addEventListener('click', function(e) {
+            const el = e.target.closest('a, button');
+            if (!el) return;
+            const href = el.getAttribute('href') || '';
+            const action = (el.form && el.form.getAttribute('action')) || '';
+            if (href.includes('/logout') || action.includes('/logout') || el.classList.contains('sidebar-signout-btn')) {
+                try {
+                    sessionStorage.setItem('ps360_logged_out', 'true');
+                    document.cookie = "ps360_just_logged_out=1; path=/; max-age=60; SameSite=Lax";
+                } catch(err) {}
+            }
+        }, true);
+
+        // =========================================================================
+        // GLOBAL SIDEBAR TOGGLE UX CONTROLLER
+        // =========================================================================
+        function updateSidebarToggleState(isCollapsed) {
+            const toggleBtns = document.querySelectorAll('.sidebar-toggle-btn');
+            toggleBtns.forEach(btn => {
+                const iconCollapse = btn.querySelector('.sidebar-icon-collapse');
+                const iconExpand = btn.querySelector('.sidebar-icon-expand');
+                const label = isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar';
+
+                if (iconCollapse && iconExpand) {
+                    if (isCollapsed) {
+                        iconCollapse.classList.add('d-none');
+                        iconExpand.classList.remove('d-none');
+                    } else {
+                        iconCollapse.classList.remove('d-none');
+                        iconExpand.classList.add('d-none');
+                    }
+                }
+
+                btn.setAttribute('aria-label', label);
+                btn.setAttribute('aria-expanded', isCollapsed ? 'false' : 'true');
+                btn.setAttribute('title', label);
+                btn.setAttribute('data-bs-original-title', label);
+
+                if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
+                    const tooltipInstance = bootstrap.Tooltip.getInstance(btn);
+                    if (tooltipInstance) {
+                        tooltipInstance.hide();
+                        tooltipInstance.setContent({ '.tooltip-inner': label });
+                    }
+                }
+            });
+        }
+
+        function initSidebarToggle() {
+            const toggleBtns = document.querySelectorAll('.sidebar-toggle-btn');
+            if (!toggleBtns.length) return;
+
+            const isDesktop = window.innerWidth >= 992;
+            const savedState = localStorage.getItem('ps_sidebar_collapsed');
+
+            if (isDesktop && savedState === 'true') {
+                document.body.classList.add('sidebar-collapsed');
+                updateSidebarToggleState(true);
+            } else if (isDesktop) {
+                document.body.classList.remove('sidebar-collapsed');
+                updateSidebarToggleState(false);
+            } else {
+                // Mobile default: drawer closed
+                updateSidebarToggleState(true);
+            }
+
+            toggleBtns.forEach(btn => {
+                if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
+                    const hasHover = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+                    if (hasHover) {
+                        let tip = bootstrap.Tooltip.getInstance(btn);
+                        if (!tip) {
+                            new bootstrap.Tooltip(btn, {
+                                boundary: 'window',
+                                container: 'body'
+                            });
+                        }
+                    }
+                }
+
+                if (btn.dataset.toggleBound === 'true') return;
+                btn.dataset.toggleBound = 'true';
+
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const targetId = btn.getAttribute('data-sidebar-target');
+                    const isDesktopNow = window.innerWidth >= 992;
+
+                    if (isDesktopNow) {
+                        const nowCollapsed = document.body.classList.toggle('sidebar-collapsed');
+                        try {
+                            localStorage.setItem('ps_sidebar_collapsed', nowCollapsed ? 'true' : 'false');
+                        } catch(err) {}
+                        updateSidebarToggleState(nowCollapsed);
+                    } else {
+                        const sidebarEl = (targetId && document.getElementById(targetId)) || document.querySelector('aside.offcanvas-lg');
+                        if (sidebarEl && typeof bootstrap !== 'undefined') {
+                            const offcanvas = bootstrap.Offcanvas.getOrCreateInstance(sidebarEl);
+                            offcanvas.toggle();
+                        }
+                    }
+                });
+            });
+
+            // Mobile offcanvas listeners to synchronize icon & tooltip
+            const sidebars = document.querySelectorAll('aside.offcanvas-lg, aside[id$="Sidebar"]');
+            sidebars.forEach(sidebar => {
+                if (sidebar.dataset.offcanvasEventsBound === 'true') return;
+                sidebar.dataset.offcanvasEventsBound = 'true';
+
+                sidebar.addEventListener('show.bs.offcanvas', function() {
+                    if (window.innerWidth < 992) {
+                        updateSidebarToggleState(false);
+                    }
+                });
+                sidebar.addEventListener('hidden.bs.offcanvas', function() {
+                    if (window.innerWidth < 992) {
+                        updateSidebarToggleState(true);
+                    }
+                });
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', initSidebarToggle);
+        document.body.addEventListener('htmx:afterSettle', initSidebarToggle);
+
+        // Universal Sidebar Scroll State Preservation Controller
+        function getSidebarScrollContainer() {
+            const scrollable = document.querySelector(
+                '.sa-nav-scroll, aside nav.overflow-y-auto, [id$="Sidebar"] nav.overflow-y-auto, [id$="Nav"].overflow-y-auto, aside nav, [id$="Sidebar"] nav, aside .offcanvas-body'
+            );
+            if (scrollable) return scrollable;
+            const aside = document.querySelector('aside.sa-sidebar-desktop, aside.enterprise-sidebar, [id$="Sidebar"], aside');
+            if (aside) {
+                return aside.querySelector('.sa-nav-scroll, nav, .overflow-y-auto, .offcanvas-body') || aside;
+            }
+            return null;
+        }
+
+        function restoreSidebarScrollState() {
+            const el = getSidebarScrollContainer();
+            if (!el) return;
+
+            let targetScroll = null;
+            try {
+                const saved = sessionStorage.getItem('ps_sidebar_scroll_pos');
+                if (saved !== null && saved !== '') {
+                    const parsed = parseInt(saved, 10);
+                    if (!isNaN(parsed) && parsed >= 0) {
+                        targetScroll = parsed;
+                    }
+                }
+            } catch (e) {}
+
+            const apply = function() {
+                if (targetScroll !== null && targetScroll > 0) {
+                    el.scrollTop = targetScroll;
+                } else if (targetScroll === null) {
+                    try {
+                        const activeLink = el.querySelector(
+                            'a.active, a.active-nav-item, .sa-nav-link.active, .vendor-navlink.active-nav-item, .approver-navlink.active-nav-item'
+                        );
+                        if (activeLink) {
+                            const elRect = el.getBoundingClientRect();
+                            const linkRect = activeLink.getBoundingClientRect();
+                            if (linkRect.top < elRect.top || linkRect.bottom > elRect.bottom) {
+                                activeLink.scrollIntoView({ block: 'nearest', behavior: 'auto' });
+                            }
+                        }
+                    } catch (err) {}
+                }
+            };
+
+            apply();
+            requestAnimationFrame(apply);
+            setTimeout(apply, 30);
+            setTimeout(apply, 100);
+        }
+
+        function bindSidebarScrollTracking() {
+            const el = getSidebarScrollContainer();
+            if (!el || el._psScrollTracked) return;
+            el._psScrollTracked = true;
+            el.addEventListener('scroll', function() {
+                try {
+                    sessionStorage.setItem('ps_sidebar_scroll_pos', String(el.scrollTop));
+                } catch (e) {}
+            }, { passive: true });
+        }
+
+        // Restore immediately and bind tracking
+        restoreSidebarScrollState();
+        bindSidebarScrollTracking();
+        document.addEventListener('DOMContentLoaded', function() {
+            restoreSidebarScrollState();
+            bindSidebarScrollTracking();
+        });
+        window.addEventListener('pageshow', restoreSidebarScrollState);
+
+        // Instant visual feedback for clicked sidebar menu item & preserve scroll position
+        document.addEventListener('click', function(e) {
+            const link = e.target.closest('aside nav a, aside .sidebar-nav-container a, [id$="Sidebar"] nav a, [id$="Nav"] a, .sa-nav-link, .vendor-navlink, .unified-navlink, .finance-navlink, .proc-navlink, .req-navlink, .manager-nav-link');
+            if (link && !link.getAttribute('href')?.startsWith('#') && link.getAttribute('href') !== '/logout/') {
+                const sc = getSidebarScrollContainer();
+                if (sc && sc.scrollTop >= 0) {
+                    try {
+                        sessionStorage.setItem('ps_sidebar_scroll_pos', String(sc.scrollTop));
+                    } catch (err) {}
+                }
+                const nav = link.closest('nav, aside, [id$="Sidebar"]');
+                if (nav) {
+                    nav.querySelectorAll('a.active, a.active-nav-item').forEach(el => {
+                        el.classList.remove('active', 'active-nav-item');
+                        el.removeAttribute('aria-current');
+                    });
+                    link.classList.add('active', 'active-nav-item');
+                    link.setAttribute('aria-current', 'page');
+                }
+            }
+        });
+    </script>
+
+    {% block extra_js %}{% endblock extra_js %}
+</body>
+</html>

@@ -1,0 +1,38 @@
+<div class="modal-header">
+    <h5 class="modal-title fw-bold"><i class="fa-solid fa-circle-check text-success me-2"></i>{{ vendor.vendor_number }} · {{ vendor.legal_name }}</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+</div>
+<div class="modal-body">
+    {% if dispatch %}
+        {% if dispatch.status == 'DELIVERED' %}
+            <div class="alert alert-success small" role="alert">
+                <i class="fa-solid fa-check-double me-1"></i>Credentials confirmed <strong>delivered</strong> to <strong>{{ dispatch.sent_to }}</strong>.
+            </div>
+        {% elif dispatch.status == 'SENT' %}
+            <div class="alert alert-success small" role="alert">
+                <i class="fa-solid fa-paper-plane me-1"></i>Credentials emailed to <strong>{{ dispatch.sent_to }}</strong> (awaiting provider delivery confirmation). The vendor must set a new password at first login.
+            </div>
+        {% elif dispatch.status == 'RETRYING' %}
+            <div class="alert alert-warning small" role="alert">
+                <i class="fa-solid fa-rotate me-1"></i>Delivery in progress (retrying).
+            </div>
+        {% elif dispatch.status == 'FAILED' %}
+            <div class="alert alert-danger small" role="alert">
+                <i class="fa-solid fa-circle-xmark me-1"></i>Delivery failed: {{ dispatch.error }}
+            </div>
+        {% endif %}
+    {% elif error %}
+        <div class="alert alert-danger small" role="alert"><i class="fa-solid fa-circle-xmark me-1"></i>{{ error }}</div>
+    {% else %}
+        <div class="alert alert-success small" role="alert">Vendor registered as <strong>DRAFT</strong>.</div>
+        <p class="small text-muted mb-0">Generate a login for <strong>{{ vendor.email }}</strong> and email the credentials with the portal link(s).</p>
+    {% endif %}
+</div>
+<div class="modal-footer">
+    <a href="{% url 'vendor_detail' vendor.id %}" class="btn btn-light rounded-pill">Open vendor</a>
+    {% if not dispatch or dispatch.status == 'FAILED' %}
+    <button class="btn btn-primary rounded-pill px-4" hx-post="{% url 'vendor_issue_credentials' vendor.id %}" hx-vals='{"force": "true"}' hx-target="#modal-content-body" hx-swap="innerHTML" hx-disabled-elt="this">
+        <i class="fa-solid fa-paper-plane me-1"></i>{% if error or dispatch %}Retry email dispatch{% else %}Generate credentials &amp; email{% endif %}
+    </button>
+    {% endif %}
+</div>

@@ -1,0 +1,253 @@
+{% with p=request.path st=request.GET.status %}
+<style>
+    @media (min-width: 992px) {
+        aside.proc-exec-sidebar-desktop,
+        .proc-exec-sidebar-desktop,
+        aside#procExecSidebar {
+            width: 260px !important;
+            min-width: 260px !important;
+            flex-shrink: 0 !important;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            bottom: 0 !important;
+            height: 100vh !important;
+            max-height: 100vh !important;
+            overflow: hidden !important;
+            overflow-y: hidden !important;
+            display: flex !important;
+            flex-direction: column !important;
+            z-index: 1040;
+            background: #DFEAFF !important;
+            border-right: 1px solid #B4C8E8 !important;
+            box-shadow: 3px 0 10px rgba(30, 64, 120, 0.08) !important;
+        }
+        .proc-exec-sidebar-desktop nav#procExecNav,
+        .proc-exec-sidebar-desktop nav {
+            overflow-y: auto !important;
+            flex: 1 1 auto !important;
+            min-height: 0 !important;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255,255,255,0.15) transparent;
+        }
+        .proc-exec-sidebar-desktop nav::-webkit-scrollbar {
+            width: 4px;
+        }
+        .proc-exec-sidebar-desktop nav::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.15);
+            border-radius: 4px;
+        }
+    }
+
+    /* Section label style */
+    .nav-section-label {
+        display: flex !important;
+        align-items: center !important;
+        font-size: 11.5px !important;
+        font-weight: 800 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.8px !important;
+        color: #163A70 !important;
+        background: #D4E5FF !important;
+        border-left: 3px solid #1677FF !important;
+        border-radius: 6px !important;
+        padding: 0.35rem 0.65rem !important;
+        margin-top: 12px !important;
+        margin-bottom: 5px !important;
+        user-select: none !important;
+        cursor: default !important;
+        box-shadow: 0 1px 2px rgba(22, 58, 112, 0.05) !important;
+    }
+
+    /* Top-level nav link */
+    .vendor-navlink,
+    .proc-navlink {
+        display: flex !important;
+        align-items: center !important;
+        min-height: 38px !important;
+        padding: 0.5rem 0.75rem !important;
+        border-radius: 9px !important;
+        font-size: 13.5px !important;
+        font-weight: 500 !important;
+        color: #1E293B !important;
+        text-decoration: none !important;
+        transition: all 0.15s ease !important;
+    }
+    .vendor-navlink:hover,
+    .vendor-navlink:focus,
+    .proc-navlink:hover,
+    .proc-navlink:focus {
+        background: rgba(22, 119, 255, 0.08) !important;
+        color: #0F172A !important;
+    }
+    .vendor-navlink:focus,
+    .proc-navlink:hover,
+    .proc-navlink:focus {
+        background: rgba(255,255,255,0.08);
+        color: #fff;
+    }
+    .vendor-navlink.active-nav-item,
+    .proc-navlink.active-nav-item,
+    .vendor-navlink.active,
+    .proc-navlink.active {
+        background: linear-gradient(135deg, #1677FF 0%, #0866E8 100%) !important;
+        color: #FFFFFF !important;
+        -webkit-text-fill-color: #FFFFFF !important;
+        font-weight: 600 !important;
+        border-radius: 10px !important;
+        box-shadow: 0 4px 10px rgba(22, 119, 255, 0.22) !important;
+        text-decoration: none !important;
+    }
+    .vendor-navlink.active-nav-item span,
+    .proc-navlink.active-nav-item span,
+    .vendor-navlink.active span,
+    .proc-navlink.active span {
+        color: #FFFFFF !important;
+        -webkit-text-fill-color: #FFFFFF !important;
+    }
+    .vendor-navlink.active-nav-item i,
+    .proc-navlink.active-nav-item i,
+    .vendor-navlink.active i,
+    .proc-navlink.active i,
+    .vendor-navlink.active-nav-item i[class*="text-"],
+    .proc-navlink.active-nav-item i[class*="text-"] {
+        color: #FFFFFF !important;
+        -webkit-text-fill-color: #FFFFFF !important;
+    }
+    .vendor-navlink .nav-icon,
+    .proc-navlink .nav-icon {
+        width: 20px;
+        text-align: center;
+        margin-right: 0.65rem;
+        flex-shrink: 0;
+    }
+</style>
+
+<aside class="offcanvas-lg offcanvas-start border-end shadow-sm enterprise-sidebar text-white border-end border-secondary border-opacity-25 shadow-sm proc-exec-sidebar-desktop" tabindex="-1" id="procExecSidebar" aria-labelledby="procExecSidebarLabel" style="width: 260px; min-width: 260px;">
+    <!-- Sidebar Brand Header (Logo + Toggle Button) -->
+    {% include 'partials/sidebar_header.html' with sidebar_id='procExecSidebar' dashboard_url='/procurement/' %}
+
+    <!-- Navigation (Scrollable, NO FOOTER, NO DUPLICATE LOGOUT BUTTON) -->
+    <nav class="flex-grow-1 overflow-y-auto px-2 py-3 d-flex flex-column gap-1" id="procExecNav" style="flex: 1 1 0%; min-height: 0;" aria-label="Procurement Executive Navigation">
+        <!-- 1. Workspace Heading -->
+        <div class="workspace-heading sa-workspace-header">
+            <i class="fa-solid fa-briefcase me-2"></i>
+            <span>PROCUREMENT DESK</span>
+        </div>
+
+        <!-- 2. Standalone Dashboard -->
+        <a href="/procurement/" class="vendor-navlink proc-navlink {% if p == '/procurement/' or p == '/procurement/dashboard/' or p == '/' %}active-nav-item{% endif %}" {% if p == '/procurement/' or p == '/procurement/dashboard/' or p == '/' %}aria-current="page"{% endif %}>
+            <span>Dashboard</span>
+        </a>
+
+        <!-- 3. Vendors Section -->
+        <div class="nav-section-label">Vendors</div>
+        <a href="{% url 'vendor_onboarding' %}" class="vendor-navlink proc-navlink {% if section == 'onboarding' or p == '/vendors/onboarding/' or p == '/vendors/create/' %}active-nav-item{% endif %}" {% if section == 'onboarding' or p == '/vendors/onboarding/' or p == '/vendors/create/' %}aria-current="page"{% endif %}>
+            <span>Vendor Onboarding &amp; KYC</span>
+        </a>
+        <a href="{% url 'vendor_list' %}" class="vendor-navlink proc-navlink {% if section == 'master' or p == '/vendors/' or '/vendors/' in p and section != 'governance' and section != 'onboarding' and not '/vendors/governance/' in p and not '/vendors/onboarding/' in p and not '/vendors/create/' in p %}active-nav-item{% endif %}" {% if section == 'master' or p == '/vendors/' or '/vendors/' in p and section != 'governance' and section != 'onboarding' and not '/vendors/governance/' in p and not '/vendors/onboarding/' in p and not '/vendors/create/' in p %}aria-current="page"{% endif %}>
+            <span>Vendor Master &amp; Risk</span>
+        </a>
+        <a href="{% url 'vendor_governance' %}" class="vendor-navlink proc-navlink {% if section == 'governance' or p == '/vendors/governance/' %}active-nav-item{% endif %}" {% if section == 'governance' or p == '/vendors/governance/' %}aria-current="page"{% endif %}>
+            <span>Vendor Governance</span>
+        </a>
+
+        <!-- Sourcing Section -->
+        <div class="nav-section-label">Sourcing</div>
+        <a href="{% url 'sourcing_list' %}" class="vendor-navlink proc-navlink {% if p == '/sourcing-events/' or p == '/sourcing-events/create/' %}active-nav-item{% endif %}" {% if p == '/sourcing-events/' or p == '/sourcing-events/create/' %}aria-current="page"{% endif %}>
+            <span>RFQ / RFP</span>
+        </a>
+        <a href="{% url 'bid_portal_dashboard' %}" class="vendor-navlink proc-navlink {% if '/bid-portal/' in p %}active-nav-item{% endif %}" {% if '/bid-portal/' in p %}aria-current="page"{% endif %}>
+            <span>Vendor Bid Portal</span>
+        </a>
+        <a href="{% url 'evaluation_dashboard' %}" class="vendor-navlink proc-navlink {% if '/evaluation/' in p %}active-nav-item{% endif %}" {% if '/evaluation/' in p %}aria-current="page"{% endif %}>
+            <span>Evaluation &amp; Award</span>
+        </a>
+
+        <!-- Execution Section -->
+        <div class="nav-section-label">Execution</div>
+        <a href="{% url 'orders_list' %}" class="vendor-navlink proc-navlink {% if '/purchase-orders/' in p %}active-nav-item{% endif %}" {% if '/purchase-orders/' in p %}aria-current="page"{% endif %}>
+            <span>Purchase Orders</span>
+        </a>
+        <a href="{% url 'invoices_list' %}" class="vendor-navlink proc-navlink d-flex align-items-center justify-content-between {% if '/invoices/' in p %}active-nav-item{% endif %}" {% if '/invoices/' in p %}aria-current="page"{% endif %}>
+            <div class="d-flex align-items-center min-width-0">
+                <span class="text-truncate">Invoices</span>
+            </div>
+            <span class="badge bg-secondary bg-opacity-50 text-light px-2 py-0.5 rounded-pill flex-shrink-0" style="font-size: 0.65rem;">View</span>
+        </a>
+        <a href="{% url 'scorecard_list' %}" class="vendor-navlink proc-navlink {% if '/scorecards/' in p %}active-nav-item{% endif %}" {% if '/scorecards/' in p %}aria-current="page"{% endif %}>
+            <span>Supplier Performance</span>
+        </a>
+        <a href="{% url 'notification_list' %}" class="vendor-navlink proc-navlink {% if '/notifications/' in p %}active-nav-item{% endif %}" {% if '/notifications/' in p %}aria-current="page"{% endif %}>
+            <span>Notifications</span>
+        </a>
+
+        <!-- Reports Section -->
+        <div class="nav-section-label">Reports</div>
+        <a href="{% url 'proc_exec_pr_aging' %}" class="vendor-navlink proc-navlink {% if p == '/reports/pr-aging/' %}active-nav-item{% endif %}" {% if p == '/reports/pr-aging/' %}aria-current="page"{% endif %}>
+            <span>PR Aging</span>
+        </a>
+        <a href="{% url 'proc_exec_sourcing_cycle' %}" class="vendor-navlink proc-navlink {% if p == '/reports/sourcing-cycle/' %}active-nav-item{% endif %}" {% if p == '/reports/sourcing-cycle/' %}aria-current="page"{% endif %}>
+            <span>Sourcing Cycle</span>
+        </a>
+        <a href="{% url 'proc_exec_po_status' %}" class="vendor-navlink proc-navlink {% if p == '/reports/po-status/' %}active-nav-item{% endif %}" {% if p == '/reports/po-status/' %}aria-current="page"{% endif %}>
+            <span>PO Status</span>
+        </a>
+    </nav>
+</aside>
+
+<script>
+    // Preserve vertical scroll position of #procExecNav across full-page navigations
+    // so clicking lower items (e.g. PR Aging, Sourcing Cycle, PO Status) stays in place
+    // instead of jumping back up to the first navigation item.
+    (function() {
+        var SCROLL_KEY = 'ps_proc_exec_nav_scroll';
+        var navEl = document.getElementById('procExecNav');
+        if (!navEl) return;
+
+        function restoreScroll() {
+            var saved = null;
+            try {
+                saved = sessionStorage.getItem(SCROLL_KEY);
+            } catch (err) {}
+            if (saved !== null && saved !== '') {
+                var parsed = parseInt(saved, 10);
+                if (!isNaN(parsed)) {
+                    navEl.scrollTop = parsed;
+                }
+            }
+            var activeLink = navEl.querySelector('a.active-nav-item, a.active');
+            if (activeLink) {
+                var navRect = navEl.getBoundingClientRect();
+                var linkRect = activeLink.getBoundingClientRect();
+                if (linkRect.top < navRect.top || linkRect.bottom > navRect.bottom) {
+                    activeLink.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+                }
+            }
+        }
+
+        function saveScroll() {
+            try {
+                sessionStorage.setItem(SCROLL_KEY, String(navEl.scrollTop || 0));
+            } catch (err) {}
+        }
+
+        restoreScroll();
+        document.addEventListener('DOMContentLoaded', restoreScroll);
+
+        navEl.addEventListener('scroll', saveScroll, { passive: true });
+        document.querySelectorAll('#procExecSidebar a.vendor-navlink, #procExecSidebar a.proc-navlink').forEach(function(link) {
+            link.addEventListener('click', function() {
+                saveScroll();
+                var sidebarEl = document.getElementById('procExecSidebar');
+                if (window.innerWidth < 992 && sidebarEl && typeof bootstrap !== 'undefined') {
+                    var offcanvasInstance = bootstrap.Offcanvas.getInstance(sidebarEl);
+                    if (offcanvasInstance) {
+                        offcanvasInstance.hide();
+                    }
+                }
+            });
+        });
+    })();
+</script>
+{% endwith %}

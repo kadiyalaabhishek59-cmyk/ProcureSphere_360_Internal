@@ -1,0 +1,149 @@
+{% extends 'layouts/vendor_base.html' %}
+
+{% block vendor_title %}Invoices & Payments{% endblock %}
+
+{% block vendor_content %}
+<div class="container-fluid px-0">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb small">
+            <li class="breadcrumb-item"><a href="/vendor/" class="text-decoration-none text-muted">Dashboard</a></li>
+            <li class="breadcrumb-item active fw-semibold text-dark" aria-current="page">Invoices</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <h3 class="fw-bold text-dark mb-1">Invoices & Payments</h3>
+            <p class="text-muted mb-0 small">Track submitted invoices, match exceptions, and payment status.</p>
+        </div>
+        <div>
+            {% if eligible_pos %}
+                {% if eligible_pos|length == 1 %}
+                    <a href="{% url 'vendor_invoice_submit' eligible_pos.first.id %}" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm">
+                        <i class="fa-solid fa-file-invoice-dollar me-2"></i> Submit Invoice
+                    </a>
+                {% else %}
+                    <div class="dropdown">
+                        <button class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm dropdown-toggle" type="button" id="submitInvoiceDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fa-solid fa-file-invoice-dollar me-2"></i> Submit Invoice
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" aria-labelledby="submitInvoiceDropdown">
+                            <li class="dropdown-header small text-uppercase text-secondary">Select Purchase Order</li>
+                            {% for p in eligible_pos %}
+                            <li>
+                                <a class="dropdown-item py-2" href="{% url 'vendor_invoice_submit' p.id %}">
+                                    <div class="fw-semibold">{{ p.po_number }}</div>
+                                    <small class="text-muted">₹{{ p.total_amount }} &bull; {{ p.get_status_display }}</small>
+                                </a>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+            {% else %}
+                <a href="/vendor/purchase-orders/" class="btn btn-outline-secondary rounded-pill px-4 fw-bold shadow-sm" title="Review Purchase Orders">
+                    <i class="fa-solid fa-file-invoice-dollar me-2"></i> Submit Invoice
+                </a>
+            {% endif %}
+        </div>
+    </div>
+
+    {% include 'partials/messages.html' %}
+
+    <!-- Filter Tabs -->
+    <ul class="nav nav-pills vendor-scrollable-pills flex-nowrap overflow-x-auto mb-4 gap-2">
+        <li class="nav-item">
+            <a class="nav-link rounded-pill px-3 fw-semibold {% if tab == 'all' or not tab %}active{% else %}bg-light text-dark{% endif %}" href="?tab=all">
+                All Invoices <span class="badge bg-secondary ms-1 rounded-pill">{{ counts.all }}</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link rounded-pill px-3 fw-semibold {% if tab == 'pending' %}active{% else %}bg-light text-dark{% endif %}" href="?tab=pending">
+                Pending Approval <span class="badge bg-secondary ms-1 rounded-pill">{{ counts.pending }}</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link rounded-pill px-3 fw-semibold {% if tab == 'approved' %}active{% else %}bg-light text-dark{% endif %}" href="?tab=approved">
+                Approved <span class="badge bg-secondary ms-1 rounded-pill">{{ counts.approved }}</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link rounded-pill px-3 fw-semibold {% if tab == 'paid' %}active{% else %}bg-light text-dark{% endif %}" href="?tab=paid">
+                Paid <span class="badge bg-secondary ms-1 rounded-pill">{{ counts.paid }}</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link rounded-pill px-3 fw-semibold {% if tab == 'exceptions' %}active{% else %}bg-light text-dark{% endif %}" href="?tab=exceptions">
+                Exceptions / Corrections <span class="badge bg-secondary ms-1 rounded-pill">{{ counts.exceptions }}</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link rounded-pill px-3 fw-semibold {% if tab == 'rejected' %}active{% else %}bg-light text-dark{% endif %}" href="?tab=rejected">
+                Rejected <span class="badge bg-secondary ms-1 rounded-pill">{{ counts.rejected }}</span>
+            </a>
+        </li>
+    </ul>
+
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="text-secondary small fw-semibold text-uppercase ps-4 py-3">Invoice #</th>
+                            <th class="text-secondary small fw-semibold text-uppercase py-3">Date</th>
+                            <th class="text-secondary small fw-semibold text-uppercase py-3">Due Date</th>
+                            <th class="text-secondary small fw-semibold text-uppercase py-3">Amount</th>
+                            <th class="text-secondary small fw-semibold text-uppercase py-3">PO Ref</th>
+                            <th class="text-secondary small fw-semibold text-uppercase py-3">Status</th>
+                            <th class="text-secondary small fw-semibold text-uppercase text-end pe-4 py-3">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for invoice in invoices %}
+                        <tr>
+                            <td class="ps-4">
+                                <a href="{% url 'vendor_invoice_detail' invoice.id %}" class="fw-bold text-primary text-decoration-none font-monospace">{{ invoice.invoice_number }}</a>
+                            </td>
+                            <td class="text-muted small">{{ invoice.invoice_date|date:"M d, Y" }}</td>
+                            <td class="text-muted small">{{ invoice.due_date|date:"M d, Y" }}</td>
+                            <td>
+                                <span class="fw-bold text-dark">₹{{ invoice.total_amount }}</span>
+                            </td>
+                            <td>
+                                <a href="/vendor/purchase-orders/{{ invoice.po.id }}/" class="text-decoration-none text-primary fw-semibold">{{ invoice.po.po_number }}</a>
+                            </td>
+                            <td>
+                                {% if invoice.status == 'PAID' %}
+                                    <span class="badge bg-success bg-opacity-25 text-success border border-success rounded-pill px-2 py-1">Paid</span>
+                                {% elif invoice.status == 'READY_FOR_PAYMENT' %}
+                                    <span class="badge bg-info bg-opacity-25 text-info border border-info rounded-pill px-2 py-1">Ready for Payment</span>
+                                {% elif invoice.status == 'EXCEPTION' %}
+                                    <span class="badge bg-danger bg-opacity-25 text-danger border border-danger rounded-pill px-2 py-1">Match Exception</span>
+                                {% elif invoice.status == 'REJECTED' %}
+                                    <span class="badge bg-dark bg-opacity-25 text-dark border border-dark rounded-pill px-2 py-1">Rejected</span>
+                                {% else %}
+                                    <span class="badge bg-warning bg-opacity-25 text-dark border border-warning rounded-pill px-2 py-1">{{ invoice.get_status_display }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end pe-4">
+                                <a href="{% url 'vendor_invoice_detail' invoice.id %}" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+                                    <i class="fa-solid fa-eye me-1"></i> View
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-5 text-muted">
+                                <i class="fa-solid fa-file-invoice text-secondary opacity-25 mb-3" style="font-size: 3rem;"></i>
+                                <p class="mb-0">No invoices found under this tab.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

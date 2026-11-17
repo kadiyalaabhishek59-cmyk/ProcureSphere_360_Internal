@@ -1,0 +1,412 @@
+{% extends 'layouts/vendor_base.html' %}
+
+{% block vendor_title %}Document Vault{% endblock %}
+
+{% block vendor_content %}
+<div class="container-fluid px-0">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb small">
+            <li class="breadcrumb-item"><a href="/vendor/" class="text-decoration-none text-muted">Dashboard</a></li>
+            <li class="breadcrumb-item active fw-semibold text-dark" aria-current="page">Documents Vault</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <h3 class="fw-bold text-dark mb-1">Vendor Documents Vault</h3>
+            <p class="text-muted mb-0 small">
+                Secure enterprise repository for verified KYC certificates, compliance filings, and submitted bid attachments.
+            </p>
+        </div>
+        <div>
+            <button class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#uploadKycModal">
+                <i class="fa-solid fa-upload me-1"></i> Upload KYC Document
+            </button>
+        </div>
+    </div>
+
+    <!-- Compliance & Event Eligibility Banner -->
+    {% if vendor.is_event_eligible %}
+        <div class="alert alert-success border-0 shadow-sm d-flex align-items-center py-3 px-3 mb-4 rounded-3">
+            <i class="fa-solid fa-circle-check text-success fs-4 me-3"></i>
+            <div>
+                <div class="fw-bold text-dark">Profile Legally Approved &amp; Eligible for Sourcing Events</div>
+                <div class="small text-muted">
+                    Your KYC documentation has been reviewed and approved by Legal Compliance. Your account is fully eligible to participate in RFQ and RFP sourcing events.
+                </div>
+            </div>
+        </div>
+    {% elif vendor.event_eligibility_status == 'EXPIRED' or vendor.event_eligibility_status == 'SUSPENDED' %}
+        <div class="alert alert-danger border-0 shadow-sm d-flex align-items-center py-3 px-3 mb-4 rounded-3">
+            <i class="fa-solid fa-triangle-exclamation text-danger fs-4 me-3"></i>
+            <div>
+                <div class="fw-bold text-dark">Compliance Action Required — Event Eligibility Suspended</div>
+                <div class="small text-muted">
+                    One or more mandatory compliance documents have expired or require renewal. Sourcing event participation is temporarily restricted until renewed documents are uploaded and verified.
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <div class="alert alert-warning border-0 shadow-sm d-flex align-items-center py-3 px-3 mb-4 rounded-3">
+            <i class="fa-solid fa-hourglass-half text-warning fs-4 me-3"></i>
+            <div>
+                <div class="fw-bold text-dark">KYC Verification &amp; Legal Approval Pending</div>
+                <div class="small text-muted">
+                    Your compliance documents are currently under review by Legal Compliance. Event eligibility will be granted once all mandatory documents are verified.
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+
+    <!-- Filter Tabs -->
+    <div class="card glass-card border-0 shadow-sm mb-4">
+        <div class="card-body p-3">
+            <ul class="nav nav-pills vendor-scrollable-pills flex-nowrap overflow-x-auto gap-2">
+                <li class="nav-item">
+                    <a class="nav-link rounded-pill px-3 py-1 small fw-semibold {% if category == 'all' %}active{% else %}text-secondary{% endif %}" href="?category=all">
+                        All Documents <span class="badge bg-secondary bg-opacity-25 text-secondary ms-1">{{ category_counts.all }}</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link rounded-pill px-3 py-1 small fw-semibold {% if category == 'kyc' %}active{% else %}text-secondary{% endif %}" href="?category=kyc">
+                        KYC & Compliance Certificates <span class="badge bg-primary bg-opacity-25 text-primary ms-1">{{ category_counts.kyc }}</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link rounded-pill px-3 py-1 small fw-semibold {% if category == 'bids' %}active{% else %}text-secondary{% endif %}" href="?category=bids">
+                        Bid Attachments & Proposals <span class="badge bg-info bg-opacity-25 text-dark ms-1">{{ category_counts.bids }}</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- KYC & Compliance Documents Section -->
+    {% if category == 'all' or category == 'kyc' %}
+    <div class="card glass-card border-0 shadow-sm mb-4">
+        <div class="card-header bg-transparent border-0 pt-3 pb-0 d-flex justify-content-between align-items-center">
+            <h5 class="fw-bold text-dark mb-0">
+                <i class="fa-solid fa-certificate text-primary me-2"></i> KYC & Compliance Documentation
+            </h5>
+            <span class="badge bg-secondary bg-opacity-25 text-secondary">{{ kyc_docs.count }} Files</span>
+        </div>
+        <div class="card-body p-0 pt-3">
+            {% if kyc_docs %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light small text-uppercase text-secondary">
+                        <tr>
+                            <th class="ps-4">Document Title / Type</th>
+                            <th>File Name</th>
+                            <th>Verification Status</th>
+                            <th>Expiry Date</th>
+                            <th>Uploaded At</th>
+                            <th class="text-end pe-4">Secure Download</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for doc in kyc_docs %}
+                        <tr>
+                            <td class="ps-4">
+                                <div class="fw-semibold text-dark">{{ doc.title|default:doc.get_document_type_display }}</div>
+                                <small class="badge bg-light text-secondary border">{{ doc.get_document_type_display }}</small>
+                            </td>
+                            <td class="font-monospace small text-muted">
+                                <i class="fa-solid fa-file-pdf text-danger me-1"></i>
+                                {{ doc.file.name|slice:":35" }}
+                            </td>
+                            <td>
+                                {% if doc.status == 'VERIFIED' or doc.is_verified %}
+                                <span class="badge bg-success bg-opacity-25 text-success border border-success border-opacity-25 rounded-pill px-2 py-1 small fw-bold">
+                                    <i class="fa-solid fa-circle-check me-1"></i> Verified
+                                </span>
+                                {% elif doc.status == 'CHANGES_REQUIRED' %}
+                                <span class="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-50 rounded-pill px-2 py-1 small fw-bold">
+                                    <i class="fa-solid fa-rotate-left me-1"></i> Action Required
+                                </span>
+                                {% if doc.reviewer_notes %}
+                                    <div class="small text-danger mt-1"><em>Feedback:</em> {{ doc.reviewer_notes }}</div>
+                                {% endif %}
+                                {% elif doc.status == 'REJECTED' %}
+                                <span class="badge bg-danger bg-opacity-25 text-danger border border-danger border-opacity-25 rounded-pill px-2 py-1 small fw-bold">
+                                    <i class="fa-solid fa-ban me-1"></i> Rejected
+                                </span>
+                                {% if doc.reviewer_notes %}
+                                    <div class="small text-danger mt-1"><em>Reason:</em> {{ doc.reviewer_notes }}</div>
+                                {% endif %}
+                                {% elif doc.status == 'EXPIRED' or doc.is_expired %}
+                                <span class="badge bg-dark bg-opacity-25 text-dark border border-dark border-opacity-25 rounded-pill px-2 py-1 small fw-bold">
+                                    <i class="fa-solid fa-calendar-xmark me-1"></i> Expired
+                                </span>
+                                {% else %}
+                                <span class="badge bg-info bg-opacity-25 text-dark border border-info border-opacity-50 rounded-pill px-2 py-1 small fw-bold">
+                                    <i class="fa-solid fa-clock me-1"></i> Pending Verification
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td class="small">
+                                {% if doc.expiry_date %}
+                                    <span class="{% if doc.is_expired %}text-danger fw-bold{% else %}text-muted{% endif %}">
+                                        {{ doc.expiry_date|date:"M d, Y" }}
+                                    </span>
+                                    {% if doc.is_expired %}
+                                        <div class="badge bg-danger text-white rounded-pill px-2 py-0 mt-1" style="font-size:0.65rem;">Expired</div>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="text-muted fst-italic">No expiration</span>
+                                {% endif %}
+                            </td>
+                            <td class="small text-muted">{{ doc.created_at|date:"M d, Y H:i" }}</td>
+                            <td class="text-end pe-4">
+                                <a href="{% url 'vendor_portal_document_download' doc_type='kyc' doc_id=doc.id %}" class="btn btn-outline-primary btn-sm rounded-pill px-3 shadow-sm">
+                                    <i class="fa-solid fa-cloud-arrow-down me-1"></i> Download
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-4 text-muted small">
+                No KYC documents uploaded yet. You can upload required compliance files from your <a href="/vendor/profile/#kyc-docs" class="text-primary text-decoration-none">Company Profile</a>.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Bid Attachments Section -->
+    {% if category == 'all' or category == 'bids' %}
+    <div class="card glass-card border-0 shadow-sm mb-4">
+        <div class="card-header bg-transparent border-0 pt-3 pb-0 d-flex justify-content-between align-items-center">
+            <h5 class="fw-bold text-dark mb-0">
+                <i class="fa-solid fa-paperclip text-info me-2"></i> Bid Proposal Attachments
+            </h5>
+            <span class="badge bg-secondary bg-opacity-25 text-secondary">{{ bid_attachments.count }} Files</span>
+        </div>
+        <div class="card-body p-0 pt-3">
+            {% if bid_attachments %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light small text-uppercase text-secondary">
+                        <tr>
+                            <th class="ps-4">Title / Specification</th>
+                            <th>Bid Reference</th>
+                            <th>Sourcing Event</th>
+                            <th>Envelope Category</th>
+                            <th>Uploaded At</th>
+                            <th class="text-end pe-4">Secure Download</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for att in bid_attachments %}
+                        <tr>
+                            <td class="ps-4">
+                                <div class="fw-semibold text-dark">{{ att.title|default:"Bid Supporting Document" }}</div>
+                                <span class="font-monospace small text-muted">{{ att.file.name|slice:":30" }}</span>
+                            </td>
+                            <td>
+                                <a href="{% url 'vendor_bid_detail' bid_id=att.bid.id %}" class="font-monospace text-primary text-decoration-none fw-semibold">
+                                    {{ att.bid.bid_number }}
+                                </a>
+                                <span class="badge bg-light text-dark border ms-1" style="font-size: 0.65rem;">V{{ att.bid.version }}</span>
+                            </td>
+                            <td>
+                                <a href="{% url 'vendor_sourcing_detail' event_id=att.bid.event.id %}" class="text-dark text-decoration-none small fw-semibold">
+                                    {{ att.bid.event.event_number }}
+                                </a>
+                                <small class="text-muted d-block text-truncate" style="max-width: 180px;">{{ att.bid.event.title }}</small>
+                            </td>
+                            <td>
+                                {% if att.document_type == 'TECHNICAL' %}
+                                <span class="badge bg-primary bg-opacity-25 text-primary border border-primary border-opacity-25">TECHNICAL</span>
+                                {% elif att.document_type == 'COMMERCIAL' %}
+                                <span class="badge bg-success bg-opacity-25 text-success border border-success border-opacity-25">COMMERCIAL</span>
+                                {% else %}
+                                <span class="badge bg-secondary bg-opacity-25 text-secondary border">{{ att.document_type }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="small text-muted">{{ att.created_at|date:"M d, Y H:i" }}</td>
+                            <td class="text-end pe-4">
+                                <a href="{% url 'vendor_portal_document_download' doc_type='bid' doc_id=att.id %}" class="btn btn-outline-info btn-sm rounded-pill px-3 shadow-sm">
+                                    <i class="fa-solid fa-cloud-arrow-down me-1"></i> Download
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-4 text-muted small">
+                No bid attachments found. Supporting technical or commercial documents uploaded during bid submission appear here.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Modal: Upload KYC Document -->
+<div class="modal fade" id="uploadKycModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content glass-card">
+            <form method="POST" action="{% url 'vendor_profile' %}" enctype="multipart/form-data">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="upload_kyc">
+                <input type="hidden" name="next" value="{% url 'vendor_documents' %}">
+                <div class="modal-header border-bottom">
+                    <h5 class="modal-title fw-bold text-dark">Upload KYC Compliance Document</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Document Classification</label>
+                        <select name="document_type" class="form-select form-select-sm" required>
+                            {% for code, label in doc_types %}
+                            <option value="{{ code }}">{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Document Title / Label</label>
+                        <input type="text" name="title" class="form-control form-control-sm" placeholder="e.g. 2026 Tax Clearance Certificate" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Expiry Date (if applicable)</label>
+                        <input type="date" name="expiry_date" class="form-control form-control-sm">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold" for="kycFileInput">Select File (PDF, DOC, DOCX, XLSX, CSV &le; 10MB)</label>
+                        <input type="file" name="kyc_file" id="kycFileInput" class="form-control form-control-sm" accept=".pdf,.doc,.docx,.xlsx,.csv,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" required>
+                        <div id="kycFileFeedback" class="invalid-feedback small mt-1" style="display: none;"></div>
+                        <div class="form-text small text-muted">Supported formats: PDF, DOC, DOCX, XLSX, CSV (&le; 10MB). Image files (PNG, JPG, JPEG, GIF, WebP) are not permitted.</div>
+                    </div>
+                </div>
+                <div class="modal-footer border-top bg-light py-2 px-4 d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-sm rounded-pill px-4 shadow-sm fw-semibold">
+                        <i class="fa-solid fa-cloud-arrow-up me-1"></i> Upload Document
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const fileInput = document.getElementById("kycFileInput");
+    const feedback = document.getElementById("kycFileFeedback");
+    const form = fileInput ? fileInput.closest("form") : null;
+    const modalEl = document.getElementById("uploadKycModal");
+
+    if (!fileInput || !form) return;
+
+    const ALLOWED_DOC_EXTENSIONS = ["pdf", "doc", "docx", "xlsx", "csv"];
+    const DISALLOWED_IMAGE_EXTENSIONS = [
+        "png", "jpg", "jpeg", "gif", "webp", "bmp", "svg", "tiff", "ico", "avif", "heic", "heif"
+    ];
+    const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
+
+    function showError(message) {
+        fileInput.classList.add("is-invalid");
+        fileInput.value = "";
+        if (feedback) {
+            feedback.textContent = message;
+            feedback.style.display = "block";
+        }
+    }
+
+    function clearError() {
+        fileInput.classList.remove("is-invalid");
+        if (feedback) {
+            feedback.textContent = "";
+            feedback.style.display = "none";
+        }
+    }
+
+    function validateFile(file) {
+        if (!file) {
+            return { valid: false, message: "Please select a document file to upload." };
+        }
+
+        // 10 MB limit check
+        if (file.size > MAX_FILE_SIZE_BYTES) {
+            return {
+                valid: false,
+                message: "File size exceeds the maximum allowed limit of 10 MB."
+            };
+        }
+        if (file.size === 0) {
+            return {
+                valid: false,
+                message: "Uploaded file is empty. Zero-byte files are not permitted."
+            };
+        }
+
+        const fileName = file.name || "";
+        const ext = fileName.includes(".") ? fileName.split(".").pop().toLowerCase() : "";
+        const mimeType = (file.type || "").toLowerCase();
+
+        // Reject image files explicitly by extension or MIME type
+        if (
+            DISALLOWED_IMAGE_EXTENSIONS.includes(ext) ||
+            mimeType.startsWith("image/")
+        ) {
+            const extLabel = ext ? ext.toUpperCase() : "Image";
+            return {
+                valid: false,
+                message: `Unsupported file type (${extLabel}). Image files (PNG, JPG, JPEG, GIF, WebP) are not allowed. Please upload a supported document file (PDF, DOC, DOCX, XLSX, CSV).`
+            };
+        }
+
+        // Validate that the extension is an explicitly supported document format
+        if (!ALLOWED_DOC_EXTENSIONS.includes(ext)) {
+            return {
+                valid: false,
+                message: `File extension '.${ext}' is not permitted. Only document files (PDF, DOC, DOCX, XLSX, CSV) are allowed.`
+            };
+        }
+
+        return { valid: true };
+    }
+
+    fileInput.addEventListener("change", function () {
+        clearError();
+        const file = fileInput.files && fileInput.files[0];
+        if (!file) return;
+
+        const result = validateFile(file);
+        if (!result.valid) {
+            showError(result.message);
+        }
+    });
+
+    form.addEventListener("submit", function (e) {
+        const file = fileInput.files && fileInput.files[0];
+        if (!file) {
+            e.preventDefault();
+            showError("Please select a valid document file before uploading.");
+            return false;
+        }
+
+        const result = validateFile(file);
+        if (!result.valid) {
+            e.preventDefault();
+            showError(result.message);
+            return false;
+        }
+    });
+
+    if (modalEl) {
+        modalEl.addEventListener("hidden.bs.modal", function () {
+            clearError();
+        });
+    }
+});
+</script>
+{% endblock %}

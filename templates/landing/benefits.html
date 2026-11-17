@@ -1,0 +1,31 @@
+{% extends 'landing/base.html' %}
+{% load static %}
+
+{% block json_ld %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  "name": "Enterprise Benefits — ProcureSphere 360",
+  "description": "Discover the enterprise benefits of ProcureSphere 360 — from traceable workflows to zero silent overspend.",
+  "url": "{{ site_url|default:'https://procuresphere.com' }}/benefits/",
+  "isPartOf": {
+    "@type": "WebSite",
+    "name": "ProcureSphere 360",
+    "url": "{{ site_url|default:'https://procuresphere.com' }}"
+  }
+}
+</script>
+{% endblock json_ld %}
+
+{% block content %}
+<div class="page-layout" style="padding-top:76px;">
+
+  <!-- Benefits Hero (dark video section) -->
+  {% include 'landing/partials/benefits_section.html' %}
+
+  <!-- Benefits Comparison Table -->
+  {% include 'landing/partials/benefits_comparison.html' %}
+
+</div>
+{% endblock %}

@@ -1,0 +1,123 @@
+{% load static %}
+<!-- ProcureSphere 360 - Standardized Global Enterprise Navbar -->
+<nav class="navbar global-enterprise-navbar py-0 sticky-top sa-topbar enterprise-topbar"
+     style="z-index: 1030; min-height: 70px; height: 70px; background: #D6E4FF !important; border-bottom: 1px solid #AFC6ED !important; box-shadow: 0 3px 10px rgba(30, 64, 120, 0.12) !important;">
+    <div class="container-fluid ps-2 pe-3 pe-lg-4 d-flex align-items-center justify-content-between flex-nowrap h-100">
+        <!-- 1. LEFT SECTION: Hamburger / Sidebar Toggle + Mobile/Collapsed Brand Logo -->
+        <div class="d-flex align-items-center flex-nowrap">
+            {% if sidebar_id %}
+            {% include 'partials/sidebar_toggle_button.html' with sidebar_id=sidebar_id %}
+            {% else %}
+            {% include 'partials/sidebar_toggle_button.html' with sidebar_id='sidebar' %}
+            {% endif %}
+
+            <!-- Brand Logo (visible on mobile/tablet or when desktop sidebar is collapsed) -->
+            <a href="{% if dashboard_url %}{{ dashboard_url }}{% elif user.is_superuser or user.role_code == 'SUPER_ADMIN' %}/superadmin/{% elif user.role_code == 'PROC_MGR' %}/manager/{% elif user.role_code == 'AUDITOR' %}/audit/dashboard/{% elif user.role_code == 'REQUESTER' %}/requester/{% elif user.role_code == 'DEPT_APPROVER' %}/approver/{% elif user.role_code == 'FINANCE_AP' %}/finance/{% elif user.role_code == 'STORES_RECEIVER' %}/stores/{% elif user.role_code == 'LEGAL_MGR' %}/legal/{% elif user.role_code == 'VENDOR_USER' %}/vendor/{% else %}/procurement/{% endif %}"
+               class="align-items-center text-decoration-none ms-2 ms-sm-3 global-navbar-mobile-brand"
+               aria-label="ProcureSphere 360 Home">
+                <img src="{% static 'landing/images/procuresphere_360_nav_brand.webp' %}"
+                     alt="ProcureSphere 360"
+                     class="mobile-navbar-brand-logo dashboard-brand-logo">
+            </a>
+        </div>
+
+        <!-- 2. RIGHT SECTION: [ Notification Bell ] [ Profile Icon ] -->
+        <div class="d-flex align-items-center gap-2 gap-sm-3 flex-shrink-0 ms-auto global-navbar-right-actions">
+            <!-- Notifications Icon with Dynamic Unread Badge -->
+            <a href="{{ notification_url|default:'/notifications/' }}"
+               class="btn global-nav-action-btn sa-nav-action-btn position-relative d-flex align-items-center justify-content-center p-0"
+               title="Notifications"
+               aria-label="Notifications"
+               style="width: 38px; height: 38px; border-radius: 9px; background: #DCE8FA !important; border: 1px solid #B6C9E8 !important; color: #183153 !important;">
+                <i class="fa-solid fa-bell fs-5"></i>
+                {% if unread_notifications_count and unread_notifications_count > 0 %}
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.65rem; min-width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; transform: translate(-45%, -25%) !important;">
+                    {{ unread_notifications_count }}
+                </span>
+                {% elif metrics and metrics.unread_notifications and metrics.unread_notifications > 0 %}
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.65rem; min-width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; transform: translate(-45%, -25%) !important;">
+                    {{ metrics.unread_notifications }}
+                </span>
+                {% endif %}
+            </a>
+
+            <!-- User Profile Button with Minimal 2-Item Dropdown -->
+            {% if user.is_authenticated or request.user.is_authenticated %}
+            {% with current_user=user|default:request.user %}
+            <div class="dropdown">
+                <button class="btn p-0 d-flex align-items-center justify-content-center rounded-circle global-profile-btn sa-profile-btn"
+                        type="button"
+                        id="{{ profile_dropdown_id|default:'globalProfileDropdown' }}"
+                        data-bs-toggle="dropdown"
+                        data-bs-auto-close="true"
+                        aria-expanded="false"
+                        title="Account Menu"
+                        style="width: 38px; height: 38px; min-width: 38px; border-radius: 50% !important; background: #1677FF !important; border: 2px solid #91CAFF !important; color: #FFFFFF !important; box-shadow: 0 2px 6px rgba(22, 119, 255, 0.28) !important;">
+                    <i class="fa-solid fa-user" style="font-size: 1.1rem; color: #FFFFFF !important;"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow border-0 py-2 mt-2" aria-labelledby="{{ profile_dropdown_id|default:'globalProfileDropdown' }}" style="min-width: 200px; border-radius: 10px;">
+                    <li class="px-3 py-2 border-bottom mb-1">
+                        <div class="small fw-semibold text-truncate text-dark">{{ current_user.get_full_name|default:current_user.email }}</div>
+                        <div class="text-muted text-truncate" style="font-size: 0.75rem;">{{ current_user.email }}</div>
+                    </li>
+                    <li>
+                        <form method="POST" action="/logout/" id="globalNavbarLogoutForm" class="m-0 p-0">
+                            {% csrf_token %}
+                            <button type="submit" class="dropdown-item py-2 text-danger fw-semibold d-flex align-items-center bg-transparent border-0 w-100">
+                                <i class="fa-solid fa-arrow-right-from-bracket me-2 text-danger"></i>
+                                <span>Sign Out</span>
+                            </button>
+                        </form>
+                    </li>
+                </ul>
+            </div>
+            {% endwith %}
+            {% endif %}
+        </div>
+    </div>
+</nav>
+
+<style>
+    .global-navbar-mobile-brand {
+        display: inline-flex !important;
+        align-items: center !important;
+        text-decoration: none !important;
+    }
+    .global-navbar-mobile-brand img {
+        height: 46px !important;
+        max-height: 48px !important;
+        width: auto !important;
+        max-width: 200px !important;
+        object-fit: contain !important;
+        display: block !important;
+        filter: drop-shadow(0 1px 2px rgba(30, 64, 120, 0.08)) !important;
+    }
+    @media (max-width: 576px) {
+        .global-navbar-mobile-brand img {
+            height: 44px !important;
+            max-height: 46px !important;
+            max-width: 190px !important;
+        }
+    }
+    @media (max-width: 375px) {
+        .global-navbar-mobile-brand img {
+            height: 40px !important;
+            max-height: 42px !important;
+            max-width: 168px !important;
+        }
+    }
+    /* Mobile responsive: increase gap between notification and profile icons */
+    @media (max-width: 768px) {
+        .global-navbar-right-actions {
+            gap: 18px !important;
+        }
+    }
+    @media (min-width: 992px) {
+        .global-navbar-mobile-brand {
+            display: none !important;
+        }
+        body.sidebar-collapsed .global-navbar-mobile-brand {
+            display: inline-flex !important;
+        }
+    }
+</style>

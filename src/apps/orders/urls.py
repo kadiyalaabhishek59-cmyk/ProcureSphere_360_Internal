@@ -1,0 +1,82 @@
+from django.urls import path
+
+from . import views
+
+urlpatterns = [
+    path("purchase-orders/", views.list_view, name="orders_list"),
+    path(
+        "purchase-orders/htmx/awards-pending/",
+        views.awards_pending_po_tab_view,
+        name="orders_awards_pending_tab",
+    ),
+    path(
+        "purchase-orders/htmx/generate-from-award/<uuid:event_id>/",
+        views.po_generate_from_award_htmx_view,
+        name="orders_generate_from_award",
+    ),
+    path("purchase-orders/<uuid:pk>/", views.detail_view, name="order_detail"),
+    path(
+        "purchase-orders/<uuid:pk>/htmx/amend/",
+        views.po_amend_modal_view,
+        name="orders_amend_modal",
+    ),
+    path(
+        "purchase-orders/<uuid:pk>/htmx/amendments/",
+        views.po_amendments_partial_view,
+        name="orders_amendments_partial",
+    ),
+    path(
+        "purchase-orders/<uuid:pk>/amendments/<uuid:amendment_id>/action/",
+        views.po_approve_amendment_view,
+        name="order_amendment_action",
+    ),
+    path(
+        "purchase-orders/<uuid:pk>/amendments/<uuid:amendment_id>/approve/",
+        views.po_amendment_approve_view,
+        name="order_amendment_approve",
+    ),
+    path(
+        "purchase-orders/<uuid:pk>/amendments/<uuid:amendment_id>/reject/",
+        views.po_amendment_reject_view,
+        name="order_amendment_reject",
+    ),
+    path(
+        "purchase-orders/<uuid:pk>/approve/",
+        views.po_approve_action_view,
+        name="order_approve",
+    ),
+    path(
+        "purchase-orders/<uuid:pk>/reject/",
+        views.po_reject_action_view,
+        name="order_reject",
+    ),
+    path(
+        "purchase-orders/<uuid:pk>/issue/",
+        views.po_issue_action_view,
+        name="order_issue",
+    ),
+    path(
+        "purchase-orders/<uuid:pk>/request-changes/",
+        views.po_request_changes_action_view,
+        name="order_request_changes",
+    ),
+    path(
+        "purchase-orders/<uuid:pk>/submit-approval/",
+        views.po_submit_approval_action_view,
+        name="order_submit_approval",
+    ),
+    path(
+        "purchase-orders/<uuid:pk>/cancel/",
+        views.po_cancel_action_view,
+        name="order_cancel",
+    ),
+    path(
+        "purchase-orders/<uuid:pk>/edit/",
+        views.po_edit_draft_view,
+        name="orders_edit_draft",
+    ),
+    path("purchase-orders/create/", views.po_create_view, name="orders_create"),
+    path("orders/create/", views.po_create_view, name="orders_create_alias"),
+    path("orders/", views.list_view, name="orders_list_alias"),
+    path("orders/<uuid:pk>/", views.detail_view, name="order_detail_alias"),
+]

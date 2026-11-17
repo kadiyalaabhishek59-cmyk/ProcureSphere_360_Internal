@@ -1,0 +1,619 @@
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
+from django.db.models import Q
+from django.shortcuts import redirect, render
+from django.utils import timezone
+
+from apps.accounts.models import Role, User
+from apps.requisitions.models import PurchaseRequisition
+
+from .models import ApprovalAction, ApprovalDelegate
+from .services import process_approval_action_service, set_approval_delegate_service
+
+
+def _get_legal_contract_inbox_querysets(user):
+    """Retrieve organization-scoped contract queues relevant to Legal Manager reviews."""
+    import uuid
+
+    from apps.audit.models import AuditLog
+    from apps.contracts.models import Contract
+    from apps.contracts.selectors import (
+        get_contracts_pending_legal_review,
+        get_contracts_qs,
+    )
+
+    pending_qs = get_contracts_pending_legal_review(user=user)
+    raw_acted_ids = AuditLog.objects.filter(
+        actor=user,
+        target_model="Contract",
+        action__in=[AuditLog.ACTION_APPROVE, AuditLog.ACTION_REJECT],
+    ).values_list("target_object_id", flat=True)
+
+    acted_uuids = []
+    for raw_id in raw_acted_ids:
+        try:
+            acted_uuids.append(uuid.UUID(str(raw_id)))
+        except (ValueError, TypeError):
+            continue
+
+    history_statuses = [
+        Contract.STATUS_BUSINESS_APPROVAL,
+        Contract.STATUS_ACTIVE,
+        Contract.STATUS_RENEWAL_DUE,
+        Contract.STATUS_RENEWED,
+        Contract.STATUS_EXPIRED,
+        Contract.STATUS_TERMINATED,
+    ]
+    history_q = Q(status__in=history_statuses)
+    if acted_uuids:
+        history_q |= Q(id__in=acted_uuids)
+    history_qs = get_contracts_qs(user=user).filter(history_q).distinct()
+    return pending_qs, history_qs
+
+
+def _get_approval_querysets(user, role_code):
+    """Retrieve base pending and history querysets scoped by role and department."""
+    if not getattr(user, "is_superuser", False) and role_code in [
+        Role.LEGAL_MGR,
+        Role.STORES_RECEIVER,
+    ]:
+        return PurchaseRequisition.objects.none(), PurchaseRequisition.objects.none()
+
+    pending_statuses = ["SUBMITTED", "MANAGER_REVIEW", "BUDGET_REVIEW"]
+    history_statuses = ["APPROVED", "REJECTED", "SOURCING", "PO_ISSUED"]
+
+    if role_code == Role.REQUESTER:
+        return (
+            PurchaseRequisition.objects.filter(requester=user, status__in=pending_statuses),
+            PurchaseRequisition.objects.filter(requester=user, status__in=history_statuses),
+        )
+
+    user_approved_pr_ids = ApprovalAction.objects.filter(
+        actor=user,
+        target_model_name="PurchaseRequisition",
+        action__in=[ApprovalAction.ACTION_APPROVE, ApprovalAction.ACTION_REJECT],
+    ).values_list("target_object_id", flat=True)
+
+    if role_code == Role.DEPT_APPROVER:
+        user_dept = getattr(user, "department", None)
+        if not user_dept:
+            from apps.organization.models import CostCenter, Department
+
+            managed_cc = (
+                CostCenter.objects.filter(manager=user)
+                .select_related("department")
+                .first()
+            )
+            if managed_cc and managed_cc.department:
+                user_dept = managed_cc.department
+            elif getattr(user, "organization", None):
+                user_dept = Department.objects.filter(
+                    organization=user.organization
+                ).first()
+
+        user_org = getattr(user, "organization", None) or (
+            user_dept.organization if user_dept else None
+        )
+        if user_dept:
+            from apps.organization.models import Department
+
+            depts_with_approvers = Department.objects.filter(
+                organization=user_org,
+                users__role__code=Role.DEPT_APPROVER,
+                users__is_active=True,
+            ).exclude(id=user_dept.id)
+
+            q = (
+                Q(department=user_dept)
+                | Q(cost_center__manager=user)
+                | (
+                    Q(department__organization=user_org)
+                    & ~Q(department__in=depts_with_approvers)
+                )
+            )
+            pending_qs = PurchaseRequisition.objects.filter(
+                q, status__in=pending_statuses
+            ).exclude(id__in=user_approved_pr_ids).distinct()
+            history_qs = PurchaseRequisition.objects.filter(
+                q & (Q(status__in=history_statuses) | Q(id__in=user_approved_pr_ids))
+            ).distinct()
+            return pending_qs, history_qs
+        elif user_org:
+            q = Q(department__organization=user_org) | Q(
+                cost_center__manager=user
+            )
+            pending_qs = PurchaseRequisition.objects.filter(
+                q, status__in=pending_statuses
+            ).exclude(id__in=user_approved_pr_ids).distinct()
+            history_qs = PurchaseRequisition.objects.filter(
+                q & (Q(status__in=history_statuses) | Q(id__in=user_approved_pr_ids))
+            ).distinct()
+            return pending_qs, history_qs
+        else:
+            pending_qs = PurchaseRequisition.objects.filter(
+                status__in=pending_statuses
+            ).exclude(id__in=user_approved_pr_ids)
+            history_qs = PurchaseRequisition.objects.filter(
+                Q(status__in=history_statuses) | Q(id__in=user_approved_pr_ids)
+            )
+            return pending_qs, history_qs
+
+    return (
+        PurchaseRequisition.objects.filter(status__in=pending_statuses),
+        PurchaseRequisition.objects.filter(
+            Q(status__in=history_statuses) | Q(id__in=user_approved_pr_ids)
+        ).distinct(),
+    )
+
+
+def _get_base_layout(user_or_role, role_code=None):
+    """Determine layout template based on user role."""
+    if role_code is None:
+        role_code = user_or_role
+        user = None
+    else:
+        user = user_or_role
+    if (user and getattr(user, "is_superuser", False)) or role_code in [
+        Role.SUPER_ADMIN,
+        "SUPER_ADMIN",
+        "ADMIN",
+    ]:
+        return "layouts/superadmin_base.html"
+    if role_code in [Role.PROC_MGR, "PROC_MGR"]:
+        return "manager/base_manager.html"
+    if role_code in [Role.LEGAL_MGR, "LEGAL_MGR"]:
+        return "layouts/legal_base.html"
+    if role_code in [Role.DEPT_APPROVER, "DEPT_APPROVER"]:
+        return "layouts/approver_base.html"
+    if role_code in [Role.FINANCE_AP, "FINANCE_AP"]:
+        return "layouts/finance_base.html"
+    if role_code in [Role.AUDITOR, "AUDITOR"]:
+        return "audit/base_auditor.html"
+    if role_code in [Role.STORES_RECEIVER, "STORES_RECEIVER"]:
+        return "layouts/stores_base.html"
+    return "layouts/requester_base.html"
+
+
+def _handle_approval_post(request, role_code):
+    """Process approval or rejection POST submission."""
+    if role_code == Role.AUDITOR:
+        messages.error(
+            request,
+            "Permission Denied: Compliance Auditors hold strictly read-only permissions and cannot approve or reject requisitions.",
+        )
+        return redirect("approvals_inbox")
+    if not request.user.is_superuser and role_code in [
+        Role.LEGAL_MGR,
+        Role.STORES_RECEIVER,
+        Role.REQUESTER,
+    ]:
+        messages.error(
+            request,
+            "Permission Denied: Your role is not authorized to approve or reject purchase requisitions.",
+        )
+        return redirect("approvals_inbox")
+
+    pr_id = request.POST.get("pr_id")
+    action = request.POST.get("action")  # APPROVED or REJECTED
+    comments = request.POST.get("comments", "").strip()
+
+    try:
+        pr = PurchaseRequisition.objects.get(id=pr_id)
+        if action in ["REJECT", "REJECTED"] and not comments:
+            comments = "Rejected by Department Approver."
+        process_approval_action_service(
+            target_object=pr,
+            actor=request.user,
+            action=action,
+            comments=comments,
+        )
+        messages.success(request, f"Requisition {pr.pr_number} successfully {action.lower()}!")
+        referer = request.META.get("HTTP_REFERER")
+        if referer:
+            return redirect(referer)
+        return redirect("approvals_inbox")
+    except Exception as e:
+        messages.error(request, f"Error processing approval action: {str(e)}")
+        return None
+
+
+@login_required(login_url="/login/")
+def approvals_inbox_view(request):
+    """
+    Unified Approvals Inbox for Department Approvers, Procurement Managers, and Finance.
+    """
+    user = request.user
+    role_code = getattr(user, "role_code", None) or (
+        user.role.code if hasattr(user, "role") and user.role else Role.SUPER_ADMIN
+    )
+    if not user.is_superuser and role_code in [Role.PROC_MGR, "PROC_MGR"]:
+        return redirect("manager_approvals")
+    if not user.is_superuser and (getattr(user, "is_vendor", False) or role_code in [Role.VENDOR_USER, "VENDOR_USER"]):
+        from django.core.exceptions import PermissionDenied
+        raise PermissionDenied("External vendors are not authorized to view the internal approval inbox.")
+
+    if request.method == "POST":
+        res = _handle_approval_post(request, role_code)
+        if res:
+            return res
+
+    tab = request.GET.get("tab", "pending")
+    search_q = request.GET.get("q", "").strip()
+    status_filter = request.GET.get("status", "").strip()
+    overrun_filter = request.GET.get("overrun", "").strip().lower() in ["1", "true", "yes"]
+    if overrun_filter and not status_filter:
+        status_filter = "BUDGET_REVIEW"
+
+    is_legal_inbox = bool(not user.is_superuser and role_code == Role.LEGAL_MGR)
+    query_params = request.GET.copy()
+    if "page" in query_params:
+        query_params.pop("page")
+    querystring = query_params.urlencode()
+    page_number = request.GET.get("page")
+
+    if is_legal_inbox:
+        from apps.contracts.models import Contract
+
+        legal_pending, legal_history = _get_legal_contract_inbox_querysets(user)
+        if search_q:
+            c_filter = (
+                Q(contract_number__icontains=search_q)
+                | Q(title__icontains=search_q)
+                | Q(vendor__legal_name__icontains=search_q)
+            )
+            legal_pending = legal_pending.filter(c_filter)
+            legal_history = legal_history.filter(c_filter)
+
+        valid_legal_history = [
+            Contract.STATUS_BUSINESS_APPROVAL,
+            Contract.STATUS_ACTIVE,
+            Contract.STATUS_DRAFT,
+            Contract.STATUS_RENEWAL_DUE,
+            Contract.STATUS_RENEWED,
+            Contract.STATUS_EXPIRED,
+            Contract.STATUS_TERMINATED,
+        ]
+        if status_filter:
+            if tab == "history":
+                if status_filter in valid_legal_history:
+                    legal_history = legal_history.filter(status=status_filter)
+                else:
+                    status_filter = ""
+            else:
+                if status_filter == Contract.STATUS_LEGAL_REVIEW:
+                    legal_pending = legal_pending.filter(status=status_filter)
+                else:
+                    status_filter = ""
+
+        legal_pending = legal_pending.order_by("-updated_at")
+        legal_history = legal_history.order_by("-updated_at")
+        pending_count = legal_pending.count()
+
+        if tab == "history":
+            page_obj = Paginator(legal_history, 10).get_page(page_number)
+            legal_history_display = page_obj
+            legal_pending_display = legal_pending
+        else:
+            page_obj = Paginator(legal_pending, 10).get_page(page_number)
+            legal_pending_display = page_obj
+            legal_history_display = legal_history
+
+        pending_display = PurchaseRequisition.objects.none()
+        history_display = PurchaseRequisition.objects.none()
+        has_budget_overrun = False
+    else:
+        pending_prs, history_prs = _get_approval_querysets(user, role_code)
+
+        if search_q:
+            q_filter = (
+                Q(pr_number__icontains=search_q)
+                | Q(title__icontains=search_q)
+                | Q(requester__email__icontains=search_q)
+                | Q(department__name__icontains=search_q)
+            )
+            pending_prs = pending_prs.filter(q_filter)
+            history_prs = history_prs.filter(q_filter)
+
+        valid_pending_statuses = [
+            "PENDING",
+            "SUBMITTED",
+            "MANAGER_REVIEW",
+            "BUDGET_REVIEW",
+        ]
+        valid_history_statuses = [
+            "APPROVED",
+            "REJECTED",
+            "PENDING",
+            "MANAGER_REVIEW",
+            "SUBMITTED",
+            "BUDGET_REVIEW",
+            "SOURCING",
+            "PO_ISSUED",
+        ]
+
+        if status_filter:
+            if tab == "history":
+                if status_filter == "PENDING":
+                    history_prs = history_prs.filter(
+                        status__in=[
+                            PurchaseRequisition.STATUS_SUBMITTED,
+                            PurchaseRequisition.STATUS_MANAGER_REVIEW,
+                            PurchaseRequisition.STATUS_BUDGET_REVIEW,
+                        ]
+                    )
+                elif status_filter in valid_history_statuses:
+                    history_prs = history_prs.filter(status=status_filter)
+                else:
+                    status_filter = ""
+            else:
+                if status_filter == "PENDING":
+                    pending_prs = pending_prs.filter(
+                        status__in=[
+                            PurchaseRequisition.STATUS_SUBMITTED,
+                            PurchaseRequisition.STATUS_MANAGER_REVIEW,
+                            PurchaseRequisition.STATUS_BUDGET_REVIEW,
+                        ]
+                    )
+                elif status_filter == "BUDGET_REVIEW":
+                    # Include PRs in STATUS_BUDGET_REVIEW as well as any pending PRs that exceed cost center budget allocation
+                    today_date = timezone.now().date()
+                    overrun_ids = set(
+                        pending_prs.filter(status=PurchaseRequisition.STATUS_BUDGET_REVIEW).values_list("id", flat=True)
+                    )
+                    other_pending = list(pending_prs.exclude(status=PurchaseRequisition.STATUS_BUDGET_REVIEW))
+                    cc_ids = [pr.cost_center_id for pr in other_pending if pr.cost_center_id]
+                    if cc_ids:
+                        from apps.budgets.models import Budget
+
+                        active_budgets = {}
+                        for b in Budget.objects.filter(
+                            cost_center_id__in=cc_ids,
+                            fiscal_period__start_date__lte=today_date,
+                            fiscal_period__end_date__gte=today_date,
+                            fiscal_period__is_closed=False,
+                        ).order_by("-fiscal_period__start_date"):
+                            active_budgets.setdefault(b.cost_center_id, b)
+                        missing_cc_ids = [cid for cid in cc_ids if cid not in active_budgets]
+                        if missing_cc_ids:
+                            for b in Budget.objects.filter(
+                                cost_center_id__in=missing_cc_ids,
+                                fiscal_period__is_closed=False,
+                            ).order_by("-fiscal_period__start_date"):
+                                active_budgets.setdefault(b.cost_center_id, b)
+                        for pr in other_pending:
+                            b = active_budgets.get(pr.cost_center_id)
+                            if b is not None and (b.available_amount <= 0 or pr.total_amount > b.available_amount):
+                                overrun_ids.add(pr.id)
+                    pending_prs = pending_prs.filter(id__in=overrun_ids)
+                elif status_filter in valid_pending_statuses:
+                    pending_prs = pending_prs.filter(status=status_filter)
+                else:
+                    status_filter = ""
+
+        pending_prs = pending_prs.select_related(
+            "requester", "department", "cost_center", "department__organization"
+        ).order_by("-updated_at")
+        history_prs = history_prs.select_related(
+            "requester", "department", "cost_center", "department__organization"
+        ).order_by("-updated_at")
+
+        pending_count = pending_prs.count()
+        if status_filter == "BUDGET_REVIEW":
+            has_budget_overrun = pending_prs.exists()
+        else:
+            has_budget_overrun = pending_prs.filter(status="BUDGET_REVIEW").exists()
+            if not has_budget_overrun:
+                cc_ids = list(pending_prs.values_list("cost_center_id", flat=True).distinct())
+                cc_ids = [cid for cid in cc_ids if cid]
+                if cc_ids:
+                    from apps.budgets.models import Budget
+
+                    today_date = timezone.now().date()
+                    active_budgets = {}
+                    for b in Budget.objects.filter(
+                        cost_center_id__in=cc_ids,
+                        fiscal_period__start_date__lte=today_date,
+                        fiscal_period__end_date__gte=today_date,
+                        fiscal_period__is_closed=False,
+                    ).order_by("-fiscal_period__start_date"):
+                        active_budgets.setdefault(b.cost_center_id, b)
+                    missing_cc_ids = [cid for cid in cc_ids if cid not in active_budgets]
+                    if missing_cc_ids:
+                        for b in Budget.objects.filter(
+                            cost_center_id__in=missing_cc_ids,
+                            fiscal_period__is_closed=False,
+                        ).order_by("-fiscal_period__start_date"):
+                            active_budgets.setdefault(b.cost_center_id, b)
+                    for pr in pending_prs:
+                        b = active_budgets.get(pr.cost_center_id)
+                        if b is not None and (b.available_amount <= 0 or pr.total_amount > b.available_amount):
+                            has_budget_overrun = True
+                            break
+
+        if tab == "history":
+            history_paginator = Paginator(history_prs, 10)
+            page_obj = history_paginator.get_page(page_number)
+            history_display = page_obj
+            pending_display = pending_prs
+        else:
+            pending_paginator = Paginator(pending_prs, 10)
+            page_obj = pending_paginator.get_page(page_number)
+            pending_display = page_obj
+            history_display = history_prs
+
+            # Annotate inline approval eligibility and budget overrun status without altering routing rules
+            from apps.approvals.models import ApprovalPolicy
+            from apps.approvals.services import evaluate_approval_chain
+            from apps.budgets.models import Budget
+
+            today_date = timezone.now().date()
+            pending_items = list(page_obj.object_list)
+            cc_ids = [pr.cost_center_id for pr in pending_items if pr.cost_center_id]
+            active_budgets = {}
+            if cc_ids:
+                for b in Budget.objects.filter(
+                    cost_center_id__in=cc_ids,
+                    fiscal_period__start_date__lte=today_date,
+                    fiscal_period__end_date__gte=today_date,
+                    fiscal_period__is_closed=False,
+                ).order_by("-fiscal_period__start_date"):
+                    active_budgets.setdefault(b.cost_center_id, b)
+                missing_cc_ids = [cid for cid in cc_ids if cid not in active_budgets]
+                if missing_cc_ids:
+                    for b in Budget.objects.filter(
+                        cost_center_id__in=missing_cc_ids,
+                        fiscal_period__is_closed=False,
+                    ).order_by("-fiscal_period__start_date"):
+                        active_budgets.setdefault(b.cost_center_id, b)
+
+            is_restricted_role = not user.is_superuser and role_code in [
+                Role.AUDITOR,
+                Role.LEGAL_MGR,
+                Role.STORES_RECEIVER,
+                Role.REQUESTER,
+            ]
+            for pr in pending_items:
+                b = active_budgets.get(pr.cost_center_id)
+                pr.is_over_budget = bool(
+                    pr.status == PurchaseRequisition.STATUS_BUDGET_REVIEW
+                    or (b is not None and (b.available_amount <= 0 or pr.total_amount > b.available_amount))
+                )
+                can_decide = False
+                if not is_restricted_role and pr.status == PurchaseRequisition.STATUS_BUDGET_REVIEW:
+                    if user.is_superuser or role_code in [Role.FINANCE_AP, Role.PROC_MGR, Role.SUPER_ADMIN]:
+                        can_decide = True
+                elif not is_restricted_role and pr.status in [
+                    PurchaseRequisition.STATUS_SUBMITTED,
+                    PurchaseRequisition.STATUS_MANAGER_REVIEW,
+                ] and not (pr.is_over_budget and role_code == Role.DEPT_APPROVER):
+                    if user.is_superuser:
+                        can_decide = True
+                    else:
+                        pr_org = (
+                            getattr(getattr(pr, "department", None), "organization", None)
+                            or getattr(getattr(getattr(pr, "cost_center", None), "department", None), "organization", None)
+                            or getattr(pr.requester, "effective_organization", None)
+                        )
+                        chain = evaluate_approval_chain(
+                            module=ApprovalPolicy.MODULE_PR,
+                            amount=pr.total_amount,
+                            department=pr.department,
+                            cost_center=pr.cost_center,
+                            organization=pr_org,
+                        )
+                        step_idx = ApprovalAction.objects.filter(
+                            target_object_id=str(pr.id),
+                            target_model_name="PurchaseRequisition",
+                            action=ApprovalAction.ACTION_APPROVE,
+                        ).count()
+                        if chain and step_idx < len(chain):
+                            step_info = chain[step_idx]
+                            req_role = step_info["approver_role"]
+                            spec_app = step_info["specific_approver"]
+                            eff_app = step_info["effective_approver"]
+                            if spec_app:
+                                can_decide = user == eff_app or user == spec_app
+                            else:
+                                approver_role_code = getattr(getattr(user, "role", None), "code", None)
+                                if (getattr(user, "role_id", None) == req_role.id) or (approver_role_code == req_role.code):
+                                    pr_dept = pr.department or (
+                                        pr.cost_center.department if pr.cost_center else None
+                                    )
+                                    if req_role.code == Role.DEPT_APPROVER and pr_dept and user.department:
+                                        has_own_approver = (
+                                            User.objects.filter(
+                                                role__code=Role.DEPT_APPROVER,
+                                                department=pr_dept,
+                                                is_active=True,
+                                            )
+                                            .exclude(id=user.id)
+                                            .exists()
+                                        )
+                                        can_decide = (
+                                            user.department == pr_dept
+                                            or (pr.cost_center and user == pr.cost_center.manager)
+                                            or not has_own_approver
+                                        )
+                                    else:
+                                        can_decide = True
+                        elif not chain and role_code in [Role.DEPT_APPROVER, Role.SUPER_ADMIN]:
+                            can_decide = True
+                pr.can_inline_decide = can_decide
+
+        legal_pending_display = []
+        legal_history_display = []
+
+    base_layout = _get_base_layout(request.user, role_code)
+
+    context = {
+        "pending_prs": pending_display,
+        "history_prs": history_display,
+        "legal_pending_contracts": legal_pending_display,
+        "legal_history_contracts": legal_history_display,
+        "is_legal_inbox": is_legal_inbox,
+        "page_obj": page_obj,
+        "querystring": querystring,
+        "pending_count": pending_count,
+        "active_tab": tab,
+        "role_code": role_code,
+        "base_layout": base_layout,
+        "active_nav": "my_approvals" if tab == "history" else "pending_approvals",
+        "search_q": search_q,
+        "status_filter": status_filter,
+        "has_budget_overrun": has_budget_overrun,
+    }
+    return render(request, "pages/approvals/inbox.html", context)
+
+
+# Alias for URL route compatibility
+inbox_view = approvals_inbox_view
+
+
+@login_required(login_url="/login/")
+def delegation_view(request):
+    """
+    Allows approvers to set a temporary delegate for their approval responsibilities.
+    """
+    user = request.user
+    role_code = getattr(user, "role_code", None) or (
+        user.role.code if hasattr(user, "role") and user.role else ""
+    )
+
+    if request.method == "POST":
+        delegate_id = request.POST.get("delegate_id")
+        start_date = request.POST.get("start_date")
+        end_date = request.POST.get("end_date")
+        reason = request.POST.get("reason", "").strip()
+
+        try:
+            delegate_user = User.objects.get(pk=delegate_id)
+            set_approval_delegate_service(
+                approver=user,
+                delegate=delegate_user,
+                start_date=start_date,
+                end_date=end_date,
+                reason=reason,
+            )
+            messages.success(request, f"Delegation to {delegate_user.email} set successfully.")
+        except User.DoesNotExist:
+            messages.error(request, "Selected delegate user not found.")
+        except Exception as e:
+            messages.error(request, f"Error setting delegation: {str(e)}")
+        return redirect("approvals_delegation")
+
+    active_delegates = ApprovalDelegate.objects.filter(
+        approver=user, is_active=True, end_date__gte=timezone.now().date()
+    ).order_by("-start_date")
+
+    eligible_delegates = User.objects.filter(
+        role__code__in=[Role.DEPT_APPROVER, Role.PROC_MGR, Role.PROC_EXEC]
+    ).exclude(pk=user.pk).select_related("role")
+
+    base_layout = _get_base_layout(user, role_code)
+    return render(request, "pages/approvals/delegation.html", {
+        "active_delegates": active_delegates,
+        "eligible_delegates": eligible_delegates,
+        "base_layout": base_layout,
+        "role_code": role_code,
+    })

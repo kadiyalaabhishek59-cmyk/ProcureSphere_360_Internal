@@ -1,0 +1,517 @@
+import time
+
+from django.contrib.auth import authenticate, login, logout
+from django.http import JsonResponse
+from django.middleware.csrf import get_token
+from django.utils.decorators import method_decorator
+from django.views import View
+from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
+from drf_spectacular.utils import OpenApiExample, OpenApiResponse, extend_schema
+from rest_framework import filters, mixins, status, views, viewsets
+from rest_framework.decorators import action
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
+
+from .models import Role, User
+from .selectors import get_all_roles, get_all_users
+from .serializers import (
+    LoginRequestSerializer,
+    LoginResponseSerializer,
+    RoleSerializer,
+    UserCreateSerializer,
+    UserSerializer,
+)
+
+
+@method_decorator(ensure_csrf_cookie, name="dispatch")
+class SessionLoginView(views.APIView):
+    permission_classes = [AllowAny]
+    serializer_class = LoginRequestSerializer
+
+    @extend_schema(
+        summary="Session Login",
+        description="Authenticate user with email and password to start a session and obtain a CSRF token.",
+        request=LoginRequestSerializer,
+        examples=[
+            OpenApiExample(
+                "Standard Login Example",
+                value={
+                    "email": "user@example.com",
+                    "password": "placeholder_password_only",
+                },
+                request_only=True,
+            )
+        ],
+        responses={
+            200: LoginResponseSerializer,
+            400: OpenApiResponse(description="Validation error: email and password are required."),
+            401: OpenApiResponse(description="Authentication failed: invalid email or password."),
+            403: OpenApiResponse(description="Forbidden: account is inactive."),
+            429: OpenApiResponse(description="Too many failed login attempts: account temporarily locked."),
+        },
+        tags=["Authentication"],
+    )
+    def post(self, request, *args, **kwargs):
+        if not isinstance(request.data, dict):
+            return Response(
+                {
+                    "error": {
+                        "code": "VALIDATION_ERROR",
+                        "message": "Invalid request payload format. Expected a JSON object.",
+                    }
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        serializer = self.serializer_class(data=request.data)
+        if not serializer.is_valid():
+            return Response(
+                {
+                    "error": {
+                        "code": "VALIDATION_ERROR",
+                        "message": "Invalid email or password format.",
+                        "details": serializer.errors,
+                    }
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        email = serializer.validated_data.get("email")
+        password = serializer.validated_data.get("password")
+
+        if not isinstance(email, str) or not isinstance(password, str) or len(email) > 254:
+            return Response(
+                {
+                    "error": {
+                        "code": "VALIDATION_ERROR",
+                        "message": "Invalid email format or length exceeds allowable limit.",
+                    }
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Resolve user case-insensitively for email matching (DEF-019)
+        from apps.accounts.models import User
+        matched_user = User.objects.filter(email__iexact=str(email).strip()).first()
+        auth_username = matched_user.email if matched_user else email
+
+        raw_request = request._request if hasattr(request, "_request") else request
+
+        # Check if client/user is already locked out by Axes before authenticating (DEF-001)
+        try:
+            from axes.handlers.proxy import AxesProxyHandler
+
+            if not AxesProxyHandler.is_allowed(raw_request, credentials={"username": auth_username, "email": auth_username}):
+                try:
+                    from apps.audit.models import AuditLog
+                    from apps.audit.services import create_audit_log_service
+
+                    create_audit_log_service(
+                        actor=matched_user,
+                        action=AuditLog.ACTION_LOGIN_FAILED,
+                        target_model="User",
+                        target_object_id=str(matched_user.id if matched_user else email),
+                        new_state={
+                            "event": "LOGIN_FAILED",
+                            "email": str(email).strip().lower(),
+                            "reason": "Account locked",
+                        },
+                        request=raw_request,
+                    )
+                except Exception:
+                    pass
+
+                return Response(
+                    {
+                        "error": {
+                            "code": "ACCOUNT_LOCKED",
+                            "message": "Too many failed login attempts. Account is locked temporarily.",
+                            "details": {"retry_after_seconds": 180},
+                        }
+                    },
+                    status=status.HTTP_429_TOO_MANY_REQUESTS,
+                )
+        except Exception:
+            pass
+
+        user = authenticate(request, username=auth_username, password=password)
+        if user is None:
+            # Audit failed login attempt (DEF-018 / DEF-015)
+            try:
+                from apps.audit.models import AuditLog
+                from apps.audit.services import create_audit_log_service
+
+                create_audit_log_service(
+                    actor=matched_user,
+                    action=AuditLog.ACTION_LOGIN_FAILED,
+                    target_model="User",
+                    target_object_id=str(matched_user.id if matched_user else email),
+                    new_state={
+                        "event": "LOGIN_FAILED",
+                        "email": str(email).strip().lower(),
+                        "reason": "Account locked" if (getattr(raw_request, "axes_locked_out", False) or getattr(request, "axes_locked_out", False)) else "Invalid credentials",
+                    },
+                    request=raw_request,
+                )
+            except Exception:
+                pass
+
+            is_locked = False
+            if getattr(raw_request, "axes_locked_out", False) or getattr(request, "axes_locked_out", False):
+                is_locked = True
+            else:
+                try:
+                    from axes.handlers.proxy import AxesProxyHandler
+
+                    if not AxesProxyHandler.is_allowed(raw_request, credentials={"username": auth_username, "email": auth_username}):
+                        is_locked = True
+                except Exception:
+                    pass
+
+            if is_locked:
+                return Response(
+                    {
+                        "error": {
+                            "code": "ACCOUNT_LOCKED",
+                            "message": "Too many failed login attempts. Account is locked temporarily.",
+                            "details": {"retry_after_seconds": 180},
+                        }
+                    },
+                    status=status.HTTP_429_TOO_MANY_REQUESTS,
+                )
+
+            return Response(
+                {
+                    "error": {
+                        "code": "AUTHENTICATION_FAILED",
+                        "message": "Invalid email or password.",
+                    }
+                },
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        if not user.is_active:
+            return Response(
+                {"error": {"code": "USER_INACTIVE", "message": "Account is inactive."}},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        login(request, user)
+        request.session["_last_activity_ts"] = time.time()
+        csrf_token = get_token(request)
+        serializer = UserSerializer(user)
+
+        from apps.audit.models import AuditLog
+        from apps.audit.services import create_audit_log_service
+
+        create_audit_log_service(
+            actor=user,
+            action=AuditLog.ACTION_LOGIN,
+            target_model="User",
+            target_object_id=str(user.id),
+            new_state={
+                "email": user.email,
+                "role": user.role_code if hasattr(user, "role_code") else None,
+            },
+            ip_address=request.META.get("REMOTE_ADDR"),
+            user_agent=request.META.get("HTTP_USER_AGENT", ""),
+        )
+
+        resp = Response(
+            {
+                "message": "Login successful.",
+                "user": serializer.data,
+                "csrf_token": csrf_token,
+            },
+            status=status.HTTP_200_OK,
+        )
+        resp.delete_cookie("ps360_just_logged_out")
+        resp.delete_cookie("ps360_user_signed_out")
+        return resp
+
+
+class SessionLogoutView(views.APIView):
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        summary="Session Logout",
+        description="Terminates the active user session and records an audit log.",
+        request=None,
+        responses={
+            200: OpenApiResponse(description="Successfully logged out."),
+            401: OpenApiResponse(description="Authentication credentials were not provided."),
+        },
+        tags=["Authentication"],
+    )
+    def post(self, request, *args, **kwargs):
+        user = request.user
+        if not user or not user.is_authenticated:
+            return Response(
+                {
+                    "error": {
+                        "code": "NOT_AUTHENTICATED",
+                        "message": "Authentication credentials were not provided.",
+                        "details": "Authentication credentials were not provided.",
+                    }
+                },
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+        if user and user.is_authenticated:
+            from apps.audit.models import AuditLog
+            from apps.audit.services import create_audit_log_service
+
+            create_audit_log_service(
+                actor=user,
+                action=AuditLog.ACTION_LOGOUT,
+                target_model="User",
+                target_object_id=str(user.id),
+                previous_state={"email": user.email},
+                ip_address=request.META.get("REMOTE_ADDR"),
+                user_agent=request.META.get("HTTP_USER_AGENT", ""),
+            )
+
+        logout(request)
+        return Response({"message": "Logout successful."}, status=status.HTTP_200_OK)
+
+
+@method_decorator(csrf_exempt, name="dispatch")
+class SessionExitBeaconView(View):
+    """
+    Receives beacon when user exits the web application to the browser homepage
+    via browser back navigation. Terminates the server session immediately.
+    """
+
+    def post(self, request, *args, **kwargs):
+        user = getattr(request, "user", None)
+        if user is not None and user.is_authenticated:
+            try:
+                from apps.audit.models import AuditLog
+                from apps.audit.services import create_audit_log_service
+
+                create_audit_log_service(
+                    actor=user,
+                    action=AuditLog.ACTION_LOGOUT,
+                    target_model="User",
+                    target_object_id=str(user.id),
+                    previous_state={"email": user.email},
+                    new_state={"reason": "browser_exit_to_home"},
+                    ip_address=request.META.get("REMOTE_ADDR"),
+                    user_agent=request.META.get("HTTP_USER_AGENT", ""),
+                )
+            except Exception:
+                pass
+            logout(request)
+
+        response = JsonResponse({"status": "ok", "message": "Session terminated on exit."})
+        response.set_cookie("ps360_just_logged_out", "1", max_age=120, path="/", samesite="Lax")
+        response.set_cookie("ps360_user_signed_out", "1", max_age=120, path="/", samesite="Lax")
+        return response
+
+
+class SessionRefreshView(views.APIView):
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        summary="Session Token Refresh",
+        description="Refreshes an active session token or returns 401 if unauthenticated.",
+        responses={
+            200: OpenApiResponse(description="Session active and refreshed."),
+            401: OpenApiResponse(description="Authentication required to refresh session."),
+        },
+        tags=["Authentication"],
+    )
+    def post(self, request, *args, **kwargs):
+        if request.user and request.user.is_authenticated:
+            return Response({"status": "ok", "message": "Session refreshed."}, status=status.HTTP_200_OK)
+
+        email = request.data.get("email") or request.data.get("username")
+        password = request.data.get("password")
+        if email and password:
+            matched_user = User.objects.filter(email__iexact=str(email).strip()).first()
+            auth_username = matched_user.email if matched_user else email
+            user = authenticate(request, username=auth_username, password=password)
+            if user and user.is_active:
+                login(request, user)
+                request.session["_last_activity_ts"] = time.time()
+                return Response(
+                    {"status": "ok", "message": "Session refreshed.", "user": UserSerializer(user).data},
+                    status=status.HTTP_200_OK,
+                )
+
+        return Response(
+            {"error": {"code": "NOT_AUTHENTICATED", "message": "Authentication required to refresh session."}},
+            status=status.HTTP_401_UNAUTHORIZED,
+        )
+
+
+class SessionKeepAliveView(views.APIView):
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        summary="Session Activity Keepalive",
+        description="Extends an active authenticated session when real user activity occurs in the UI.",
+        responses={
+            200: OpenApiResponse(description="Session activity timestamp refreshed."),
+            401: OpenApiResponse(description="Session expired or unauthenticated."),
+        },
+        tags=["Authentication"],
+    )
+    def get(self, request, *args, **kwargs):
+        if not request.user or not request.user.is_authenticated:
+            return Response(
+                {
+                    "error": {
+                        "code": "SESSION_EXPIRED",
+                        "message": "Your session has expired. Please sign in again.",
+                    },
+                    "redirect_url": "/login/?session_expired=1",
+                },
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+        return Response({"status": "authenticated"}, status=status.HTTP_200_OK)
+
+    def post(self, request, *args, **kwargs):
+        if not request.user or not request.user.is_authenticated:
+            return Response(
+                {
+                    "error": {
+                        "code": "SESSION_EXPIRED",
+                        "message": "Your session has expired. Please sign in again.",
+                    },
+                    "redirect_url": "/login/?session_expired=1",
+                },
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        from django.conf import settings as django_settings
+
+        timeout_seconds = int(getattr(django_settings, "SESSION_IDLE_TIMEOUT_SECONDS", 300))
+        now = time.time()
+        request.session["_last_activity_ts"] = now
+        return Response(
+            {
+                "status": "ok",
+                "timeout_seconds": timeout_seconds,
+                "expires_at": int(now + timeout_seconds),
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class UserViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ["email", "first_name", "last_name", "role__code", "role__name"]
+
+    def get_serializer_class(self):
+        if self.action == "create":
+            return UserCreateSerializer
+        return UserSerializer
+
+    def get_permissions(self):
+        from .permissions import IsAuditorOrSuperAdmin, IsNotVendorUser, IsSuperAdmin
+
+        if self.action == "me":
+            return [IsAuthenticated()]
+        if self.action in ["list", "retrieve"]:
+            return [IsAuthenticated(), IsAuditorOrSuperAdmin()]
+        if self.action in ["create", "update", "partial_update", "destroy"]:
+            return [IsAuthenticated(), IsSuperAdmin()]
+        return [IsAuthenticated(), IsNotVendorUser()]
+
+    def get_queryset(self):
+        user = self.request.user
+        if not user or not user.is_authenticated:
+            return User.objects.none()
+        role_code = getattr(user, "role_code", None) or (
+            user.role.code if getattr(user, "role", None) else None
+        )
+        if user.is_superuser or role_code == Role.SUPER_ADMIN:
+            return get_all_users().order_by("email", "id")
+        return User.objects.filter(id=user.id).order_by("id")
+
+    def perform_create(self, serializer):
+        user = serializer.save()
+        from apps.audit.models import AuditLog
+        actor = self.request.user if getattr(self.request, "user", None) and self.request.user.is_authenticated else None
+        AuditLog.objects.create(
+            actor=actor,
+            action=AuditLog.ACTION_CREATE,
+            target_model="User",
+            target_object_id=str(user.id),
+            previous_state=None,
+            new_state={
+                "email": user.email,
+                "role": getattr(user.role, "code", None),
+                "is_active": user.is_active,
+            },
+        )
+
+    def perform_update(self, serializer):
+        old_user = self.get_object()
+        old_state = {
+            "email": old_user.email,
+            "role": getattr(old_user.role, "code", None),
+            "is_active": old_user.is_active,
+        }
+        user = serializer.save()
+        from apps.audit.models import AuditLog
+        actor = self.request.user if getattr(self.request, "user", None) and self.request.user.is_authenticated else None
+        AuditLog.objects.create(
+            actor=actor,
+            action=AuditLog.ACTION_UPDATE,
+            target_model="User",
+            target_object_id=str(user.id),
+            previous_state=old_state,
+            new_state={
+                "email": user.email,
+                "role": getattr(user.role, "code", None),
+                "is_active": user.is_active,
+            },
+        )
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if instance.id == request.user.id:
+            return Response(
+                {
+                    "error": {
+                        "code": "VALIDATION_ERROR",
+                        "message": "Users cannot delete their own account.",
+                    }
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        from apps.audit.models import AuditLog
+        actor = request.user if getattr(request, "user", None) and request.user.is_authenticated else None
+        AuditLog.objects.create(
+            actor=actor,
+            action=AuditLog.ACTION_DELETE,
+            target_model="User",
+            target_object_id=str(instance.id),
+            previous_state={
+                "email": instance.email,
+                "role": getattr(instance.role, "code", None),
+            },
+            new_state=None,
+        )
+        return super().destroy(request, *args, **kwargs)
+
+    @action(detail=False, methods=["get"], permission_classes=[IsAuthenticated])
+    def me(self, request):
+        serializer = self.get_serializer(request.user)
+        return Response(serializer.data)
+
+
+class RoleViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
+    queryset = Role.objects.all()
+    serializer_class = RoleSerializer
+
+    def get_permissions(self):
+        from .permissions import IsNotVendorUser
+
+        return [IsAuthenticated(), IsNotVendorUser()]
+
+    def get_queryset(self):
+        return get_all_roles()

@@ -1,0 +1,49 @@
+<!-- Fullscreen Overlay Menu -->
+<div class="overlay-menu-container" id="overlay-menu" aria-hidden="true">
+  <div class="overlay-menu-bg"></div>
+  <div class="overlay-menu-content" id="overlay-menu-content">
+
+    <a href="/" class="overlay-menu-item {% if active_nav == 'home' %}is-active{% endif %}" style="transition-delay:0.1s">
+      <span class="overlay-menu-label">HOME</span>
+    </a>
+
+    <a href="/about/" class="overlay-menu-item {% if active_nav == 'about' %}is-active{% endif %}" style="transition-delay:0.15s">
+      <span class="overlay-menu-label">ABOUT</span>
+    </a>
+
+    <a href="/solutions/" class="overlay-menu-item {% if active_nav == 'solutions' %}is-active{% endif %}" style="transition-delay:0.2s">
+      <span class="overlay-menu-label">SOLUTIONS</span>
+    </a>
+
+    <a href="/benefits/" class="overlay-menu-item {% if active_nav == 'benefits' %}is-active{% endif %}" style="transition-delay:0.25s">
+      <span class="overlay-menu-label">BENEFITS</span>
+    </a>
+
+    <a href="/process/" class="overlay-menu-item {% if active_nav == 'process' %}is-active{% endif %}" style="transition-delay:0.3s">
+      <span class="overlay-menu-label">PROCESS</span>
+    </a>
+
+    <a href="/faq/" class="overlay-menu-item {% if active_nav == 'faq' %}is-active{% endif %}" style="transition-delay:0.35s">
+      <span class="overlay-menu-label">FAQ</span>
+    </a>
+
+    <div class="overlay-menu-login-wrap">
+      {% if request.user.is_authenticated %}
+      <a href="/dashboard/" id="overlay-login-btn" class="overlay-menu-login-btn" style="text-decoration:none; margin-bottom: 10px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
+        <span>Open Dashboard</span>
+      </a>
+      <a href="/logout/" class="overlay-menu-login-btn" style="text-decoration:none; background: rgba(220, 53, 69, 0.15); border-color: rgba(220, 53, 69, 0.3); color: #ff6b6b;">
+        <span>Sign Out</span>
+      </a>
+      {% else %}
+      <a href="/login/" id="overlay-login-btn" class="overlay-menu-login-btn" style="text-decoration:none;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 5 6v5c0 4.8 2.8 8 7 10 4.2-2 7-5.2 7-10V6l-7-3Z"/><path d="m9 12 2 2 4-4"/></svg>
+        <span>Login to Portal</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 7l10 10M17 7v10H7"/></svg>
+      </a>
+      {% endif %}
+    </div>
+
+  </div>
+</div>

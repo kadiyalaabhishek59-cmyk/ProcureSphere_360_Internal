@@ -1,0 +1,880 @@
+{% extends 'manager/base_manager.html' %}
+
+{% block title %}Pending Awards & Awarded Sourcing — Procurement Manager{% endblock %}
+
+{% block manager_breadcrumbs %}
+<li class="breadcrumb-item"><a href="/manager/" class="text-decoration-none text-muted">Manager</a></li>
+<li class="breadcrumb-item"><a href="/manager/sourcing/" class="text-decoration-none text-muted">Sourcing</a></li>
+<li class="breadcrumb-item active text-dark fw-semibold" aria-current="page">Awards Desk</li>
+{% endblock manager_breadcrumbs %}
+
+{% block mobile_page_title %}Awards Desk{% endblock mobile_page_title %}
+
+{% block manager_content %}
+<div class="container-fluid px-0">
+
+    <!-- Page Header Area -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle fw-bold px-3 py-1 rounded-pill shadow-xs" style="font-size: 0.75rem; letter-spacing: 0.04em;">
+                    <i class="fa-solid fa-award me-1 text-warning"></i> EXECUTIVE SOURCING AWARDS
+                </span>
+                <span class="text-muted small">Technical/commercial governance &amp; contract award execution</span>
+            </div>
+            <h1 class="h3 fw-bold text-dark mb-1 font-heading">Awards Governance Desk</h1>
+            <p class="text-muted small mb-0">Authorize evaluated winning bids, inspect finalized award decisions, and review closed sourcing rounds.</p>
+        </div>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <a href="/manager/" class="btn btn-outline-secondary btn-sm rounded-pill px-3 shadow-2xs">
+                <i class="fa-solid fa-arrow-left me-1"></i>Back to Dashboard
+            </a>
+            <button onclick="loadPendingAwards()" class="btn btn-outline-secondary btn-sm rounded-pill px-3 shadow-2xs" id="awardsRefreshBtn">
+                <i class="fa-solid fa-arrows-rotate me-1" id="awardsRefreshIcon"></i> Refresh Awards
+            </button>
+            <a href="/manager/sourcing/" class="btn btn-outline-primary btn-sm rounded-pill px-3 shadow-2xs">
+                <i class="fa-solid fa-gavel me-1"></i> Sourcing Events Directory
+            </a>
+        </div>
+    </div>
+
+    <!-- Award Summary KPI Cards -->
+    <div class="row g-3 mb-4" id="awardsKpiRow">
+        <div class="col-6 col-lg-3">
+            <div class="card border-0 shadow-sm rounded-3 bg-white p-3 h-100 border-start border-4 border-warning">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <span class="text-muted small text-uppercase fw-bold" style="font-size: 0.7rem;">Awaiting Decision</span>
+                    <span class="badge bg-warning-subtle text-warning-emphasis rounded-circle p-2"><i class="fa-solid fa-hourglass-half"></i></span>
+                </div>
+                <h3 class="fw-bold text-dark mb-1 font-heading" id="kpiPendingCount">-</h3>
+                <div class="text-muted small" id="kpiPendingSubtext">- sourcing events</div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card border-0 shadow-sm rounded-3 bg-white p-3 h-100 border-start border-4 border-success">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <span class="text-muted small text-uppercase fw-bold" style="font-size: 0.7rem;">Already Awarded</span>
+                    <span class="badge bg-success-subtle text-success rounded-circle p-2"><i class="fa-solid fa-award"></i></span>
+                </div>
+                <h3 class="fw-bold text-dark mb-1 font-heading" id="kpiAwardedCount">-</h3>
+                <div class="text-muted small" id="kpiAwardedSubtext">- finalized awards</div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card border-0 shadow-sm rounded-3 bg-white p-3 h-100 border-start border-4 border-info">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <span class="text-muted small text-uppercase fw-bold" style="font-size: 0.7rem;">Evaluated Bids</span>
+                    <span class="badge bg-info-subtle text-info rounded-circle p-2"><i class="fa-solid fa-file-signature"></i></span>
+                </div>
+                <h3 class="fw-bold text-dark mb-1 font-heading" id="kpiEvaluatedBidsCount">-</h3>
+                <div class="text-muted small">Technical &amp; Commercial Scored</div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card border-0 shadow-sm rounded-3 bg-white p-3 h-100 border-start border-4 border-primary">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <span class="text-muted small text-uppercase fw-bold" style="font-size: 0.7rem;">Total Commitment Value</span>
+                    <span class="badge bg-primary-subtle text-primary rounded-circle p-2"><i class="fa-solid fa-dollar-sign"></i></span>
+                </div>
+                <h3 class="fw-bold text-dark mb-1 font-heading" id="kpiTotalProposedValue">-</h3>
+                <div class="text-muted small">Awarded + recommended bids</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Segmented Mode Tabs -->
+    <ul class="nav nav-pills mb-3 gap-2 flex-wrap" id="awardsTabs">
+        <li class="nav-item">
+            <button class="nav-link active rounded-pill px-3 py-1.5 fw-semibold small shadow-2xs" id="tabPendingBtn" onclick="switchAwardsTab('pending')">
+                <i class="fa-solid fa-hourglass-half me-1"></i> Pending Decisions &amp; Reviews 
+                <span class="badge bg-warning text-dark ms-1 rounded-pill" id="tabPendingBadge">0</span>
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link rounded-pill px-3 py-1.5 fw-semibold small text-secondary bg-white border shadow-2xs" id="tabAwardedBtn" onclick="switchAwardsTab('awarded')">
+                <i class="fa-solid fa-award me-1"></i> Already Awarded 
+                <span class="badge bg-success text-white ms-1 rounded-pill" id="tabAwardedBadge">0</span>
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link rounded-pill px-3 py-1.5 fw-semibold small text-secondary bg-white border shadow-2xs" id="tabClosedNoBidsBtn" onclick="switchAwardsTab('closed_no_bids')">
+                <i class="fa-solid fa-ban me-1"></i> Closed (No Bids) 
+                <span class="badge bg-secondary text-white ms-1 rounded-pill" id="tabNoBidsBadge">0</span>
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link rounded-pill px-3 py-1.5 fw-semibold small text-secondary bg-white border shadow-2xs" id="tabAllBtn" onclick="switchAwardsTab('all')">
+                <i class="fa-solid fa-list me-1"></i> All Events 
+                <span class="badge bg-slate-100 text-dark border ms-1 rounded-pill" id="tabAllBadge">0</span>
+            </button>
+        </li>
+    </ul>
+
+    <!-- Search and Quick Filter Toolbar -->
+    <div class="card border-0 shadow-sm rounded-3 bg-white p-3 mb-4">
+        <div class="row g-2 align-items-center">
+            <div class="col-12 col-md-5">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-slate-50 border"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+                    <input type="text" id="awardSearchInput" class="form-control" placeholder="Filter by event #, title, vendor, PR..." oninput="filterPendingAwards()">
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <select id="awardTypeFilter" class="form-select form-select-sm" onchange="filterPendingAwards()">
+                    <option value="">All Event Types</option>
+                    <option value="RFQ">RFQ (Quotation)</option>
+                    <option value="RFP">RFP (Proposal)</option>
+                </select>
+            </div>
+            <div class="col-6 col-md-4 text-md-end">
+                <span class="badge bg-slate-100 text-dark border px-3 py-2 rounded-pill small" id="awardsCountBadge">0 Records</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Error State Container -->
+    <div id="awardsErrorState" class="alert alert-danger rounded-3 border-0 shadow-sm d-none mb-4 d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center gap-2">
+            <i class="fa-solid fa-triangle-exclamation fs-5"></i>
+            <span id="awardsErrorMessage">Unable to fetch award records.</span>
+        </div>
+        <button onclick="loadPendingAwards()" class="btn btn-outline-danger btn-sm rounded-pill px-3">Retry</button>
+    </div>
+
+    <!-- Main Awards Container -->
+    <div id="pendingAwardsListContainer">
+        <div class="text-center py-5">
+            <div class="spinner-border text-warning me-2"></div>
+            <div class="text-muted small mt-2">Loading sourcing awards and evaluated bids...</div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Award Decision Action (Approve / Reject / Return) -->
+<style>
+    #awardActionModal {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        z-index: 1060 !important;
+        overflow-x: hidden !important;
+        overflow-y: auto !important;
+    }
+    #awardActionModal .modal-dialog {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        min-height: calc(100% - 3.5rem) !important;
+        margin: 1.75rem auto !important;
+        max-width: 540px !important;
+    }
+    #awardModalTitle {
+        color: #111827 !important;
+        font-weight: 700 !important;
+    }
+</style>
+<div class="modal fade" id="awardActionModal" tabindex="-1" aria-hidden="true" style="z-index: 1060;">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 540px; margin: 1.75rem auto;">
+        <div class="modal-content bg-white rounded-4 border-0 shadow-lg overflow-hidden">
+            <div class="modal-header border-bottom px-4 py-3" style="background-color: #F9FAFB !important; border-bottom: 1px solid #E5E7EB !important;">
+                <h6 class="modal-title fw-bold font-heading d-flex align-items-center gap-2 mb-0" id="awardModalHeaderHeading" style="color: #111827 !important; font-size: 1.05rem; line-height: 1.4;">
+                    <i class="fa-solid fa-award text-amber" id="modalHeaderIcon"></i>
+                    <span id="awardModalTitle" style="color: #111827 !important; display: inline-block;">Confirm Award Decision</span>
+                </h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <input type="hidden" id="modalEventId">
+                <input type="hidden" id="modalWinningBidId">
+                <input type="hidden" id="modalActionType">
+
+                <!-- Summary Info Box -->
+                <div class="mb-3 p-3 bg-slate-50 border rounded-3" id="modalSummaryBox">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="small text-muted text-uppercase fw-bold" style="font-size: 0.65rem;">Selected Event &amp; Vendor</span>
+                        <span id="modalStatusBadge" class="badge bg-secondary rounded-pill px-2.5 py-0.5" style="font-size: 0.7rem;">Status</span>
+                    </div>
+                    <div class="fw-bold text-dark fs-6" id="modalEventSummary">-</div>
+                    <div class="text-primary fw-semibold small mt-1" id="modalBidSummary">-</div>
+                    <div class="text-muted small mt-1" id="modalScoreSummary" style="font-size: 0.75rem;">-</div>
+                </div>
+
+                <!-- Guidance Note -->
+                <div class="alert alert-info rounded-3 py-2 px-3 small mb-3 border-0 d-flex align-items-start gap-2" id="modalGuidanceAlert">
+                    <i class="fa-solid fa-circle-info mt-1"></i>
+                    <span id="modalGuidanceText">Review the proposal details before authorizing this decision.</span>
+                </div>
+
+                <!-- Inline Error Alert -->
+                <div class="alert alert-danger rounded-3 py-2 px-3 small mb-3 border border-danger-subtle d-flex align-items-start gap-2 d-none" id="modalErrorAlert" role="alert">
+                    <i class="fa-solid fa-circle-exclamation text-danger mt-1 fs-6"></i>
+                    <div class="flex-grow-1">
+                        <div class="fw-bold text-danger mb-0" id="modalErrorAlertTitle">Action Blocked</div>
+                        <div class="text-danger small mt-0.5" id="modalErrorAlertText"></div>
+                    </div>
+                    <button type="button" class="btn-close small ms-auto" onclick="document.getElementById('modalErrorAlert').classList.add('d-none')" aria-label="Dismiss"></button>
+                </div>
+
+                <!-- Comments Field -->
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-dark d-flex justify-content-between align-items-center">
+                        <span id="modalCommentsLabel">Governance Comments / Rationale</span>
+                        <span class="text-muted fw-normal" id="commentRequirementLabel">(Optional for approval)</span>
+                    </label>
+                    <textarea class="form-control form-control-sm rounded-3" id="modalAwardComments" rows="3" placeholder="Provide notes or justification..."></textarea>
+                    <div id="modalAwardCommentsFeedback" class="invalid-feedback fw-medium" style="font-size: 0.8rem;">Reason is mandatory.</div>
+                </div>
+            </div>
+            <div class="modal-footer border-top px-4 py-3 bg-light d-flex justify-content-end gap-2">
+                <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-warning btn-sm rounded-pill px-4 fw-bold shadow-sm" id="modalSubmitBtn" onclick="submitAwardDecision()">
+                    <span id="modalSubmitBtnText">Confirm Award</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let allAwardEvents = [];
+    let currentAwardsTab = 'pending'; // 'pending', 'awarded', 'closed_no_bids', 'all'
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // Read URL parameter for initial tab if provided
+        const urlParams = new URLSearchParams(window.location.search);
+        const initialTab = urlParams.get('tab');
+        if (initialTab && ['pending', 'awarded', 'closed_no_bids', 'all'].includes(initialTab.toLowerCase())) {
+            currentAwardsTab = initialTab.toLowerCase();
+        }
+        updateTabButtonStyles();
+
+        const modalEl = document.getElementById('awardActionModal');
+        if (modalEl && modalEl.parentElement !== document.body) {
+            document.body.appendChild(modalEl);
+        }
+        loadPendingAwards();
+    });
+
+    function switchAwardsTab(tabKey) {
+        currentAwardsTab = tabKey;
+        updateTabButtonStyles();
+
+        const url = new URL(window.location);
+        url.searchParams.set('tab', tabKey);
+        window.history.replaceState({}, '', url);
+
+        filterPendingAwards();
+    }
+
+    function updateTabButtonStyles() {
+        const tabs = [
+            { id: 'tabPendingBtn', key: 'pending', activeClass: 'btn-warning text-dark active' },
+            { id: 'tabAwardedBtn', key: 'awarded', activeClass: 'btn-success text-white active' },
+            { id: 'tabClosedNoBidsBtn', key: 'closed_no_bids', activeClass: 'btn-secondary text-white active' },
+            { id: 'tabAllBtn', key: 'all', activeClass: 'btn-dark text-white active' }
+        ];
+
+        tabs.forEach(t => {
+            const btn = document.getElementById(t.id);
+            if (!btn) return;
+            if (currentAwardsTab === t.key) {
+                btn.className = `nav-link active rounded-pill px-3 py-1.5 fw-semibold small shadow-sm ${t.activeClass}`;
+            } else {
+                btn.className = 'nav-link rounded-pill px-3 py-1.5 fw-semibold small text-secondary bg-white border shadow-2xs';
+            }
+        });
+    }
+
+    async function loadPendingAwards() {
+        const listContainer = document.getElementById('pendingAwardsListContainer');
+        const errorState = document.getElementById('awardsErrorState');
+        const refreshIcon = document.getElementById('awardsRefreshIcon');
+
+        if (refreshIcon) refreshIcon.classList.add('fa-spin');
+        if (errorState) errorState.classList.add('d-none');
+
+        listContainer.innerHTML = `
+            <div class="text-center py-5">
+                <div class="spinner-border text-warning me-2"></div>
+                <div class="text-muted small mt-2">Loading sourcing awards and evaluated bids...</div>
+            </div>
+        `;
+
+        try {
+            const data = await fetchManagerAPI('/api/v1/sourcing-events/awards/pending/?tab=all');
+            allAwardEvents = Array.isArray(data) ? data : (data.results || []);
+            
+            updateAwardKPIs(allAwardEvents);
+            filterPendingAwards();
+        } catch (err) {
+            if (errorState) {
+                errorState.classList.remove('d-none');
+                document.getElementById('awardsErrorMessage').textContent = err.message || 'Failed to fetch award records.';
+            }
+            listContainer.innerHTML = `
+                <div class="card border-0 shadow-sm rounded-3 bg-white p-5 text-center text-danger">
+                    <i class="fa-solid fa-triangle-exclamation fs-2 mb-2 d-block"></i>
+                    <div class="fw-bold font-heading">Unable to load award records</div>
+                    <div class="text-muted small mb-3">Please check your network or user authorization.</div>
+                    <div>
+                        <button onclick="loadPendingAwards()" class="btn btn-outline-danger btn-sm rounded-pill px-3">
+                            <i class="fa-solid fa-arrows-rotate me-1"></i> Retry
+                        </button>
+                    </div>
+                </div>
+            `;
+        } finally {
+            if (refreshIcon) refreshIcon.classList.remove('fa-spin');
+        }
+    }
+
+    function updateAwardKPIs(events) {
+        const kpiCount = document.getElementById('kpiPendingCount');
+        const kpiSubtext = document.getElementById('kpiPendingSubtext');
+        const kpiAwarded = document.getElementById('kpiAwardedCount');
+        const kpiAwardedSubtext = document.getElementById('kpiAwardedSubtext');
+        const kpiEvaluated = document.getElementById('kpiEvaluatedBidsCount');
+        const kpiValue = document.getElementById('kpiTotalProposedValue');
+
+        const pendingEvents = events.filter(e => e.event_category === 'pending');
+        const awardedEvents = events.filter(e => e.is_awarded);
+        const closedNoBidsEvents = events.filter(e => e.is_closed_no_bids);
+
+        let totalEvaluatedBids = 0;
+        let totalValue = 0;
+
+        events.forEach(ev => {
+            const bids = ev.evaluated_bids || [];
+            totalEvaluatedBids += bids.length;
+            if (ev.award_decision && ev.award_decision.awarded_amount) {
+                totalValue += parseFloat(ev.award_decision.awarded_amount);
+            } else if (ev.recommended_bid && ev.recommended_bid.total_bid_amount) {
+                totalValue += parseFloat(ev.recommended_bid.total_bid_amount);
+            }
+        });
+
+        if (kpiCount) kpiCount.textContent = pendingEvents.length;
+        if (kpiSubtext) kpiSubtext.textContent = `${pendingEvents.length} events awaiting decision`;
+        if (kpiAwarded) kpiAwarded.textContent = awardedEvents.length;
+        if (kpiAwardedSubtext) kpiAwardedSubtext.textContent = `${awardedEvents.length} finalized awards`;
+        if (kpiEvaluated) kpiEvaluated.textContent = totalEvaluatedBids;
+        if (kpiValue) kpiValue.textContent = `$${totalValue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+
+        // Update tab count badges
+        const tabPendingBadge = document.getElementById('tabPendingBadge');
+        const tabAwardedBadge = document.getElementById('tabAwardedBadge');
+        const tabNoBidsBadge = document.getElementById('tabNoBidsBadge');
+        const tabAllBadge = document.getElementById('tabAllBadge');
+
+        if (tabPendingBadge) tabPendingBadge.textContent = pendingEvents.length;
+        if (tabAwardedBadge) tabAwardedBadge.textContent = awardedEvents.length;
+        if (tabNoBidsBadge) tabNoBidsBadge.textContent = closedNoBidsEvents.length;
+        if (tabAllBadge) tabAllBadge.textContent = events.length;
+    }
+
+    function filterPendingAwards() {
+        const query = (document.getElementById('awardSearchInput')?.value || '').toLowerCase().trim();
+        const typeFilter = document.getElementById('awardTypeFilter')?.value || '';
+
+        const filtered = allAwardEvents.filter(ev => {
+            // Tab filter
+            if (currentAwardsTab === 'pending' && ev.event_category !== 'pending') return false;
+            if (currentAwardsTab === 'awarded' && !ev.is_awarded) return false;
+            if (currentAwardsTab === 'closed_no_bids' && !ev.is_closed_no_bids) return false;
+
+            // Type filter
+            const matchType = !typeFilter || ev.event_type === typeFilter;
+            
+            // Search query
+            const matchQuery = !query ||
+                (ev.event_number && ev.event_number.toLowerCase().includes(query)) ||
+                (ev.title && ev.title.toLowerCase().includes(query)) ||
+                (ev.requisition_number && ev.requisition_number.toLowerCase().includes(query)) ||
+                (ev.department && ev.department.toLowerCase().includes(query)) ||
+                (ev.award_decision && ev.award_decision.winning_vendor_name && ev.award_decision.winning_vendor_name.toLowerCase().includes(query)) ||
+                (ev.evaluated_bids && ev.evaluated_bids.some(b => b.vendor_name && b.vendor_name.toLowerCase().includes(query)));
+
+            return matchType && matchQuery;
+        });
+
+        renderPendingAwards(filtered);
+    }
+
+    function getAwardStatusBadge(status) {
+        if (status === 'AWARD_APPROVAL') {
+            return `<span class="badge bg-warning text-dark border border-warning-subtle fw-bold rounded-pill px-2.5 py-1" style="font-size: 0.72rem;"><i class="fa-solid fa-clock-rotate-left me-1"></i>Award Approval</span>`;
+        } else if (status === 'COMMERCIAL_REVIEW') {
+            return `<span class="badge bg-info-subtle text-info-emphasis border border-info-subtle fw-semibold rounded-pill px-2.5 py-1" style="font-size: 0.72rem;"><i class="fa-solid fa-calculator me-1"></i>Commercial Review</span>`;
+        } else if (status === 'TECHNICAL_REVIEW') {
+            return `<span class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle fw-semibold rounded-pill px-2.5 py-1" style="font-size: 0.72rem;"><i class="fa-solid fa-microchip me-1"></i>Technical Review</span>`;
+        } else if (status === 'AWARDED') {
+            return `<span class="badge bg-success-subtle text-success-emphasis border border-success-subtle fw-bold rounded-pill px-2.5 py-1" style="font-size: 0.72rem;"><i class="fa-solid fa-award me-1"></i>Awarded &amp; Finalized</span>`;
+        } else if (status === 'CANCELLED') {
+            return `<span class="badge bg-danger-subtle text-danger-emphasis border border-danger-subtle fw-semibold rounded-pill px-2.5 py-1" style="font-size: 0.72rem;"><i class="fa-solid fa-ban me-1"></i>Cancelled</span>`;
+        }
+        return `<span class="badge bg-secondary-subtle text-secondary-emphasis border rounded-pill px-2.5 py-1" style="font-size: 0.72rem;">${status || 'Pending'}</span>`;
+    }
+
+    function renderPendingAwards(events) {
+        const listContainer = document.getElementById('pendingAwardsListContainer');
+        const countBadge = document.getElementById('awardsCountBadge');
+        if (countBadge) countBadge.textContent = `${events.length} Records`;
+
+        if (events.length === 0) {
+            let emptyIcon = 'fa-circle-check text-success';
+            let emptyTitle = 'No Records Found';
+            let emptySub = 'No events match your current filter criteria.';
+
+            if (currentAwardsTab === 'pending') {
+                emptyTitle = 'No Pending Award Approvals';
+                emptySub = 'All evaluated sourcing events have been reviewed. Sourcing desk is completely up to date.';
+            } else if (currentAwardsTab === 'awarded') {
+                emptyIcon = 'fa-award text-muted';
+                emptyTitle = 'No Awarded Sourcing Events';
+                emptySub = 'No sourcing events have reached finalized award status yet.';
+            } else if (currentAwardsTab === 'closed_no_bids') {
+                emptyIcon = 'fa-ban text-muted';
+                emptyTitle = 'No Closed (No Bids) Events';
+                emptySub = 'There are no sourcing events that closed without vendor bids.';
+            }
+
+            listContainer.innerHTML = `
+                <div class="card border-0 shadow-sm rounded-3 bg-white p-5 text-center">
+                    <i class="fa-solid ${emptyIcon} fs-1 mb-3 d-block"></i>
+                    <h4 class="fw-bold text-dark font-heading">${emptyTitle}</h4>
+                    <p class="text-muted small mb-0">${emptySub}</p>
+                </div>
+            `;
+            return;
+        }
+
+        listContainer.innerHTML = events.map(ev => {
+            const bids = ev.evaluated_bids || [];
+            const isAwarded = ev.is_awarded || ev.status === 'AWARDED';
+            const isClosedNoBids = ev.is_closed_no_bids;
+
+            // 1. Render Already Awarded Sourcing Card
+            if (isAwarded) {
+                const dec = ev.award_decision || {};
+                return `
+                    <div class="card border-0 shadow-sm rounded-3 bg-white mb-4 overflow-hidden border-start border-4 border-success">
+                        <div class="card-header bg-white py-3 px-4 border-bottom d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2">
+                            <div>
+                                <div class="d-flex align-items-center gap-2 flex-wrap">
+                                    <span class="badge bg-success text-white font-monospace">${ev.event_number}</span>
+                                    <span class="badge bg-slate-100 text-dark border">${ev.event_type || 'RFQ'}</span>
+                                    <span class="badge bg-success-subtle text-success-emphasis border border-success fw-bold rounded-pill px-2.5 py-1">
+                                        <i class="fa-solid fa-check-circle me-1"></i> AWARDED
+                                    </span>
+                                    ${ev.department ? `<span class="badge bg-slate-100 text-muted border"><i class="fa-solid fa-building me-1"></i>${ev.department}</span>` : ''}
+                                    ${ev.requisition_number ? `<a href="/requisitions/${ev.requisition_id}/" class="badge bg-indigo-subtle text-indigo border-0 text-decoration-none"><i class="fa-solid fa-link me-1"></i>PR: ${ev.requisition_number}</a>` : ''}
+                                </div>
+                                <h5 class="fw-bold text-dark mb-0 mt-2 font-heading">${ev.title}</h5>
+                                <div class="text-muted small mt-1">${ev.description || 'No description provided'}</div>
+                            </div>
+                            <div class="text-md-end d-flex align-items-center gap-2 flex-wrap">
+                                <a href="/sourcing-events/${ev.id}/" class="btn btn-outline-primary btn-sm rounded-pill px-3 shadow-2xs" title="Inspect Full Event Dossier">
+                                    <i class="fa-solid fa-file-contract me-1"></i> View Sourcing Dossier
+                                </a>
+                                ${dec.po_id ? `
+                                    <a href="/orders/${dec.po_id}/" class="btn btn-primary btn-sm rounded-pill px-3 shadow-2xs">
+                                        <i class="fa-solid fa-file-invoice me-1"></i> View PO (${dec.po_number || 'Executed'})
+                                    </a>
+                                ` : ''}
+                            </div>
+                        </div>
+
+                        <!-- Awarded Winning Vendor Spotlight Ribbon -->
+                        <div class="bg-success-subtle bg-opacity-25 px-4 py-3 border-bottom">
+                            <div class="row g-3 align-items-center">
+                                <div class="col-12 col-md-4">
+                                    <div class="small text-muted text-uppercase fw-bold" style="font-size: 0.65rem;">Awarded Winning Supplier</div>
+                                    <div class="fw-bold text-dark fs-6 d-flex align-items-center gap-2">
+                                        <i class="fa-solid fa-crown text-warning"></i>
+                                        <span>${dec.winning_vendor_name || (ev.recommended_bid ? ev.recommended_bid.vendor_name : 'Authorized Supplier')}</span>
+                                    </div>
+                                    ${dec.winning_vendor_number ? `<div class="text-muted small" style="font-size: 0.72rem;">Vendor Code: ${dec.winning_vendor_number}</div>` : ''}
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <div class="small text-muted text-uppercase fw-bold" style="font-size: 0.65rem;">Total Awarded Value</div>
+                                    <div class="fw-bold text-success fs-5 font-monospace">
+                                        $${Number(dec.awarded_amount || (ev.recommended_bid ? ev.recommended_bid.total_bid_amount : 0)).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                                    </div>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <div class="small text-muted text-uppercase fw-bold" style="font-size: 0.65rem;">Awarded Authorization</div>
+                                    <div class="small text-dark fw-semibold">${dec.awarded_by || 'Procurement Manager'}</div>
+                                    <div class="text-muted small" style="font-size: 0.7rem;">${dec.awarded_at ? new Date(dec.awarded_at).toLocaleString() : 'Executed'}</div>
+                                </div>
+                                <div class="col-12 col-md-2 text-md-end">
+                                    ${dec.po_number ? `
+                                        <span class="badge bg-indigo text-white fw-bold px-3 py-1.5 rounded-pill shadow-xs">
+                                            <i class="fa-solid fa-receipt me-1"></i> PO: ${dec.po_number}
+                                        </span>
+                                    ` : `<span class="badge bg-secondary-subtle text-secondary px-3 py-1.5 rounded-pill small">PO Pending</span>`}
+                                </div>
+                            </div>
+                            ${dec.award_reason ? `
+                                <div class="mt-2 pt-2 border-top border-success-subtle small text-muted">
+                                    <span class="fw-bold text-dark">Executive Justification:</span> ${dec.award_reason}
+                                </div>
+                            ` : ''}
+                        </div>
+
+                        <!-- Competing Evaluated Bids Summary -->
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead class="table-light small text-uppercase">
+                                        <tr>
+                                            <th class="ps-4">Rank &amp; Vendor</th>
+                                            <th>Bid # &amp; Version</th>
+                                            <th>Total Bid Amount</th>
+                                            <th>Technical Score</th>
+                                            <th>Commercial Score</th>
+                                            <th>Weighted Total</th>
+                                            <th>Standing</th>
+                                            <th class="pe-4 text-end">Audit Evidence</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${bids.map((b, idx) => {
+                                            const isWinning = (dec.winning_bid_id && dec.winning_bid_id === b.bid_id) || idx === 0;
+                                            return `
+                                                <tr class="${isWinning ? 'table-success bg-opacity-25' : ''}">
+                                                    <td class="ps-4">
+                                                        <div class="d-flex align-items-center gap-2">
+                                                            <span class="badge ${isWinning ? 'bg-success text-white fw-bold' : 'bg-secondary text-white'} rounded-pill px-2 py-1">
+                                                                ${isWinning ? '<i class="fa-solid fa-crown me-1"></i>Winner' : '#' + (idx + 1)}
+                                                            </span>
+                                                            <span class="fw-bold text-dark">${b.vendor_name}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td><span class="badge bg-slate-100 text-dark border font-monospace">${b.bid_number}</span></td>
+                                                    <td class="fw-bold text-dark font-monospace">$${Number(b.total_bid_amount || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                                    <td><span class="badge bg-info-subtle text-info-emphasis border">${Number(b.technical_score || 0).toFixed(1)} / 100</span></td>
+                                                    <td><span class="badge bg-primary-subtle text-primary-emphasis border">${Number(b.commercial_score || 0).toFixed(1)} / 100</span></td>
+                                                    <td><span class="badge ${isWinning ? 'bg-success text-white' : 'bg-secondary text-white'} fw-bold px-2 py-1">${Number(b.weighted_total_score || 0).toFixed(1)} pts</span></td>
+                                                    <td>
+                                                        ${isWinning 
+                                                            ? '<span class="badge bg-success text-white rounded-pill px-2 py-0.5"><i class="fa-solid fa-award me-1"></i>Awarded</span>'
+                                                            : '<span class="badge bg-slate-100 text-muted border rounded-pill px-2 py-0.5">Non-Awarded</span>'}
+                                                    </td>
+                                                    <td class="pe-4 text-end">
+                                                        <span class="text-muted small">${b.evaluation_comments || 'Verified'}</span>
+                                                    </td>
+                                                </tr>
+                                            `;
+                                        }).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // 2. Render Closed Without Bids Card
+            if (isClosedNoBids) {
+                return `
+                    <div class="card border-0 shadow-sm rounded-3 bg-white mb-4 overflow-hidden border-start border-4 border-secondary">
+                        <div class="card-header bg-white py-3 px-4 border-bottom d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2">
+                            <div>
+                                <div class="d-flex align-items-center gap-2 flex-wrap">
+                                    <span class="badge bg-secondary text-white font-monospace">${ev.event_number}</span>
+                                    <span class="badge bg-slate-100 text-dark border">${ev.event_type || 'RFQ'}</span>
+                                    <span class="badge bg-secondary text-white rounded-pill px-2.5 py-1">
+                                        <i class="fa-solid fa-ban me-1"></i> CLOSED (NO BIDS)
+                                    </span>
+                                    ${ev.department ? `<span class="badge bg-slate-100 text-muted border"><i class="fa-solid fa-building me-1"></i>${ev.department}</span>` : ''}
+                                    ${ev.requisition_number ? `<a href="/requisitions/${ev.requisition_id}/" class="badge bg-indigo-subtle text-indigo border-0 text-decoration-none"><i class="fa-solid fa-link me-1"></i>PR: ${ev.requisition_number}</a>` : ''}
+                                </div>
+                                <h5 class="fw-bold text-dark mb-0 mt-2 font-heading">${ev.title}</h5>
+                                <div class="text-muted small mt-1">${ev.description || 'No description provided'}</div>
+                            </div>
+                            <div class="text-md-end">
+                                <a href="/sourcing-events/${ev.id}/" class="btn btn-outline-secondary btn-sm rounded-pill px-3 shadow-2xs">
+                                    <i class="fa-solid fa-eye me-1"></i> Inspect Event
+                                </a>
+                            </div>
+                        </div>
+                        <div class="card-body p-4 bg-slate-50 text-center">
+                            <i class="fa-solid fa-circle-exclamation text-secondary fs-3 mb-2 d-block"></i>
+                            <div class="fw-bold text-dark">No Vendor Proposals Received</div>
+                            <p class="text-muted small mb-0 mt-1">Bidding window closed without receiving any vendor proposals. Re-sourcing or direct inquiry required.</p>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // 3. Render Pending Review / Award Decision Card
+            let statusBadgeClass = 'bg-warning text-dark';
+            if (ev.status === 'COMMERCIAL_REVIEW') statusBadgeClass = 'bg-info text-white';
+            else if (ev.status === 'TECHNICAL_REVIEW') statusBadgeClass = 'bg-primary text-white';
+
+            return `
+                <div class="card border-0 shadow-sm rounded-3 bg-white mb-4 overflow-hidden border-start border-4 border-warning">
+                    <!-- Event Header -->
+                    <div class="card-header bg-white py-3 px-4 border-bottom d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2">
+                        <div>
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                <span class="badge bg-warning text-dark font-monospace">${ev.event_number}</span>
+                                <span class="badge bg-slate-100 text-dark border">${ev.event_type || 'RFQ'}</span>
+                                <span class="badge ${statusBadgeClass} rounded-pill">${ev.status}</span>
+                                ${ev.department ? `<span class="badge bg-slate-100 text-muted border"><i class="fa-solid fa-building me-1"></i>${ev.department}</span>` : ''}
+                                ${ev.requisition_number ? `<a href="/requisitions/${ev.requisition_id}/" class="badge bg-indigo-subtle text-indigo border-0 text-decoration-none"><i class="fa-solid fa-link me-1"></i>PR: ${ev.requisition_number}</a>` : ''}
+                            </div>
+                            <h5 class="fw-bold text-dark mb-0 mt-2 font-heading">${ev.title}</h5>
+                            <div class="text-muted small mt-1">${ev.description || 'No description provided'}</div>
+                        </div>
+                        <div class="text-md-end d-flex align-items-center gap-2">
+                            <span class="badge bg-slate-100 text-dark border px-3 py-2 rounded-pill small">
+                                <i class="fa-solid fa-users text-muted me-1"></i> ${bids.length} Evaluated Bids
+                            </span>
+                            <a href="/sourcing-events/${ev.id}/" class="btn btn-outline-secondary btn-sm rounded-pill px-3 shadow-2xs" title="Inspect Full Event">
+                                <i class="fa-solid fa-eye me-1"></i> Inspect
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Ranked Bids Table -->
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light small text-uppercase">
+                                    <tr>
+                                        <th class="ps-4">Rank &amp; Vendor</th>
+                                        <th>Bid # &amp; Version</th>
+                                        <th>Total Bid Amount</th>
+                                        <th>Technical Score</th>
+                                        <th>Commercial Score</th>
+                                        <th>Weighted Total</th>
+                                        <th>Award Status</th>
+                                        <th>Evaluator Notes</th>
+                                        <th class="pe-4 text-end">Manager Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${bids.length === 0 ? `
+                                        <tr><td colspan="9" class="text-center py-4 text-muted">No evaluated bids submitted for this event yet.</td></tr>
+                                    ` : bids.map((b, idx) => {
+                                        const isRank1 = idx === 0;
+                                        return `
+                                            <tr class="${isRank1 ? 'table-warning bg-opacity-25' : ''}">
+                                                <td class="ps-4">
+                                                    <div class="d-flex align-items-center gap-2">
+                                                        <span class="badge ${isRank1 ? 'bg-warning text-dark fw-bold' : 'bg-secondary text-white'} rounded-pill px-2 py-1">
+                                                            ${isRank1 ? '<i class="fa-solid fa-crown me-1"></i>#1 Recommended' : '#' + (idx + 1)}
+                                                        </span>
+                                                        <div>
+                                                            <div class="fw-bold text-dark d-flex align-items-center gap-1">
+                                                                <span>${b.vendor_name}</span>
+                                                                ${b.is_vendor_suspended ? '<span class="badge bg-danger text-white rounded-pill px-2 py-0.5 ms-1" style="font-size:0.65rem;"><i class="fa-solid fa-ban me-1"></i>Suspended</span>' : ''}
+                                                            </div>
+                                                            <div class="text-muted" style="font-size: 0.7rem;">ID: ${b.vendor_id || 'N/A'}</div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td><span class="badge bg-slate-100 text-dark border font-monospace">${b.bid_number} (v${b.version})</span></td>
+                                                <td class="fw-bold text-dark font-monospace">$${Number(b.total_bid_amount || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                                <td><span class="badge bg-info-subtle text-info-emphasis border">${Number(b.technical_score || 0).toFixed(1)} / 100</span></td>
+                                                <td><span class="badge bg-primary-subtle text-primary-emphasis border">${Number(b.commercial_score || 0).toFixed(1)} / 100</span></td>
+                                                <td>
+                                                    <span class="badge ${isRank1 ? 'bg-success text-white' : 'bg-secondary text-white'} fw-bold px-2 py-1">
+                                                        ${Number(b.weighted_total_score || 0).toFixed(1)} pts
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    ${getAwardStatusBadge(ev.status)}
+                                                </td>
+                                                <td class="small text-muted text-truncate" style="max-width: 180px;" title="${b.evaluation_comments || 'No comments'}">
+                                                    ${b.evaluation_comments || '<span class="text-muted fst-italic">None</span>'}
+                                                </td>
+                                                <td class="pe-4 text-end">
+                                                    <div class="btn-group btn-group-sm shadow-2xs">
+                                                        ${b.is_vendor_suspended ? `
+                                                            <button class="btn btn-secondary fw-semibold px-3 disabled" disabled title="Vendor is suspended and cannot be awarded">
+                                                                <i class="fa-solid fa-ban me-1"></i> Suspended
+                                                            </button>
+                                                        ` : `
+                                                            <button onclick="openAwardModal('${ev.id}', '${ev.event_number}', '${b.bid_id}', '${b.vendor_name}', '$${Number(b.total_bid_amount).toLocaleString(undefined, {minimumFractionDigits:2})}', '${b.weighted_total_score}', 'APPROVE', '${ev.status}')" class="btn btn-warning fw-semibold px-3" title="Award Contract to Vendor">
+                                                                <i class="fa-solid fa-check me-1"></i> Award
+                                                            </button>
+                                                        `}
+                                                        <button onclick="openAwardModal('${ev.id}', '${ev.event_number}', '${b.bid_id}', '${b.vendor_name}', '', '${b.weighted_total_score}', 'RETURN', '${ev.status}')" class="btn btn-outline-secondary" title="Return to Commercial Review for Re-evaluation">
+                                                            <i class="fa-solid fa-rotate-left"></i>
+                                                        </button>
+                                                        <button onclick="openAwardModal('${ev.id}', '${ev.event_number}', '${b.bid_id}', '${b.vendor_name}', '', '${b.weighted_total_score}', 'REJECT', '${ev.status}')" class="btn btn-outline-danger" title="Reject Event">
+                                                            <i class="fa-solid fa-xmark"></i>
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        `;
+                                    }).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function openAwardModal(eventId, eventNumber, bidId, vendorName, amount, score, actionType, eventStatus = '') {
+        document.getElementById('modalEventId').value = eventId;
+        document.getElementById('modalWinningBidId').value = bidId;
+        document.getElementById('modalActionType').value = actionType;
+        document.getElementById('modalAwardComments').value = '';
+
+        const errAlert = document.getElementById('modalErrorAlert');
+        if (errAlert) errAlert.classList.add('d-none');
+
+        document.getElementById('modalEventSummary').textContent = `Sourcing Event: ${eventNumber}`;
+        document.getElementById('modalBidSummary').textContent = amount ? `Winning Vendor: ${vendorName} (${amount})` : `Target Vendor: ${vendorName}`;
+        document.getElementById('modalScoreSummary').textContent = score ? `Weighted Evaluation Score: ${Number(score).toFixed(1)} pts` : '';
+
+        const statusBadge = document.getElementById('modalStatusBadge');
+        if (statusBadge && eventStatus) {
+            statusBadge.innerHTML = getAwardStatusBadge(eventStatus);
+        }
+
+        const submitBtn = document.getElementById('modalSubmitBtn');
+        const submitBtnText = document.getElementById('modalSubmitBtnText');
+        const title = document.getElementById('awardModalTitle');
+        const headerIcon = document.getElementById('modalHeaderIcon');
+        const reqLabel = document.getElementById('commentRequirementLabel');
+        const commentsLabel = document.getElementById('modalCommentsLabel');
+        const commentsInput = document.getElementById('modalAwardComments');
+        const guidanceAlert = document.getElementById('modalGuidanceAlert');
+        const guidanceText = document.getElementById('modalGuidanceText');
+
+        if (commentsInput) {
+            commentsInput.value = '';
+            commentsInput.classList.remove('is-invalid');
+        }
+
+        if (actionType === 'APPROVE') {
+            title.textContent = 'Authorize Final Contract Award';
+            title.style.color = '#111827';
+            headerIcon.className = 'fa-solid fa-award text-amber';
+            submitBtn.className = 'btn btn-warning btn-sm rounded-pill px-4 fw-bold shadow-sm';
+            submitBtnText.textContent = 'Confirm & Submit Award';
+            if (commentsLabel) commentsLabel.textContent = 'Governance Comments / Rationale';
+            if (commentsInput) commentsInput.placeholder = 'Provide optional notes or justification...';
+            reqLabel.textContent = '(Optional for approval)';
+            reqLabel.className = 'text-muted fw-normal';
+            guidanceAlert.className = 'alert alert-warning rounded-3 py-2 px-3 small mb-3 border-0 d-flex align-items-start gap-2';
+            guidanceText.textContent = 'Authorizing this award will finalize the sourcing event and authorize contract/PO creation.';
+        } else if (actionType === 'RETURN') {
+            title.textContent = 'Return Event for Re-Evaluation';
+            title.style.color = '#111827';
+            headerIcon.className = 'fa-solid fa-rotate-left text-info';
+            submitBtn.className = 'btn btn-secondary btn-sm rounded-pill px-4 fw-bold shadow-sm';
+            submitBtnText.textContent = 'Return to Review Desk';
+            if (commentsLabel) commentsLabel.textContent = 'Reason for Return';
+            if (commentsInput) commentsInput.placeholder = 'Provide a specific reason for returning this sourcing event for re-evaluation...';
+            reqLabel.textContent = '(Mandatory for return)';
+            reqLabel.className = 'text-danger fw-bold';
+            guidanceAlert.className = 'alert alert-secondary rounded-3 py-2 px-3 small mb-3 border-0 d-flex align-items-start gap-2';
+            guidanceText.textContent = 'The event will be returned to Commercial Review for scoring adjustments or vendor clarification.';
+        } else if (actionType === 'REJECT') {
+            title.textContent = 'Reject Sourcing Event';
+            title.style.color = '#111827';
+            headerIcon.className = 'fa-solid fa-xmark text-danger';
+            submitBtn.className = 'btn btn-danger btn-sm rounded-pill px-4 fw-bold shadow-sm';
+            submitBtnText.textContent = 'Confirm Event Cancellation';
+            if (commentsLabel) commentsLabel.textContent = 'Reason for Rejection';
+            if (commentsInput) commentsInput.placeholder = 'Provide a specific reason for rejecting this sourcing event...';
+            reqLabel.textContent = '(Mandatory for rejection)';
+            reqLabel.className = 'text-danger fw-bold';
+            guidanceAlert.className = 'alert alert-danger rounded-3 py-2 px-3 small mb-3 border-0 d-flex align-items-start gap-2';
+            guidanceText.textContent = 'Rejecting this event will cancel the sourcing process and close all active bids.';
+        }
+
+        const modalEl = document.getElementById('awardActionModal');
+        if (modalEl) {
+            if (modalEl.parentElement !== document.body) {
+                document.body.appendChild(modalEl);
+            }
+            if (window.bootstrap) {
+                const modalInst = bootstrap.Modal.getOrCreateInstance(modalEl);
+                modalInst.show();
+            }
+        }
+    }
+
+    async function submitAwardDecision() {
+        const eventId = document.getElementById('modalEventId').value;
+        const bidId = document.getElementById('modalWinningBidId').value;
+        const actionType = document.getElementById('modalActionType').value;
+        const commentsInput = document.getElementById('modalAwardComments');
+        const comments = (commentsInput.value || '').trim();
+        // DEF-002 fix: declare errAlert/errAlertText once at function scope to prevent
+        // "Identifier 'errAlert' has already been declared" SyntaxError in strict-mode browsers
+        const errAlert = document.getElementById('modalErrorAlert');
+        const errAlertText = document.getElementById('modalErrorAlertText');
+        const commentsFeedback = document.getElementById('modalAwardCommentsFeedback');
+
+        commentsInput.classList.remove('is-invalid');
+        if (errAlert) errAlert.classList.add('d-none');
+
+        if ((actionType === 'REJECT' || actionType === 'RETURN') && !comments) {
+            commentsInput.classList.add('is-invalid');
+            const actionLabel = actionType === 'REJECT' ? 'rejection' : 'return';
+            if (commentsFeedback) commentsFeedback.textContent = `Reason for ${actionLabel} is mandatory.`;
+            if (errAlert && errAlertText) {
+                errAlertText.textContent = `Reason for ${actionLabel} is mandatory. Please provide a clear justification.`;
+                errAlert.classList.remove('d-none');
+            }
+            showManagerToast(`Mandatory justification reason is required for ${actionLabel}.`, 'warning');
+            commentsInput.focus();
+            return;
+        }
+
+        const submitBtn = document.getElementById('modalSubmitBtn');
+        submitBtn.disabled = true;
+
+        try {
+            const payload = {
+                action: actionType,
+                winning_bid_id: bidId,
+                comments: comments || (actionType === 'APPROVE' ? 'Award authorized by Procurement Manager' : '')
+            };
+
+            const response = await fetchManagerAPI(`/api/v1/sourcing-events/events/${eventId}/award-approve/`, {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            });
+
+            showManagerToast(response.message || `Award decision (${actionType}) processed successfully.`, 'success');
+
+            const modalEl = document.getElementById('awardActionModal');
+            if (modalEl && window.bootstrap) {
+                const modalInst = bootstrap.Modal.getOrCreateInstance(modalEl);
+                if (modalInst) modalInst.hide();
+            }
+
+            loadPendingAwards();
+        } catch (err) {
+            let rawMsg = (typeof safeExtractErrorMessage === 'function')
+                ? safeExtractErrorMessage(err, 'Failed to process award decision. Please review required justification or permissions.')
+                : (err && err.message ? err.message : 'Failed to process award decision.');
+            const errorMsg = (typeof cleanErrorString === 'function') ? cleanErrorString(rawMsg) : rawMsg;
+
+            // errAlert and errAlertText already declared above — no re-declaration needed
+            if (errAlert && errAlertText) {
+                errAlertText.textContent = errorMsg;
+                errAlert.classList.remove('d-none');
+                errAlert.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            } else {
+                showManagerToast(errorMsg, 'error');
+            }
+        } finally {
+            submitBtn.disabled = false;
+        }
+    }
+</script>
+{% endblock manager_content %}

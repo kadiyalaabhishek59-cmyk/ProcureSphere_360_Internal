@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+
+{% block title %}Sign In — ProcureSphere 360 ERP{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center my-4">
+    <div class="col-xl-6 col-lg-8 col-md-10">
+        <div class="glass-card shadow-lg p-4 p-md-5">
+            <!-- Header Brand Title -->
+            <div class="text-center mb-4">
+                <div class="brand-icon-box mx-auto mb-3" style="width: 54px; height: 54px; border-radius: 14px;">
+                    <i class="fa-solid fa-cube text-cyan fs-3"></i>
+                </div>
+                <h3 class="fw-bold text-dark mb-1">ProcureSphere 360 ERP</h3>
+                <p class="text-muted small">Hewlett Packard Enterprise | Source-to-Pay & AP Workflow System</p>
+            </div>
+
+            <!-- Messages & Alerts -->
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show rounded-3 small" role="alert">
+                        <i class="fa-solid {% if message.tags == 'error' %}fa-circle-exclamation{% else %}fa-circle-check{% endif %} me-2"></i>
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <!-- Login Form -->
+            <form method="POST" action="/login/" class="mb-4">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label for="emailInput" class="form-label text-dark fw-semibold small">User Email Address</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0"><i class="fa-solid fa-envelope text-muted"></i></span>
+                        <input type="email" class="form-control border-start-0" id="emailInput" name="email" placeholder="e.g. admin@hpe.com" required>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <label for="passwordInput" class="form-label text-dark fw-semibold small mb-0">Password</label>
+                        <span class="text-muted small">Default: <code>Password123!</code></span>
+                    </div>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0"><i class="fa-solid fa-lock text-muted"></i></span>
+                        <input type="password" class="form-control border-start-0" id="passwordInput" name="password" placeholder="••••••••••••" required>
+                        <button class="btn btn-outline-secondary border-start-0" type="button" id="togglePassword" aria-label="Toggle password visibility">
+                            <i class="fa-solid fa-eye text-muted"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-cyan btn-lg w-100 rounded-3 fw-bold py-2 shadow-sm">
+                    <i class="fa-solid fa-right-to-bracket me-2"></i> Sign In to ProcureSphere 360
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.querySelectorAll('form[action="/login/"]').forEach(function (form) {
+    form.addEventListener('submit', function () {
+        try {
+            sessionStorage.removeItem('ps_nav_stack');
+            sessionStorage.removeItem('ps_nav_index');
+            sessionStorage.setItem('ps_just_logged_in', 'true');
+            sessionStorage.setItem('ps_active_tab', 'true');
+        } catch (e) {}
+    });
+});
+
+// Password visibility toggle
+const pwInput = document.getElementById('passwordInput');
+const toggleBtn = document.getElementById('togglePassword');
+const eyeIcon = toggleBtn.querySelector('i');
+const eyeOpenSvg = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+const eyeSlashSvg = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>';
+
+toggleBtn.addEventListener('click', function () {
+    const isPassword = pwInput.type === 'password';
+    pwInput.type = isPassword ? 'text' : 'password';
+    eyeIcon.innerHTML = isPassword ? eyeSlashSvg : eyeOpenSvg;
+});
+</script>
+{% endblock %}

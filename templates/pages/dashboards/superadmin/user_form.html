@@ -1,0 +1,355 @@
+<div class="modal-header bg-light border-bottom-0 pb-0 rounded-top-3">
+    <h5 class="modal-title fw-bold text-dark"><i class="fa-solid fa-user text-info me-2"></i>{% if is_edit %}Edit User{% else %}Create User{% endif %}</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+</div>
+<form id="userForm" hx-post="{% if is_edit %}/superadmin/users/{{ form.instance.pk }}/edit/{% else %}/superadmin/users/create/{% endif %}" hx-target="#modal-content-body" hx-swap="innerHTML" class="bg-white rounded-bottom-3" style="background-color: #ffffff !important;">
+    {% csrf_token %}
+    <div class="modal-body pt-4">
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+        {% endif %}
+        <div class="row g-3">
+            <!-- Row 1: Email & Phone -->
+            <div class="col-md-6">
+                <label for="id_email" class="form-label fw-semibold text-secondary small">Email Address <span class="text-danger">*</span></label>
+                {{ form.email }}
+                {% if form.email.errors %}<div class="invalid-feedback d-block mt-1 small fw-semibold" id="id_email-error" role="alert"><i class="fa-solid fa-circle-exclamation me-1 text-danger"></i><span class="text-danger">{{ form.email.errors.0 }}</span></div>{% endif %}
+            </div>
+            <div class="col-md-6">
+                <label for="id_phone_number" class="form-label fw-semibold text-secondary small">Phone Number</label>
+                {{ form.phone_number }}
+                {% if form.phone_number.errors %}<div class="invalid-feedback d-block mt-1 small fw-semibold" id="id_phone_number-error" role="alert"><i class="fa-solid fa-circle-exclamation me-1 text-danger"></i><span class="text-danger">{{ form.phone_number.errors.0 }}</span></div>{% endif %}
+            </div>
+
+            <!-- Organization (Hidden if Scoped, Dropdown if Global Superadmin) -->
+            {% if form.organization.is_hidden %}
+                {{ form.organization }}
+            {% else %}
+            <div class="col-12">
+                <label for="id_organization" class="form-label fw-semibold text-secondary small">Organization</label>
+                {{ form.organization }}
+                {% if form.organization.errors %}<div class="invalid-feedback d-block mt-1 small fw-semibold" id="id_organization-error" role="alert"><i class="fa-solid fa-circle-exclamation me-1 text-danger"></i><span class="text-danger">{{ form.organization.errors.0 }}</span></div>{% endif %}
+            </div>
+            {% endif %}
+
+            <!-- Row 2: Role & Department -->
+            <div class="col-md-6">
+                <label for="id_role" class="form-label fw-semibold text-secondary small">Role <span class="text-danger">*</span></label>
+                {{ form.role }}
+                {% if form.role.errors %}<div class="invalid-feedback d-block mt-1 small fw-semibold" id="id_role-error" role="alert"><i class="fa-solid fa-circle-exclamation me-1 text-danger"></i><span class="text-danger">{{ form.role.errors.0 }}</span></div>{% endif %}
+            </div>
+            <div class="col-md-6" id="department-col">
+                <label for="id_department" class="form-label fw-semibold text-secondary small">Department</label>
+                {{ form.department }}
+                {% if form.department.errors %}<div class="invalid-feedback d-block mt-1 small fw-semibold" id="id_department-error" role="alert"><i class="fa-solid fa-circle-exclamation me-1 text-danger"></i><span class="text-danger">{{ form.department.errors.0 }}</span></div>{% endif %}
+            </div>
+
+            <!-- Organization-Wide Access Notice (displayed for all Non-Requester Roles) -->
+            <div class="col-12" id="org-wide-role-wrapper" style="display: none;">
+                <div class="alert alert-light border border-info border-opacity-25 bg-info bg-opacity-10 rounded-3 p-3 mb-0 d-flex align-items-center">
+                    <i class="fa-solid fa-building-circle-check fs-4 me-3 text-info flex-shrink-0"></i>
+                    <div>
+                        <div class="fw-bold text-dark small">Organization-Wide Access</div>
+                        <div class="text-secondary small">This role operates organization-wide across all departments. Department and cost center mapping is strictly reserved for Requester accounts.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Requester Department & Cost Center Allocation (ONLY FOR REQUESTERS) -->
+            <div class="col-12" id="requester-dept-cc-wrapper" style="display: none;">
+                <div class="p-3 rounded-3 border bg-light">
+                    <div class="d-flex align-items-center mb-2 text-primary fw-semibold small">
+                        <i class="fa-solid fa-sitemap me-2"></i> Requester Allocation (Cost Center)
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-12" id="cost-center-wrapper">
+                            <label for="id_cost_center" class="form-label fw-semibold text-secondary small">Cost Center <span class="text-danger">*</span></label>
+                            {{ form.cost_center }}
+                            <div class="form-text small text-muted">Mandatory for Requesters. Must belong to the selected Department.</div>
+                            {% if form.cost_center.errors %}<div class="invalid-feedback d-block mt-1 small fw-semibold" id="id_cost_center-error" role="alert"><i class="fa-solid fa-circle-exclamation me-1 text-danger"></i><span class="text-danger">{{ form.cost_center.errors.0 }}</span></div>{% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 3: Password (Optional — auto-generated if blank) with Generator and Copy -->
+            <div class="col-12">
+                <label class="form-label fw-semibold text-secondary small">Password <span class="text-muted fw-normal">{% if is_edit %}(Optional — leave blank to keep existing password){% else %}(Optional — auto-generated if blank){% endif %}</span></label>
+                <div class="input-group">
+                    <input type="password" name="password" class="form-control" id="id_password" placeholder="Enter password or leave blank to auto-generate" autocomplete="new-password">
+                    <button class="btn btn-outline-secondary" type="button" id="togglePasswordBtn" title="Show / Hide Password">
+                        <i class="fa-solid fa-eye" id="togglePasswordIcon"></i>
+                    </button>
+                    <button class="btn btn-outline-primary" type="button" id="generatePasswordBtn" title="Generate Secure Password">
+                        <i class="fa-solid fa-wand-magic-sparkles me-1"></i> Generate Password
+                    </button>
+                    <button class="btn btn-outline-secondary" type="button" id="copyPasswordBtn" title="Copy Password">
+                        <i class="fa-solid fa-copy me-1"></i> Copy
+                    </button>
+                </div>
+                <div class="form-text small text-muted">
+                    Must contain at least 12 characters, including uppercase, lowercase, numbers, and special characters, or leave blank to auto-generate on save.
+                </div>
+                <div id="copyFeedback" class="text-success small mt-1" style="display:none;">
+                    <i class="fa-solid fa-circle-check me-1"></i>Password copied to clipboard!
+                </div>
+                {% if form.password.errors %}<div class="invalid-feedback d-block mt-1 small fw-semibold" id="id_password-error" role="alert"><i class="fa-solid fa-circle-exclamation me-1 text-danger"></i><span class="text-danger">{{ form.password.errors.0 }}</span></div>{% endif %}
+            </div>
+
+            <!-- Automated Email Dispatch (Hidden - Always sends credentials to user's email via Brevo) -->
+            <input type="hidden" name="send_welcome_email" value="on">
+            <input type="hidden" name="send_welcome_email_present" value="1">
+
+            <!-- Active User Account Switch with Dynamic Status Indicator -->
+            <div class="col-12">
+                <label class="form-label fw-semibold text-secondary small">Account Status (Active / Disabled)</label>
+                <div class="d-flex align-items-center gap-2 mt-1">
+                    <div class="form-check form-switch m-0">
+                        {% if is_edit %}
+                            {% if form.is_bound %}
+                                <input type="checkbox" name="is_active" class="form-check-input" id="id_is_active" {% if form.is_active.value %}checked{% endif %}>
+                            {% else %}
+                                <input type="checkbox" name="is_active" class="form-check-input" id="id_is_active" {% if user_obj.is_active %}checked{% endif %}>
+                            {% endif %}
+                        {% else %}
+                            {% if form.is_bound %}
+                                <input type="checkbox" name="is_active" class="form-check-input" id="id_is_active" {% if form.is_active.value %}checked{% endif %}>
+                            {% else %}
+                                <input type="checkbox" name="is_active" class="form-check-input" id="id_is_active" checked>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                    <span id="userStatusBadge" class="badge {% if is_edit and not user_obj.is_active %}bg-danger bg-opacity-10 text-danger border border-danger{% else %}bg-success bg-opacity-10 text-success border border-success{% endif %} fw-semibold">
+                        {% if is_edit and not user_obj.is_active %}Disabled / Inactive Account{% else %}Active User Account{% endif %}
+                    </span>
+                </div>
+                {% if form.is_active.errors %}<div class="text-danger small mt-1">{{ form.is_active.errors }}</div>{% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="modal-footer border-top-0 pt-0 d-flex flex-wrap gap-2 justify-content-end">
+        <button type="button" class="btn btn-light rounded-pill px-4 flex-fill flex-sm-grow-0" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-info text-white fw-bold rounded-pill px-4 flex-fill flex-sm-grow-0" id="saveUserBtn">
+            <i class="fa-solid fa-check me-1"></i> Save User
+        </button>
+    </div>
+</form>
+
+<script>
+window.updateUserStatusLabel = function(el) {
+    var badge = document.getElementById("userStatusBadge");
+    if (!badge) return;
+    if (el.checked) {
+        badge.className = "badge bg-success bg-opacity-10 text-success border border-success fw-semibold";
+        badge.textContent = "Active User Account";
+    } else {
+        badge.className = "badge bg-danger bg-opacity-10 text-danger border border-danger fw-semibold";
+        badge.textContent = "Disabled / Inactive Account";
+    }
+};
+(function() {
+    var activeCheck = document.getElementById("id_is_active");
+    if (activeCheck) {
+        activeCheck.addEventListener("change", function() {
+            if (window.updateUserStatusLabel) window.updateUserStatusLabel(this);
+        });
+    }
+    var roleSelect = document.getElementById("id_role");
+    var deptSelect = document.getElementById("id_department");
+    var reqWrapper = document.getElementById("requester-dept-cc-wrapper");
+    var orgWrapper = document.getElementById("org-wide-role-wrapper");
+    var ccSelect = document.getElementById("id_cost_center");
+
+    // Password Elements
+    var pwdInput = document.getElementById("id_password");
+    var toggleBtn = document.getElementById("togglePasswordBtn");
+    var toggleIcon = document.getElementById("togglePasswordIcon");
+    var genBtn = document.getElementById("generatePasswordBtn");
+    var copyBtn = document.getElementById("copyPasswordBtn");
+    var copyFeedback = document.getElementById("copyFeedback");
+    var userForm = document.getElementById("userForm");
+    var saveBtn = document.getElementById("saveUserBtn");
+
+    function isRequesterSelected() {
+        if (!roleSelect) return false;
+        var selectedOpt = roleSelect.options[roleSelect.selectedIndex];
+        if (!selectedOpt || !selectedOpt.text) return false;
+        return selectedOpt.text.toUpperCase().indexOf("REQUESTER") !== -1;
+    }
+
+    function updateRoleVisibility() {
+        if (!roleSelect) return;
+        var val = roleSelect.value;
+        if (!val) {
+            if (reqWrapper) reqWrapper.style.display = "none";
+            if (orgWrapper) orgWrapper.style.display = "none";
+            return;
+        }
+        if (isRequesterSelected()) {
+            if (reqWrapper) reqWrapper.style.display = "block";
+            if (orgWrapper) orgWrapper.style.display = "none";
+            refreshCostCenters();
+        } else {
+            if (reqWrapper) reqWrapper.style.display = "none";
+            if (orgWrapper) orgWrapper.style.display = "block";
+            if (deptSelect) deptSelect.value = "";
+            if (ccSelect) ccSelect.value = "";
+        }
+    }
+
+    function refreshCostCenters() {
+        if (!deptSelect || !ccSelect) return;
+        var deptId = deptSelect.value;
+        if (!deptId) {
+            ccSelect.innerHTML = '<option value="">-- Select Cost Center --</option>';
+            return;
+        }
+        var userId = "{% if is_edit %}{{ form.instance.pk }}{% endif %}";
+        var url = '/superadmin/cost-centers/options/?department=' + encodeURIComponent(deptId);
+        if (userId) {
+            url += '&user_id=' + encodeURIComponent(userId);
+        }
+        fetch(url)
+            .then(function(res) { return res.text(); })
+            .then(function(html) {
+                var currentVal = ccSelect.value;
+                ccSelect.innerHTML = html;
+                if (currentVal) ccSelect.value = currentVal;
+            })
+            .catch(function(err) {
+                console.error("Error loading cost centers:", err);
+            });
+    }
+
+    // Cryptographically secure password generation in JavaScript (min 14 chars with required sets)
+    function generateSecurePassword() {
+        var length = 14;
+        var uppers = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        var lowers = "abcdefghijklmnopqrstuvwxyz";
+        var digits = "0123456789";
+        var symbols = "!@#$%^&*()_+-=[]{}|;:,.<>?";
+        var all = uppers + lowers + digits + symbols;
+
+        var array = new Uint32Array(length);
+        if (window.crypto && window.crypto.getRandomValues) {
+            window.crypto.getRandomValues(array);
+        } else {
+            for (var i = 0; i < length; i++) {
+                array[i] = Math.floor(Math.random() * 1000000);
+            }
+        }
+
+        var pwd = [
+            uppers[array[0] % uppers.length],
+            uppers[array[1] % uppers.length],
+            lowers[array[2] % lowers.length],
+            lowers[array[3] % lowers.length],
+            digits[array[4] % digits.length],
+            digits[array[5] % digits.length],
+            symbols[array[6] % symbols.length],
+            symbols[array[7] % symbols.length],
+        ];
+
+        for (var k = 8; k < length; k++) {
+            pwd.push(all[array[k] % all.length]);
+        }
+
+        // Shuffle
+        var shuffleArray = new Uint32Array(length);
+        if (window.crypto && window.crypto.getRandomValues) {
+            window.crypto.getRandomValues(shuffleArray);
+        } else {
+            for (var s = 0; s < length; s++) {
+                shuffleArray[s] = Math.floor(Math.random() * 1000000);
+            }
+        }
+        for (var j = length - 1; j > 0; j--) {
+            var randIdx = shuffleArray[j] % (j + 1);
+            var temp = pwd[j];
+            pwd[j] = pwd[randIdx];
+            pwd[randIdx] = temp;
+        }
+
+        return pwd.join('');
+    }
+
+    // Show / Hide password toggle
+    if (toggleBtn && pwdInput && toggleIcon) {
+        toggleBtn.addEventListener("click", function() {
+            if (pwdInput.type === "password") {
+                pwdInput.type = "text";
+                toggleIcon.classList.remove("fa-eye");
+                toggleIcon.classList.add("fa-eye-slash");
+            } else {
+                pwdInput.type = "password";
+                toggleIcon.classList.remove("fa-eye-slash");
+                toggleIcon.classList.add("fa-eye");
+            }
+        });
+    }
+
+    // Generate Password
+    if (genBtn && pwdInput) {
+        genBtn.addEventListener("click", function() {
+            var generated = generateSecurePassword();
+            pwdInput.value = generated;
+            pwdInput.type = "text";
+            if (toggleIcon) {
+                toggleIcon.classList.remove("fa-eye");
+                toggleIcon.classList.add("fa-eye-slash");
+            }
+            pwdInput.focus();
+        });
+    }
+
+    // Copy Password to Clipboard
+    function showCopyFeedback() {
+        if (copyFeedback) {
+            copyFeedback.style.display = "block";
+            setTimeout(function() {
+                copyFeedback.style.display = "none";
+            }, 2500);
+        }
+    }
+
+    if (copyBtn && pwdInput) {
+        copyBtn.addEventListener("click", function() {
+            var val = pwdInput.value;
+            if (!val) {
+                window.PSToast("Please enter or generate a password first.", 'info', 'Nothing to copy');
+                return;
+            }
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(val).then(showCopyFeedback).catch(function() {
+                    pwdInput.type = "text";
+                    pwdInput.select();
+                    document.execCommand("copy");
+                    showCopyFeedback();
+                });
+            } else {
+                pwdInput.type = "text";
+                pwdInput.select();
+                document.execCommand("copy");
+                showCopyFeedback();
+            }
+        });
+    }
+
+    // Visual button feedback without premature disabling
+    if (userForm && saveBtn) {
+        userForm.addEventListener("htmx:configRequest", function() {
+            saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Saving User...';
+        });
+    }
+
+    if (roleSelect) {
+        roleSelect.addEventListener("change", updateRoleVisibility);
+    }
+    if (deptSelect) {
+        deptSelect.addEventListener("change", refreshCostCenters);
+    }
+
+    // Initial check on load
+    updateRoleVisibility();
+})();
+</script>

@@ -1,0 +1,871 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In — ProcureSphere 360 ERP</title>
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="description" content="Sign in to ProcureSphere 360 Enterprise Procurement Platform." />
+
+    <!-- Production WebP Favicon Suite -->
+    <link rel="icon" type="image/webp" sizes="32x32" href="{% static 'icons/favicon-32x32.webp' %}">
+    <link rel="icon" type="image/webp" sizes="16x16" href="{% static 'icons/favicon-16x16.webp' %}">
+    <link rel="icon" type="image/webp" href="{% static 'icons/favicon.webp' %}">
+    <link rel="apple-touch-icon" href="{% static 'icons/apple-touch-icon.webp' %}">
+    <link rel="manifest" href="{% static 'icons/site.webmanifest' %}">
+    <meta name="theme-color" content="#ffffff">
+
+    <!-- CDN Preconnects -->
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap"
+        rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #eaf2fd 0%, #dbe8fa 40%, #c9ddf7 100%);
+            font-family: 'DM Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            color: #1a2540;
+            position: relative;
+            padding: 24px;
+            overflow-x: hidden;
+        }
+
+        /* Ambient backdrop light effects for rich enterprise depth */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -12%;
+            left: -8%;
+            width: 55vw;
+            height: 55vw;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, rgba(255, 255, 255, 0) 70%);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            bottom: -18%;
+            right: -8%;
+            width: 65vw;
+            height: 65vw;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(37, 99, 235, 0.13) 0%, rgba(255, 255, 255, 0) 70%);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* ── EXIT PILL (embedded inside card, top-right) ──────── */
+        .lm-exit-pill {
+            position: absolute;
+            top: 18px;
+            right: 20px;
+            z-index: 50;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            border-radius: 9999px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #475569;
+            text-decoration: none;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(15, 23, 42, 0.05);
+            font-family: inherit;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            letter-spacing: 0.01em;
+        }
+
+        .lm-exit-pill:hover {
+            background: #f8fafc;
+            border-color: #94a3b8;
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.10);
+            transform: translateY(-1px);
+            color: #0f172a;
+        }
+
+        /* ── SPLIT-SCREEN CARD CONTAINER ───────────────── */
+        .login-content-wrapper {
+            background: #ffffff;
+            border-radius: 24px;
+            box-shadow: 0 24px 64px -12px rgba(15, 30, 75, 0.18), 0 0 0 1px rgba(220, 230, 245, 0.85);
+            display: flex;
+            flex-direction: row;
+            overflow: hidden;
+            width: 82vw;
+            max-width: 1180px;
+            height: 80vh;
+            min-height: 580px;
+            max-height: 750px;
+            position: relative;
+            z-index: 10;
+            animation: lmSlide 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes lmSlide {
+            from {
+                opacity: 0;
+                transform: scale(0.98) translateY(16px);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        /* ── LEFT PANEL (BRAND EXPERIENCE - ~48% WIDTH) ──────── */
+        .lm-left {
+            flex: 0 0 48%;
+            width: 48%;
+            background: linear-gradient(155deg, #dbeafe 0%, #d0e3fc 42%, #c2daf9 78%, #b3d1f7 100%) !important;
+            display: flex;
+            flex-direction: column;
+            padding: 36px 36px 0 36px;
+            position: relative;
+            overflow: hidden;
+            border-right: 1px solid rgba(190, 215, 245, 0.85);
+        }
+
+        /* Badge */
+        .lm-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 16px;
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(8px);
+            color: #1d4ed8;
+            border-radius: 9999px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            font-family: 'DM Mono', monospace, sans-serif;
+            margin-bottom: 16px;
+            width: fit-content;
+            border: 1px solid rgba(190, 218, 255, 0.9);
+            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.08);
+            position: relative;
+            z-index: 2;
+        }
+
+        .lm-badge-dot {
+            width: 7px;
+            height: 7px;
+            background: #2563eb;
+            border-radius: 50%;
+            flex-shrink: 0;
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25);
+        }
+
+        /* Headline */
+        .lm-headline {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 32px;
+            font-weight: 800;
+            line-height: 1.25;
+            color: #0b1528 !important;
+            margin: 0 0 12px 0;
+            letter-spacing: -0.015em;
+            position: relative;
+            z-index: 2;
+        }
+
+        .lm-headline-blue {
+            display: block;
+            color: #1d4ed8 !important;
+            font-family: 'Playfair Display', Georgia, serif;
+            font-style: normal;
+            font-weight: 800;
+        }
+
+        /* Subtext */
+        .lm-sub {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #334155;
+            margin: 0 0 18px 0;
+            max-width: 460px;
+            font-family: 'DM Sans', 'Inter', sans-serif;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Trust Points Pill Tray */
+        .lm-trust-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .lm-trust-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 12px;
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(200, 220, 250, 0.8);
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #334155;
+            backdrop-filter: blur(4px);
+        }
+
+        .lm-trust-tag i {
+            color: #2563eb;
+            font-size: 11px;
+        }
+
+        /* Person image pinned to bottom */
+        .lm-img-wrap {
+            margin-top: auto;
+            flex-shrink: 0;
+            width: 100%;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            line-height: 0;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .lm-img {
+            width: 108%;
+            max-width: 680px;
+            height: auto;
+            object-fit: contain;
+            object-position: bottom center;
+            display: block;
+            margin: 0 auto;
+            margin-bottom: -4px;
+            filter: drop-shadow(0 14px 30px rgba(15, 30, 75, 0.14));
+            transition: transform 0.3s ease;
+        }
+
+        /* ── RIGHT PANEL (AUTHENTICATION - ~52% WIDTH) ───────── */
+        .lm-right {
+            flex: 1 1 52%;
+            width: 52%;
+            background: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 28px 40px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(203, 213, 225, 0.6) transparent;
+        }
+
+        .lm-right::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .lm-right::-webkit-scrollbar-thumb {
+            background: rgba(203, 213, 225, 0.6);
+            border-radius: 4px;
+        }
+
+        /* Form Wrapper - generous enterprise width */
+        .lm-form-wrap {
+            width: 100%;
+            max-width: 420px;
+            margin: auto;
+        }
+
+        /* Prominent Brand Logo */
+        .lm-logo-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+
+        .lm-logo-emblem {
+            height: 66px;
+            width: 66px;
+            object-fit: contain;
+            display: block;
+            filter: drop-shadow(0 6px 18px rgba(37, 99, 235, 0.22));
+            transition: transform 0.2s ease;
+        }
+
+        .lm-logo-wordmark {
+            height: 27px;
+            width: auto;
+            object-fit: contain;
+            display: block;
+            margin-top: 5px;
+        }
+
+        .lm-heading {
+            text-align: center;
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 25px;
+            font-weight: 700;
+            color: #0b1528;
+            margin: 0 0 3px 0;
+            letter-spacing: -0.01em;
+            line-height: 1.25;
+        }
+
+        .lm-tagline {
+            text-align: center;
+            font-size: 13px;
+            color: #64748b;
+            margin: 0 0 14px 0;
+            font-family: 'DM Sans', 'Inter', sans-serif;
+            line-height: 1.4;
+        }
+
+        /* Alerts */
+        .login-alert-banner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-radius: 10px;
+            padding: 9px 14px;
+            font-size: 13px;
+            margin-bottom: 14px;
+            line-height: 1.4;
+        }
+
+        .login-alert-banner.alert-danger {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #b91c1c;
+        }
+
+        .login-alert-banner.alert-info {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            color: #1d4ed8;
+        }
+
+        .login-alert-banner.alert-success {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            color: #15803d;
+        }
+
+        /* Form Controls */
+        .lm-form {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .lm-field {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .lm-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #1e293b;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .lm-input-wrap {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .lm-icon {
+            position: absolute;
+            left: 14px;
+            color: #94a3b8;
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+        }
+
+        .lm-input {
+            width: 100%;
+            padding: 12px 14px 12px 42px;
+            border: 1.5px solid #cbd5e1;
+            border-radius: 11px;
+            font-size: 14.5px;
+            font-family: inherit;
+            color: #0f172a;
+            background: #ffffff;
+            outline: none;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+        }
+
+        .lm-input:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.14);
+        }
+
+        .lm-input::placeholder {
+            color: #94a3b8;
+            font-size: 14px;
+        }
+
+        /* Eye toggle */
+        .lm-eye {
+            position: absolute;
+            right: 12px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #94a3b8;
+            padding: 4px;
+            display: flex;
+            align-items: center;
+            transition: color 0.15s;
+        }
+
+        .lm-eye:hover {
+            color: #475569;
+        }
+
+        /* Remember + Forgot row */
+        .lm-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 13px;
+            margin-top: 2px;
+            margin-bottom: 2px;
+        }
+
+        .lm-remember {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #475569;
+            cursor: pointer;
+            user-select: none;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .lm-remember input[type="checkbox"] {
+            accent-color: #2563eb;
+            cursor: pointer;
+            width: 15px;
+            height: 15px;
+        }
+
+        .lm-forgot {
+            display: none !important;
+        }
+
+        /* Submit button */
+        .lm-submit {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 9px;
+            width: 100%;
+            padding: 13px 20px;
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            color: #ffffff;
+            border: none;
+            border-radius: 11px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            letter-spacing: 0.01em;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.32);
+            margin-top: 4px;
+        }
+
+        .lm-submit:hover {
+            background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.42);
+        }
+
+        .lm-submit:active {
+            transform: translateY(0);
+        }
+
+        /* ── RESPONSIVE ADAPTATIONS ──────────────────────────── */
+        @media (max-width: 1200px) {
+            .login-content-wrapper {
+                width: 92vw;
+                max-width: 1150px;
+                height: 86vh;
+            }
+
+            .lm-left {
+                padding: 34px 34px 0 34px;
+            }
+
+            .lm-headline {
+                font-size: 32px;
+            }
+
+            .lm-right {
+                padding: 30px 40px;
+            }
+        }
+
+        @media (max-width: 900px) {
+            body {
+                padding: 16px;
+                min-height: 100vh;
+                height: auto;
+            }
+
+            .login-content-wrapper {
+                flex-direction: column;
+                height: auto;
+                max-height: none;
+                width: 100%;
+                max-width: 480px;
+                border-radius: 20px;
+                margin: 40px auto 20px;
+            }
+
+            .lm-left {
+                display: none;
+            }
+
+            .lm-right {
+                width: 100%;
+                flex: 1 1 100%;
+                padding: 36px 24px;
+            }
+
+            .lm-form-wrap {
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Main Enterprise Login Card -->
+    <div class="login-content-wrapper">
+
+        <!-- Exit pill — embedded at top-right inside the login card -->
+        <a href="/?logged_out=1" id="login-exit-btn" class="lm-exit-pill" aria-label="Exit to Home" onclick="window.location.href='/?logged_out=1'; return false;">
+            Exit
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+        </a>
+
+        <!-- ═══════ LEFT PANEL (BRAND EXPERIENCE) ═══════ -->
+        <div class="lm-left">
+            <!-- Badge -->
+            <div class="lm-badge">
+                <span class="lm-badge-dot"></span>
+                PROCURESPHERE PORTAL
+            </div>
+
+            <!-- Headline -->
+            <h2 class="lm-headline">
+                Enterprise Procurement,<br>
+                <span class="lm-headline-blue">Unified &amp; In Control.</span>
+            </h2>
+
+            <!-- Subtext -->
+            <p class="lm-sub">
+                Connecting every requisition, vendor negotiation, and payment into one seamless, automated source-to-pay
+                workflow.
+            </p>
+
+
+            <!-- Person image pinned to bottom of left panel -->
+            <div class="lm-img-wrap">
+                <img id="login-char-img" src="{% static 'landing/login-states/normal.webp' %}"
+                    alt="Enterprise procurement workspace" class="lm-img" />
+            </div>
+        </div>
+
+        <!-- ═══════ RIGHT PANEL (AUTHENTICATION) ═══════ -->
+        <div class="lm-right">
+            <div class="lm-form-wrap">
+
+                <!-- Prominent High-Visibility Brand Logo -->
+                <div class="lm-logo-wrapper">
+                    <img src="{% static 'landing/images/procuresphere_360_emblem.webp' %}" alt="ProcureSphere 360 Emblem"
+                        class="lm-logo-emblem" />
+                    <img src="{% static 'landing/images/procuresphere_360_wordmark.webp' %}" alt="ProcureSphere 360"
+                        class="lm-logo-wordmark" />
+                </div>
+                <h1 class="lm-heading">Welcome Back</h1>
+                <p class="lm-tagline">Sign in to your enterprise procurement portal</p>
+
+                <!-- Django Messages / Alert -->
+                {% if messages %}
+                {% for message in messages %}
+                <div
+                    class="login-alert-banner {% if message.tags == 'error' %}alert-danger{% elif message.tags == 'info' %}alert-info{% else %}alert-success{% endif %}">
+                    <div style="display: flex; align-items: center; gap: 9px;">
+                        <i
+                            class="fa-solid {% if message.tags == 'error' %}fa-circle-exclamation{% elif message.tags == 'info' %}fa-circle-info{% else %}fa-circle-check{% endif %}"></i>
+                        <span>{{ message }}</span>
+                    </div>
+                    <button type="button" onclick="this.closest('.login-alert-banner').remove()"
+                        style="background: none; border: none; font-size: 16px; cursor: pointer; color: inherit; padding: 0 4px; line-height: 1; opacity: 0.7;"
+                        aria-label="Close alert">&times;</button>
+                </div>
+                {% endfor %}
+                {% endif %}
+
+                {% if session_expired_notice and not messages %}
+                <div class="login-alert-banner alert-info" data-session-expired-banner="true">
+                    <div style="display: flex; align-items: center; gap: 9px;">
+                        <i class="fa-solid fa-clock"></i>
+                        <span>{{ session_expired_notice }}</span>
+                    </div>
+                    <button type="button" onclick="this.closest('.login-alert-banner').remove()"
+                        style="background: none; border: none; font-size: 16px; cursor: pointer; color: inherit; padding: 0 4px; line-height: 1; opacity: 0.7;"
+                        aria-label="Close alert">&times;</button>
+                </div>
+                {% endif %}
+
+                <!-- Form -->
+                <form id="loginForm" class="lm-form" method="POST"
+                    action="/login/{% if request.GET.next %}?next={{ request.GET.next }}{% endif %}">
+                    {% csrf_token %}
+
+                    <!-- Email -->
+                    <div class="lm-field">
+                        <label for="email" class="lm-label">Email</label>
+                        <div class="lm-input-wrap">
+                            <span class="lm-icon">
+                                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                                    <circle cx="12" cy="7" r="4" />
+                                </svg>
+                            </span>
+                            <input type="email" id="email" name="email" class="lm-input" value="{{ email|default:'' }}"
+                                placeholder="name@company.com" autocomplete="email" required />
+                        </div>
+                    </div>
+
+                    <!-- Password -->
+                    <div class="lm-field">
+                        <label for="password" class="lm-label">Password</label>
+                        <div class="lm-input-wrap">
+                            <span class="lm-icon">
+                                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+                                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                                </svg>
+                            </span>
+                            <input type="password" id="password" name="password" class="lm-input"
+                                placeholder="••••••••••••" autocomplete="current-password" required />
+                            <button type="button" id="toggle-password" class="lm-eye"
+                                aria-label="Toggle password visibility">
+                                <svg id="pw-eye-svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                    <circle cx="12" cy="12" r="3" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Remember Me -->
+                    <div class="lm-row">
+                        <label class="lm-remember">
+                            <input type="checkbox" name="remember_me" id="remember_me" />
+                            <span>Remember me</span>
+                        </label>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" id="login-submit-btn" class="lm-submit">
+                        <span>Sign In</span>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                            <polyline points="12 5 19 12 12 19"></polyline>
+                        </svg>
+                    </button>
+                </form>
+
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Character stays strictly in idle stage (no animations/reactions)
+        function setLoginCharState(state) {
+            const img = document.getElementById('login-char-img');
+            if (img) img.src = "{% static 'landing/login-states/normal.webp' %}";
+        }
+
+        // Password visibility toggle
+        const pwInput = document.getElementById('password');
+        const toggleBtn = document.getElementById('toggle-password');
+        const eyeSvg = document.getElementById('pw-eye-svg');
+        const eyeOpenSvg = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+        const eyeSlashSvg = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>';
+
+        if (toggleBtn && pwInput) {
+            toggleBtn.addEventListener('click', function () {
+                const isPassword = pwInput.type === 'password';
+                pwInput.type = isPassword ? 'text' : 'password';
+                if (eyeSvg) {
+                    eyeSvg.innerHTML = isPassword ? eyeSlashSvg : eyeOpenSvg;
+                }
+            });
+        }
+
+        const loginForm = document.getElementById('loginForm');
+        if (loginForm) {
+            loginForm.addEventListener('submit', async function (e) {
+                e.preventDefault();
+                const submitBtn = document.getElementById('login-submit-btn');
+                const originalBtnHtml = submitBtn ? submitBtn.innerHTML : '';
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<span>Signing in...</span>';
+                }
+
+                // Remove existing dynamic error banners
+                document.querySelectorAll('.login-alert-banner').forEach(function (el) { el.remove(); });
+
+                try {
+                    const formData = new FormData(loginForm);
+                    const response = await fetch(loginForm.action, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    });
+
+                    let data = null;
+                    try {
+                        data = await response.json();
+                    } catch (parseErr) {
+                        data = null;
+                    }
+
+                    if (response.ok && data && data.ok && data.redirect) {
+                        const sessionId = 'ps360_sess_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+                        try {
+                            localStorage.setItem('ps360_active_session_id', sessionId);
+                            localStorage.setItem('ps360_active_session_time', String(Date.now()));
+                            localStorage.removeItem('ps360_idle_expired_at_ms');
+                            localStorage.setItem('ps360_idle_last_activity_ms', String(Date.now()));
+                            sessionStorage.removeItem('ps360_user_signed_out');
+                            localStorage.removeItem('ps360_user_signed_out');
+                            document.cookie = "ps360_just_logged_out=; path=/; max-age=0";
+                            document.cookie = "ps360_user_signed_out=; path=/; max-age=0";
+                            sessionStorage.setItem('ps360_tab_session_id', sessionId);
+                            sessionStorage.setItem('ps_just_logged_in', 'true');
+                            sessionStorage.setItem('ps_portal_initialized', 'true');
+                            sessionStorage.setItem('ps_nav_depth', '0');
+                            sessionStorage.removeItem('ps_visited_subpage');
+                        } catch (stErr) {}
+
+                        // Broadcast to other open tabs so they auto-logout immediately
+                        if (window.BroadcastChannel) {
+                            try {
+                                const bc = new BroadcastChannel('ps360_session_channel');
+                                bc.postMessage({ type: 'NEW_LOGIN', sessionId: sessionId, timestamp: Date.now() });
+                                bc.close();
+                            } catch (bcErr) {}
+                        }
+
+                        // Navigate to dashboard
+                        window.location.href = data.redirect;
+                        return;
+                    }
+
+                    // Handle login error
+                    const errorMsg = (data && data.error) ? data.error : 'Invalid email or password. Please try again.';
+                    const alertDiv = document.createElement('div');
+                    alertDiv.className = 'login-alert-banner alert-danger';
+                    alertDiv.innerHTML = '<div style="display:flex;align-items:center;gap:9px;">' +
+                        '<i class="fa-solid fa-circle-exclamation"></i>' +
+                        '<span>' + errorMsg + '</span></div>' +
+                        '<button type="button" onclick="this.closest(\'.login-alert-banner\').remove()" ' +
+                        'style="background:none;border:none;font-size:16px;cursor:pointer;color:inherit;padding:0 4px;line-height:1;opacity:0.7;" ' +
+                        'aria-label="Close alert">&times;</button>';
+                    loginForm.parentNode.insertBefore(alertDiv, loginForm);
+
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = originalBtnHtml;
+                    }
+                } catch (netErr) {
+                    // Fallback to native form submission
+                    loginForm.submit();
+                }
+            });
+        }
+
+        // Exit button reliably clears session markers and navigates to public landing page
+        const exitBtn = document.getElementById('login-exit-btn');
+        if (exitBtn) {
+            exitBtn.addEventListener('click', function (e) {
+                e.preventDefault();
+                try {
+                    sessionStorage.setItem('ps360_clicked_home', 'true');
+                    sessionStorage.setItem('ps360_logged_out', 'true');
+                    sessionStorage.setItem('ps360_from_login', 'true');
+                    sessionStorage.removeItem('ps360_user_signed_out');
+                    sessionStorage.removeItem('ps_visited_subpage');
+                    sessionStorage.removeItem('ps360_active_subpage');
+                    sessionStorage.removeItem('ps_last_subpage_path');
+                    document.cookie = "ps360_user_signed_out=; path=/; max-age=0";
+                    document.cookie = "ps360_just_logged_out=; path=/; max-age=0";
+                } catch (err) { }
+                window.location.href = '/?logged_out=1';
+            });
+        }
+
+        // Ensure right panel is strictly at top so logo is always fully visible
+        window.addEventListener('DOMContentLoaded', function () {
+            const rightPanel = document.querySelector('.lm-right');
+            if (rightPanel) {
+                rightPanel.scrollTop = 0;
+            }
+            window.scrollTo(0, 0);
+        });
+    </script>
+</body>
+
+</html>

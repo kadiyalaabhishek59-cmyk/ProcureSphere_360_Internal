@@ -1,0 +1,489 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% block manager_title %}Procurement Manager Workspace{% endblock %} — ProcureSphere 360{% endblock %}
+
+{% block navbar %}
+{% include 'partials/global_navbar.html' with sidebar_id='managerSidebar' dashboard_url='/manager/' profile_dropdown_id='managerProfileDropdown' notification_url='/manager/notifications/' %}
+{% endblock navbar %}
+
+{% block layout %}
+<style>
+    /* Brand sizing */
+    @media (min-width: 992px) {
+    }
+    @media (max-width: 991.98px) {
+        .manager-brand-wrapper { width: auto; max-width: none; }
+        .manager-top-brand {
+            width: 190px !important;
+            max-width: 190px !important;
+            height: 38px !important;
+            max-height: 38px !important;
+            padding: 0 !important;
+            border-radius: 0 !important;
+            margin: 0 !important;
+        }
+    }
+
+    /* Desktop Sidebar (>= 992px) */
+    @media (min-width: 992px) {
+        aside.manager-sidebar-desktop,
+        .manager-sidebar-desktop,
+        aside#managerSidebar {
+            width: 260px !important;
+            min-width: 260px !important;
+            flex-shrink: 0 !important;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            bottom: 0 !important;
+            height: 100vh !important;
+            max-height: 100vh !important;
+            overflow: hidden !important;
+            overflow-y: hidden !important;
+            display: flex !important;
+            flex-direction: column !important;
+            z-index: 1040;
+            background: #DFEAFF !important;
+            border-right: 1px solid #B4C8E8 !important;
+            box-shadow: 3px 0 10px rgba(30, 64, 120, 0.08) !important;
+        }
+        .manager-sidebar-desktop .sidebar-nav-container,
+        .manager-sidebar-desktop nav {
+            overflow-y: auto !important;
+            flex: 1 1 auto !important;
+            min-height: 0 !important;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255,255,255,0.15) transparent;
+        }
+        .manager-sidebar-desktop .sidebar-nav-container::-webkit-scrollbar {
+            width: 4px;
+        }
+        .manager-sidebar-desktop .sidebar-nav-container::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.15);
+            border-radius: 4px;
+        }
+    }
+
+    /* Section label style */
+    .nav-section-label {
+        display: flex !important;
+        align-items: center !important;
+        font-size: 11.5px !important;
+        font-weight: 800 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.8px !important;
+        color: #163A70 !important;
+        background: #D4E5FF !important;
+        border-left: 3px solid #1677FF !important;
+        border-radius: 6px !important;
+        padding: 0.35rem 0.65rem !important;
+        margin-top: 12px !important;
+        margin-bottom: 5px !important;
+        user-select: none !important;
+        cursor: default !important;
+        box-shadow: 0 1px 2px rgba(22, 58, 112, 0.05) !important;
+    }
+
+    /* Top-level nav link */
+    .manager-nav-link {
+        display: flex !important;
+        align-items: center !important;
+        min-height: 38px !important;
+        padding: 0.5rem 0.75rem !important;
+        border-radius: 9px !important;
+        font-size: 13.5px !important;
+        font-weight: 500 !important;
+        color: #1E293B !important;
+        text-decoration: none !important;
+        transition: all 0.15s ease !important;
+    }
+    .manager-nav-link:hover,
+    .manager-nav-link:focus {
+        background: rgba(22, 119, 255, 0.08) !important;
+        color: #0F172A !important;
+    }
+    .manager-nav-link.active,
+    .manager-nav-link.active-nav-item {
+        background: linear-gradient(135deg, #1677FF 0%, #0866E8 100%) !important;
+        color: #FFFFFF !important;
+        -webkit-text-fill-color: #FFFFFF !important;
+        font-weight: 600 !important;
+        border-radius: 10px !important;
+        box-shadow: 0 4px 10px rgba(22, 119, 255, 0.22) !important;
+        text-decoration: none !important;
+    }
+    .manager-nav-link.active span,
+    .manager-nav-link.active-nav-item span {
+        color: #FFFFFF !important;
+        -webkit-text-fill-color: #FFFFFF !important;
+    }
+    .manager-nav-link.active i,
+    .manager-nav-link.active-nav-item i,
+    .manager-nav-link.active i[class*="text-"],
+    .manager-nav-link.active-nav-item i[class*="text-"],
+    .manager-nav-link.active i[style] {
+        color: #FFFFFF !important;
+        -webkit-text-fill-color: #FFFFFF !important;
+    }
+    .manager-nav-link .nav-icon,
+    .manager-nav-link > i:first-child,
+    .manager-nav-link span > i:first-child {
+        width: 20px;
+        text-align: center;
+        margin-right: 0.65rem;
+        flex-shrink: 0;
+    }
+
+    /* Status and Design Tokens */
+    .text-cyan { color: #00B8D9 !important; }
+    .bg-cyan { background-color: #00B8D9 !important; }
+    .bg-cyan-subtle { background-color: rgba(0, 184, 217, 0.12) !important; color: #007A8D !important; border: 1px solid rgba(0, 184, 217, 0.25) !important; }
+
+    .bg-indigo { background-color: #4F46E5 !important; color: #FFFFFF !important; }
+    .text-indigo { color: #4F46E5 !important; }
+    .bg-indigo-subtle { background-color: rgba(79, 70, 229, 0.12) !important; color: #4338CA !important; border: 1px solid rgba(79, 70, 229, 0.25) !important; }
+
+    .bg-amber { background-color: #F59E0B !important; color: #1E293B !important; }
+    .text-amber { color: #D97706 !important; }
+    .bg-amber-subtle { background-color: rgba(245, 158, 11, 0.15) !important; color: #92400E !important; border: 1px solid rgba(245, 158, 11, 0.3) !important; }
+
+    .bg-emerald { background-color: #10B981 !important; color: #FFFFFF !important; }
+    .text-emerald { color: #059669 !important; }
+    .bg-emerald-subtle { background-color: rgba(16, 185, 129, 0.12) !important; color: #047857 !important; border: 1px solid rgba(16, 185, 129, 0.25) !important; }
+
+    .bg-rose { background-color: #EF4444 !important; color: #FFFFFF !important; }
+    .text-rose { color: #DC2626 !important; }
+    .bg-rose-subtle { background-color: rgba(239, 68, 68, 0.12) !important; color: #B91C1C !important; border: 1px solid rgba(239, 68, 68, 0.25) !important; }
+
+    
+    /* Standard Bootstrap 5.3 Subtle Badge High-Contrast Enforcement */
+    .badge.bg-primary-subtle { background-color: #cfe2ff !important; color: #084298 !important; border: 1px solid #b6d4fe !important; }
+    .badge.bg-secondary-subtle { background-color: #e2e3e5 !important; color: #41464b !important; border: 1px solid #c4c8cb !important; }
+    .badge.bg-success-subtle { background-color: #d1e7dd !important; color: #0f5132 !important; border: 1px solid #badbcc !important; }
+    .badge.bg-danger-subtle { background-color: #f8d7da !important; color: #842029 !important; border: 1px solid #f5c2c7 !important; }
+    .badge.bg-warning-subtle { background-color: #fff3cd !important; color: #664d03 !important; border: 1px solid #ffecb5 !important; }
+    .badge.bg-info-subtle { background-color: #cff4fc !important; color: #055160 !important; border: 1px solid #b6effb !important; }
+
+    /* Shadow tokens */
+    .shadow-2xs { box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important; }
+    .shadow-xs { box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1) !important; }
+</style>
+
+<div class="d-flex align-items-start w-100" style="min-height: calc(100vh - 84px); max-width: 100vw; background-color: #F5F7FA;">
+    <!-- ========================================================================= -->
+    <!-- 1. STICKY SIDEBAR (ProcureSphere 360 Light Theme)                         -->
+    <!-- ========================================================================= -->
+    <aside class="offcanvas-lg offcanvas-start border-end shadow-sm enterprise-sidebar text-white border-end border-secondary border-opacity-25 shadow-sm manager-sidebar-desktop" tabindex="-1" id="managerSidebar" aria-labelledby="managerSidebarLabel" style="width: 260px; min-width: 260px;">
+        <!-- Sidebar Brand Header (Logo + Toggle Button) -->
+        {% include 'partials/sidebar_header.html' with sidebar_id='managerSidebar' dashboard_url='/manager/' %}
+
+        <!-- Scrollable Navigation (flex: 1, min-height: 0, overflow-y: auto) -->
+        <nav class="sidebar-nav-container flex-grow-1 overflow-y-auto px-2 py-3 d-flex flex-column gap-1" id="managerNav" style="flex: 1 1 0%; min-height: 0;" aria-label="Procurement Manager Navigation">
+            <!-- 1. Workspace Heading -->
+            <div class="workspace-heading sa-workspace-header">
+                <i class="fa-solid fa-user-tie me-2"></i>
+                <span>MANAGER DESK</span>
+            </div>
+
+            <!-- 2. Standalone Dashboard -->
+            <a href="/manager/" class="manager-nav-link {% if request.path == '/manager/' or request.path == '/' %}active{% endif %}">
+                <span>Dashboard</span>
+            </a>
+
+            <!-- 3. Procurement Section -->
+            <div class="nav-section-label">Procurement</div>
+            <a href="/approvals/inbox/" class="manager-nav-link d-flex align-items-center justify-content-between {% if '/approvals/' in request.path %}active{% endif %}">
+                <div class="d-flex align-items-center min-width-0">
+                    <span class="text-truncate">Pending Approvals</span>
+                </div>
+            </a>
+            <a href="/manager/pipeline/" class="manager-nav-link {% if '/manager/pipeline/' in request.path %}active{% endif %}">
+                <span>Procurement Pipeline</span>
+            </a>
+            <a href="/manager/pr-aging/" class="manager-nav-link {% if '/manager/pr-aging/' in request.path %}active{% endif %}">
+                <span>PR Aging &amp; Bottlenecks</span>
+            </a>
+            <a href="/manager/sourcing/" class="manager-nav-link {% if '/manager/sourcing/' in request.path or '/sourcing-events/' in request.path or '/sourcing/bid-portal/' in request.path or request.path == '/sourcing/' %}active{% endif %}">
+                <span>Sourcing Events</span>
+            </a>
+            <a href="/manager/awards/" class="manager-nav-link {% if '/manager/awards/' in request.path or '/sourcing/evaluation' in request.path %}active{% endif %}">
+                <span>Pending Awards</span>
+            </a>
+
+            <!-- ORDERS SECTION -->
+            <div class="nav-section-label">Orders &amp; Contracts</div>
+            <a href="/manager/purchase-orders/" class="manager-nav-link {% if '/manager/purchase-orders/' in request.path %}active{% endif %}">
+                <span>Purchase Orders</span>
+            </a>
+            <a href="/contracts/?from=manager" class="manager-nav-link {% if '/contracts' in request.path %}active{% endif %}">
+                <span>Contracts</span>
+            </a>
+
+            <!-- SUPPLIERS SECTION -->
+            <div class="nav-section-label">Suppliers</div>
+            <a href="/manager/vendor-risk/" class="manager-nav-link {% if '/manager/vendor-risk/' in request.path %}active{% endif %}">
+                <span>Vendor Risk &amp; Suspension</span>
+            </a>
+
+            <a href="/manager/performance/" class="manager-nav-link {% if '/manager/performance/' in request.path %}active{% endif %}">
+                <span>Supplier Performance</span>
+            </a>
+
+            <!-- ANALYTICS SECTION -->
+            <div class="nav-section-label">Analytics</div>
+            <a href="/manager/spend/" class="manager-nav-link {% if '/manager/spend/' in request.path %}active{% endif %}">
+                <span>Spend Analysis</span>
+            </a>
+
+            <!-- WORKFLOW SECTION -->
+            <div class="nav-section-label">Workflow</div>
+            <a href="/manager/policy-exceptions/?tab=invoices" class="manager-nav-link {% if '/manager/policy-exceptions/' in request.path or '/invoices' in request.path %}active{% endif %}">
+                <span>Invoice Exceptions</span>
+            </a>
+            <a href="/manager/notifications/" class="manager-nav-link {% if '/manager/notifications/' in request.path %}active{% endif %}">
+                <span>Notifications &amp; Alerts</span>
+            </a>
+
+
+        </nav>
+    </aside>
+
+    <!-- ========================================================================= -->
+    <!-- 2. MAIN CONTENT AREA                                                      -->
+    <!-- ========================================================================= -->
+    <main class="flex-grow-1 p-2 p-sm-3 p-md-4 w-100" style="min-width: 0; max-width: 100vw; overflow-x: hidden; background-color: #F5F7FA;">
+        <!-- Alert Messages -->
+        {% if messages %}
+        <div class="mb-4">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show shadow-sm border-0 d-flex align-items-center py-2 px-3" role="alert">
+                <i class="fa-solid {% if message.tags == 'success' %}fa-circle-check text-success{% elif message.tags == 'error' or message.tags == 'danger' %}fa-circle-exclamation text-danger{% else %}fa-circle-info text-primary{% endif %} me-2 fs-5"></i>
+                <div class="flex-grow-1">{{ message }}</div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Toast / Alert Region for Async Feedback -->
+        <div id="managerToastContainer" class="toast-container position-fixed top-0 end-0 p-3 z-3" style="margin-top: 55px;"></div>
+
+        {% block manager_content %}
+            {% block content %}{% endblock content %}
+        {% endblock manager_content %}
+    </main>
+</div>
+
+<script>
+    // Handle offcanvas link clicks on mobile (<992px)
+    document.querySelectorAll('#managerSidebar a.manager-nav-link').forEach(function(link) {
+        link.addEventListener('click', function() {
+            var sidebarEl = document.getElementById('managerSidebar');
+            if (window.innerWidth < 992 && sidebarEl && typeof bootstrap !== 'undefined') {
+                var offcanvasInstance = bootstrap.Offcanvas.getInstance(sidebarEl);
+                if (offcanvasInstance) {
+                    offcanvasInstance.hide();
+                }
+            }
+        });
+    });
+
+    // Helper to strip Python list stringification artifacts like ['...']
+    function cleanErrorString(str) {
+        if (!str || typeof str !== 'string') return '';
+        let cleaned = str.trim();
+        const lower = cleaned.toLowerCase();
+        if (lower === '[object object]' || lower === 'object object' || lower === 'object:object') {
+            return '';
+        }
+        if ((cleaned.startsWith("['") && cleaned.endsWith("']")) ||
+            (cleaned.startsWith('["') && cleaned.endsWith('"]'))) {
+            cleaned = cleaned.slice(2, -2).trim();
+        }
+        if (cleaned.startsWith('[') && cleaned.endsWith(']')) {
+            const inner = cleaned.slice(1, -1).trim();
+            if (inner.toLowerCase() !== 'object object' && inner.toLowerCase() !== 'object:object') {
+                cleaned = inner;
+                if ((cleaned.startsWith("'") && cleaned.endsWith("'")) ||
+                    (cleaned.startsWith('"') && cleaned.endsWith('"'))) {
+                    cleaned = cleaned.slice(1, -1).trim();
+                }
+            }
+        }
+        const lowerAfter = cleaned.toLowerCase();
+        if (lowerAfter === '[object object]' || lowerAfter === 'object object' || lowerAfter === 'object:object') {
+            return '';
+        }
+        return cleaned;
+    }
+
+    // Standardized Safe Error Extractor to Prevent [object Object]
+    function safeExtractErrorMessage(input, defaultFallback = 'An unexpected error occurred. Please try again.') {
+        if (!input) return defaultFallback;
+        if (typeof input === 'string') {
+            const cleaned = cleanErrorString(input);
+            return (cleaned && cleaned.toLowerCase() !== 'object object' && cleaned.toLowerCase() !== 'object:object' && cleaned !== '[object Object]') ? cleaned : defaultFallback;
+        }
+        if (typeof input === 'object') {
+            // Check if it's an Error instance with attached .data from fetchManagerAPI
+            const obj = input.data || input;
+            if (obj && typeof obj === 'object') {
+                if (obj.error && typeof obj.error === 'object') {
+                    if (typeof obj.error.message === 'string' && obj.error.message.trim()) {
+                        const m = cleanErrorString(obj.error.message);
+                        if (m) return m;
+                    }
+                    if (typeof obj.error.details === 'string' && obj.error.details.trim()) {
+                        const d = cleanErrorString(obj.error.details);
+                        if (d) return d;
+                    }
+                    if (typeof obj.error.detail === 'string' && obj.error.detail.trim()) {
+                        const d = cleanErrorString(obj.error.detail);
+                        if (d) return d;
+                    }
+                }
+                if (typeof obj.error === 'string' && obj.error.trim()) {
+                    const m = cleanErrorString(obj.error);
+                    if (m) return m;
+                }
+                if (typeof obj.detail === 'string' && obj.detail.trim()) {
+                    const m = cleanErrorString(obj.detail);
+                    if (m) return m;
+                }
+                if (Array.isArray(obj.detail) && obj.detail.length > 0) {
+                    const m = cleanErrorString(obj.detail.join(' '));
+                    if (m) return m;
+                }
+                if (typeof obj.message === 'string' && obj.message.trim()) {
+                    const m = cleanErrorString(obj.message);
+                    if (m) return m;
+                }
+                if (Array.isArray(obj.non_field_errors) && obj.non_field_errors.length > 0) {
+                    const m = cleanErrorString(obj.non_field_errors.join(' '));
+                    if (m) return m;
+                }
+                // Check if it is a field errors dict, e.g. { comments: ["This field is required."] }
+                const fieldEntries = Object.entries(obj).filter(([k]) => k !== 'status_code' && k !== 'code');
+                if (fieldEntries.length > 0) {
+                    const firstVal = fieldEntries[0][1];
+                    if (Array.isArray(firstVal) && firstVal.length > 0) {
+                        const m = cleanErrorString(`${fieldEntries[0][0]}: ${firstVal.join(', ')}`);
+                        if (m) return m;
+                    }
+                    if (typeof firstVal === 'string' && firstVal.trim()) {
+                        const m = cleanErrorString(`${fieldEntries[0][0]}: ${firstVal.trim()}`);
+                        if (m) return m;
+                    }
+                }
+            }
+            if (typeof input.message === 'string' && input.message.trim()) {
+                const m = cleanErrorString(input.message);
+                if (m && m.toLowerCase() !== 'object object' && m.toLowerCase() !== 'object:object') return m;
+            }
+            try {
+                const jsonStr = JSON.stringify(obj);
+                if (jsonStr && jsonStr !== '{}' && jsonStr !== '[]' && !jsonStr.includes('object Object')) return jsonStr;
+            } catch (e) {}
+        }
+        return defaultFallback;
+    }
+
+    // Standardized Manager Toast Notification Helper
+    function showManagerToast(message, type = 'info') {
+        const container = document.getElementById('managerToastContainer');
+        if (!container) return;
+
+        const displayMsg = safeExtractErrorMessage(message, 'An unexpected error occurred. Please try again.');
+
+        const bgClass = type === 'success' ? 'bg-success text-white' :
+                        type === 'error' || type === 'danger' ? 'bg-danger text-white' :
+                        type === 'warning' ? 'bg-warning text-dark' : 'bg-primary text-white';
+        
+        const iconClass = type === 'success' ? 'fa-circle-check' :
+                          type === 'error' || type === 'danger' ? 'fa-circle-exclamation' :
+                          type === 'warning' ? 'fa-triangle-exclamation' : 'fa-circle-info';
+
+        const toastId = 'toast_' + Date.now();
+        const toastHtml = `
+            <div id="${toastId}" class="toast align-items-center ${bgClass} border-0 shadow-lg mb-2" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="d-flex">
+                    <div class="toast-body d-flex align-items-center gap-2">
+                        <i class="fa-solid ${iconClass}"></i>
+                        <span>${displayMsg}</span>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            </div>
+        `;
+        container.insertAdjacentHTML('beforeend', toastHtml);
+        const toastElement = document.getElementById(toastId);
+        if (toastElement && window.bootstrap) {
+            const bsToast = new bootstrap.Toast(toastElement, { delay: 4500 });
+            bsToast.show();
+        }
+    }
+
+    // Standardized API Fetch with CSRF and Error Handling
+    async function fetchManagerAPI(url, options = {}) {
+        const defaultHeaders = {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+        };
+        
+        const csrfCookie = document.cookie.split('; ').find(row => row.startsWith('csrftoken='));
+        if (csrfCookie) {
+            defaultHeaders['X-CSRFToken'] = csrfCookie.split('=')[1];
+        }
+
+        options.headers = { ...defaultHeaders, ...(options.headers || {}) };
+
+        try {
+            const response = await fetch(url, options);
+            if (response.status === 401) {
+                window.location.href = '/login/?next=' + encodeURIComponent(window.location.pathname);
+                return null;
+            }
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                let errMsg = `HTTP ${response.status}: Request failed`;
+                if (typeof errData === 'string' && errData.trim()) {
+                    errMsg = errData;
+                } else if (Array.isArray(errData) && errData.length > 0) {
+                    errMsg = errData.join(' ');
+                } else if (errData && typeof errData === 'object') {
+                    if (typeof errData.detail === 'string' && errData.detail.trim()) {
+                        errMsg = errData.detail;
+                    } else if (Array.isArray(errData.detail) && errData.detail.length > 0) {
+                        errMsg = errData.detail.join(' ');
+                    } else if (errData.error && typeof errData.error === 'object') {
+                        errMsg = errData.error.message || errData.error.details || errData.error.detail || JSON.stringify(errData.error);
+                    } else if (typeof errData.error === 'string' && errData.error.trim()) {
+                        errMsg = errData.error;
+                    } else if (typeof errData.message === 'string' && errData.message.trim()) {
+                        errMsg = errData.message;
+                    } else if (Array.isArray(errData.non_field_errors) && errData.non_field_errors.length > 0) {
+                        errMsg = errData.non_field_errors.join(' ');
+                    } else {
+                        const entries = Object.entries(errData).filter(([k]) => k !== 'status_code' && k !== 'code');
+                        if (entries.length > 0) {
+                            const [k, v] = entries[0];
+                            errMsg = Array.isArray(v) ? `${k}: ${v.join(', ')}` : `${k}: ${v}`;
+                        } else {
+                            errMsg = `HTTP ${response.status}: Request failed`;
+                        }
+                    }
+                }
+                const err = new Error(errMsg);
+                err.data = errData;
+                err.status = response.status;
+                throw err;
+            }
+            return await response.json();
+        } catch (err) {
+            console.error('[Manager API Error]:', err);
+            throw err;
+        }
+    }
+</script>
+{% endblock layout %}

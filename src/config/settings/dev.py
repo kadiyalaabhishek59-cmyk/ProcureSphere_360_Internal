@@ -1,0 +1,35 @@
+
+from .base import *  # noqa: F403, F405
+
+# Development settings
+DEBUG = True
+ALLOWED_HOSTS = ["*"]
+
+# Email configuration
+# Defaults to console backend for local development.
+# Set EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
+# in environment variables to send real emails through Brevo.
+EMAIL_BACKEND = env(  # noqa: F405
+    "EMAIL_BACKEND",
+    default="django.core.mail.backends.console.EmailBackend",
+)
+# Dev-only Celery beat tasks
+CELERY_BEAT_SCHEDULE["test-beat-task-every-minute"] = {  # noqa: F405
+    "task": "apps.notifications.tasks.test_celery_beat_task",
+    "schedule": 60.0,
+}
+
+# Restricted CORS configuration (no wildcard *)
+CORS_ALLOW_ALL_ORIGINS = False
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+]
+
+
+# Development Axes settings - align with base 5 failures and 3-minute cooloff
+AXES_FAILURE_LIMIT = 5
+AXES_COOLOFF_TIME = 0.05

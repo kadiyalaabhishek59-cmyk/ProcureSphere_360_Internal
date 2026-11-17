@@ -1,0 +1,440 @@
+{% extends base_layout|default:'layouts/finance_base.html' %}
+
+{% block title %}Invoice {{ invoice.invoice_number }} — ProcureSphere 360{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12 d-flex justify-content-between align-items-center">
+        <div>
+            {% if request.user.role_code == 'PROC_MGR' %}
+            <a href="/manager/notifications/" class="text-decoration-none text-muted mb-2 d-inline-block">
+                <i class="fa-solid fa-arrow-left me-1"></i> Back to Notifications
+            </a>
+            {% else %}
+            <a href="{% url 'invoices_list' %}" class="text-decoration-none text-muted mb-2 d-inline-block">
+                <i class="fa-solid fa-arrow-left me-1"></i> Back to Invoices
+            </a>
+            {% endif %}
+            <h2 class="fw-bold text-dark mb-1">Invoice: {{ invoice.invoice_number }}</h2>
+            <p class="text-muted mb-0">From {{ invoice.vendor.legal_name }} • Created {{ invoice.created_at|date:"M d, Y" }}</p>
+        </div>
+        <div>
+            <span class="badge bg-primary fs-6 py-2 px-3">{{ invoice.get_status_display }}</span>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Invoice Details -->
+    <div class="col-lg-8">
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4">
+                <h5 class="fw-bold mb-0">Line Items</h5>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light text-muted small text-uppercase">
+                        <tr>
+                            <th class="ps-4">Description</th>
+                            <th>PO Ref</th>
+                            <th class="text-center">Qty</th>
+                            <th class="text-end">Unit Price</th>
+                            <th class="text-end pe-4">Line Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for line in invoice.lines.all %}
+                        <tr>
+                            <td class="ps-4 fw-semibold">{{ line.item_description }}</td>
+                            <td>
+                                {% if line.po_line %}
+                                    <span class="badge bg-secondary">{{ invoice.po.po_number }}</span>
+                                {% else %}
+                                    <span class="text-muted">No PO</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">{{ line.quantity }}</td>
+                            <td class="text-end">₹{{ line.unit_price|floatformat:2 }}</td>
+                            <td class="text-end pe-4 fw-bold">₹{{ line.line_total|floatformat:2 }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center py-4 text-muted">No line items found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        {% if invoice.exceptions.exists %}
+        <div class="card shadow-sm border-0 border-start border-warning border-4 mb-4">
+            <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4">
+                <h5 class="fw-bold text-warning mb-0"><i class="fa-solid fa-triangle-exclamation me-2"></i> Match Exceptions</h5>
+            </div>
+            <div class="card-body p-4">
+                <ul class="list-group list-group-flush">
+                    {% for exception in invoice.exceptions.all %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        <div>
+                            <span class="fw-bold">{{ exception.get_exception_type_display }}</span>
+                            <div class="text-muted small">{{ exception.description }}</div>
+                        </div>
+                        <span class="badge {% if exception.status == 'OPEN' %}bg-warning text-dark{% else %}bg-success{% endif %}">
+                            {{ exception.get_status_display }}
+                        </span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Associated Stores Goods Receipts (3-Way Match Physical Evidence) -->
+        {% if invoice.po and invoice.po.receipts.exists %}
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4 d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-boxes-packing text-primary me-2"></i> Associated Stores Receipts (3-Way Match Data)</h5>
+                <span class="badge bg-light text-secondary border small">{{ invoice.po.receipts.count }} GRN{{ invoice.po.receipts.count|pluralize }}</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light text-muted small text-uppercase">
+                            <tr>
+                                <th class="ps-4">GRN Number</th>
+                                <th>Received Date</th>
+                                <th>Delivery Note</th>
+                                <th>Received By</th>
+                                <th class="text-center">Inspection</th>
+                                <th class="text-center">Stock Handoff</th>
+                                <th class="text-end pe-4">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for grn in invoice.po.receipts.all %}
+                            <tr>
+                                <td class="ps-4 fw-bold font-monospace text-primary">
+                                    <a href="{% url 'receipt_detail' grn_id=grn.id %}" class="text-decoration-none">{{ grn.grn_number }}</a>
+                                </td>
+                                <td>{{ grn.received_date|date:"M d, Y H:i" }}</td>
+                                <td>{{ grn.delivery_note_number|default:"—" }}</td>
+                                <td class="small">{{ grn.received_by.get_full_name|default:grn.received_by.email }}</td>
+                                <td class="text-center">
+                                    <span class="badge {% if grn.overall_inspection_status == 'PASSED' %}bg-success-subtle text-success border border-success-subtle{% elif grn.overall_inspection_status == 'FAILED' %}bg-danger-subtle text-danger border border-danger-subtle{% else %}bg-warning-subtle text-warning border border-warning-subtle{% endif %}">
+                                        {{ grn.overall_inspection_status }}
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge {% if grn.stock_handoff_status == 'HANDED_OFF' %}bg-info-subtle text-info border border-info-subtle{% else %}bg-secondary-subtle text-secondary border border-secondary-subtle{% endif %}">
+                                        {{ grn.stock_handoff_status_display }}
+                                    </span>
+                                </td>
+<td class="text-end pe-4">
+                    <a href="{% url 'finance_grn_detail' grn_id=grn.id %}" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                        <i class="fa-solid fa-receipt me-1"></i> View GRN
+                    </a>
+                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Summary & Metadata -->
+    <div class="col-lg-4">
+        <div class="card shadow-sm border-0 bg-light mb-4">
+            <div class="card-body p-4">
+                <h5 class="fw-bold mb-4">Financial Summary</h5>
+                
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted">Subtotal</span>
+                    <span class="fw-semibold">₹{{ invoice.subtotal|floatformat:2 }}</span>
+                </div>
+                <div class="d-flex justify-content-between mb-3 pb-3 border-bottom">
+                    <span class="text-muted">Tax</span>
+                    <span class="fw-semibold">₹{{ invoice.tax_amount|floatformat:2 }}</span>
+                </div>
+                <div class="d-flex justify-content-between mb-4">
+                    <span class="fw-bold text-dark fs-5">Total Amount</span>
+                    <span class="fw-bold text-primary fs-5">₹{{ invoice.total_amount|floatformat:2 }}</span>
+                </div>
+
+                <div class="mt-4 pt-4 border-top">
+                    <h6 class="fw-bold mb-3">Invoice Details</h6>
+                    <div class="mb-2">
+                        <span class="text-muted d-block small">Invoice Date</span>
+                        <span class="fw-semibold">{{ invoice.invoice_date|date:"M d, Y" }}</span>
+                    </div>
+                    <div class="mb-2">
+                        <span class="text-muted d-block small">Due Date</span>
+                        <span class="fw-semibold">{{ invoice.due_date|date:"M d, Y" }}</span>
+                    </div>
+                    <div class="mb-2">
+                        <span class="text-muted d-block small">Purchase Order</span>
+                        <span class="fw-semibold">{{ invoice.po.po_number }}</span>
+                    </div>
+                    {% if invoice.invoice_document %}
+                    <div class="mb-2">
+                        <span class="text-muted d-block small">Invoice Document</span>
+                        <a href="{{ invoice.invoice_document.url }}" target="_blank" class="btn btn-sm btn-outline-primary mt-1">
+                            <i class="fa-solid fa-file-pdf me-1"></i> View Attached Document
+                        </a>
+                    </div>
+                    {% endif %}
+                    {% if invoice.approved_by %}
+                    <div class="mb-2">
+                        <span class="text-muted d-block small">Approved By</span>
+                        <span class="fw-semibold text-success"><i class="fa-solid fa-check-circle me-1"></i> {{ invoice.approved_by.email }} ({{ invoice.approved_at|date:"M d, Y H:i" }})</span>
+                    </div>
+                    {% endif %}
+                    {% if invoice.rejection_reason %}
+                    <div class="alert alert-danger p-2 small mt-3 mb-0">
+                        <strong>Rejection Reason:</strong> {{ invoice.rejection_reason }}
+                    </div>
+                    {% endif %}
+                    {% if invoice.correction_request_notes %}
+                    <div class="alert alert-warning p-2 small mt-3 mb-0">
+                        <strong>Correction Instructions:</strong> {{ invoice.correction_request_notes }}
+                    </div>
+                    {% endif %}
+                    {% if invoice.payment_record %}
+                    <div class="mt-4 pt-4 border-top">
+                        <h6 class="fw-bold mb-3">Payment Disbursed</h6>
+                        <div class="d-flex flex-column gap-2 small">
+                            <div class="d-flex justify-content-between text-muted">
+                                <span>Status:</span>
+                                <span class="text-success fw-bold">Disbursed (PAID)</span>
+                            </div>
+                            <div class="d-flex justify-content-between text-muted">
+                                <span>Reference / UTR ID:</span>
+                                <span>{{ invoice.payment_record.payment_reference }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between text-muted">
+                                <span>Payment Method:</span>
+                                <span>{{ invoice.payment_record.get_payment_method_display }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between text-muted">
+                                <span>Disbursement Date:</span>
+                                <span>{{ invoice.payment_record.payment_date|date:"M d, Y" }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between text-muted">
+                                <span>Processed By:</span>
+                                <span>{{ invoice.payment_record.paid_by.get_full_name|default:invoice.payment_record.paid_by.email }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="mt-4 pt-4 border-top d-flex flex-column gap-2">
+                        {% if can_validate %}
+                        <form method="post" action="{% url 'validate_invoice' invoice.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-primary w-100 fw-bold py-2 shadow-sm">
+                                <i class="fa-solid fa-calculator me-1"></i> Validate Invoice (3-Way Match)
+                            </button>
+                        </form>
+                        {% endif %}
+
+                        {% if can_approve %}
+                        <button type="button" class="btn btn-success w-100 fw-bold py-2 shadow-sm" data-bs-toggle="modal" data-bs-target="#approveModal-{{ invoice.id }}">
+                            <i class="fa-solid fa-check-double me-1"></i> Approve Invoice
+                        </button>
+                        {% endif %}
+{% if can_pay %}
+                        <button type="button" class="btn btn-success w-100 py-2 shadow-sm fw-bold" data-bs-toggle="modal" data-bs-target="#paymentModal-{{ invoice.id }}">
+                            <i class="fa-solid fa-credit-card me-1"></i> Disburse Payment
+                        </button>
+                        {% endif %}
+
+                        {% if can_request_correction %}
+                        <button type="button" class="btn btn-outline-warning w-100 py-2 shadow-sm fw-semibold" data-bs-toggle="modal" data-bs-target="#correctionModal-{{ invoice.id }}">
+                            <i class="fa-solid fa-pen-to-square me-1"></i> Request Correction
+                        </button>
+                        {% endif %}
+
+                        {% if can_reject %}
+                        <button type="button" class="btn btn-outline-danger w-100 py-2 shadow-sm fw-semibold" data-bs-toggle="modal" data-bs-target="#rejectModal-{{ invoice.id }}">
+                            <i class="fa-solid fa-ban me-1"></i> Reject Invoice
+                        </button>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    {% if is_proc %}
+                    <div class="mt-3 p-2 bg-secondary bg-opacity-10 border border-secondary border-opacity-25 rounded text-center small text-muted">
+                        <i class="fa-solid fa-lock me-1"></i> <strong>Procurement Role:</strong> Read-Only Access.<br>
+                        Financial validation and payment actions are restricted to Finance & AP.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if can_approve %}
+<!-- Approve Modal -->
+<div class="modal fade" id="approveModal-{{ invoice.id }}" tabindex="-1" aria-labelledby="approveModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title fw-bold" id="approveModalLabel">
+                    <i class="fa-solid fa-check-double me-2"></i> Approve Invoice
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{% url 'approve_invoice' invoice.id %}">
+                {% csrf_token %}
+                <div class="modal-body p-4">
+                    <p>Are you sure you want to approve invoice <strong>{{ invoice.invoice_number }}</strong> from <strong>{{ invoice.vendor.legal_name }}</strong> for payment?</p>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Approval Notes (Optional)</label>
+                        <textarea name="approval_notes" class="form-control" rows="2" placeholder="e.g. Approved following 3-way match audit."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success shadow-sm">
+                        <i class="fa-solid fa-check me-1"></i> Confirm Approval
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if can_reject %}
+<!-- Reject Modal -->
+<div class="modal fade" id="rejectModal-{{ invoice.id }}" tabindex="-1" aria-labelledby="rejectModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title fw-bold" id="rejectModalLabel">
+                    <i class="fa-solid fa-ban me-2"></i> Reject Invoice
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{% url 'reject_invoice' invoice.id %}">
+                {% csrf_token %}
+                <div class="modal-body p-4">
+                    <p class="text-danger">Rejecting this invoice will notify the vendor and reject any open match exceptions.</p>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Rejection Reason <span class="text-danger">*</span></label>
+                        <textarea name="rejection_reason" class="form-control" rows="3" placeholder="Provide mandatory justification..." required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger shadow-sm">
+                        <i class="fa-solid fa-ban me-1"></i> Confirm Rejection
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if can_request_correction %}
+<!-- Correction Modal -->
+<div class="modal fade" id="correctionModal-{{ invoice.id }}" tabindex="-1" aria-labelledby="correctionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title fw-bold" id="correctionModalLabel">
+                    <i class="fa-solid fa-pen-to-square me-2"></i> Request Invoice Correction
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{% url 'request_correction' invoice.id %}">
+                {% csrf_token %}
+                <div class="modal-body p-4">
+                    <p>Provide specific correction instructions for <strong>{{ invoice.vendor.legal_name }}</strong>:</p>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Correction Instructions <span class="text-danger">*</span></label>
+                        <textarea name="correction_notes" class="form-control" rows="3" placeholder="Specify required corrections (e.g. quantity, tax rate, attached proof)..." required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning shadow-sm fw-semibold">
+                        <i class="fa-solid fa-paper-plane me-1"></i> Send Correction Request
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if can_pay %}
+<!-- Payment Modal (triggered from sidebar "Disburse Payment" button) -->
+<div class="modal fade" id="paymentModal-{{ invoice.id }}" tabindex="-1" aria-labelledby="paymentModalDetailLabel" aria-hidden="true">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title fw-bold" id="paymentModalDetailLabel">
+                    <i class="fa-solid fa-credit-card me-2"></i> Disburse Payment
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{% url 'pay_invoice' invoice.id %}">
+                {% csrf_token %}
+                <div class="modal-body p-4">
+                    <div class="mb-3"><strong>Invoice:</strong> {{ invoice.invoice_number }}</div>
+                    <div class="mb-3"><strong>Vendor:</strong> {{ invoice.vendor.legal_name }}</div>
+                    <div class="mb-3"><strong>Total Amount:</strong> <span class="text-success fw-bold">₹{{ invoice.total_amount|floatformat:2 }}</span></div>
+                    <div class="mb-3">
+                        <label for="detail_pref" class="form-label small fw-semibold text-dark">Transaction Reference / UTR # <span class="text-danger">*</span></label>
+                        <input type="text" name="payment_reference" id="detail_pref" class="form-control" placeholder="e.g. UTR-2026-981023"
+                               pattern="^[A-Za-z0-9][A-Za-z0-9\-_/]{4,48}[A-Za-z0-9]$"
+                               minlength="6" maxlength="50"
+                               title="Alphanumeric reference or UTR (6-50 chars). Hyphens (-) and slashes (/) permitted. Disallowed special characters like !@#$%^&*() are prohibited."
+                               required>
+                        <div class="form-text small text-muted">Format: 6–50 alphanumeric characters (e.g. UTR-2026-981023, CMS123456789). No special characters (!@#$%).</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="detail_pmeth" class="form-label small fw-semibold text-dark">Payment Method <span class="text-danger">*</span></label>
+                        <select name="payment_method" id="detail_pmeth" class="form-select" required>
+                            <option value="ACH_TRANSFER">ACH Transfer</option>
+                            <option value="BANK_WIRE">Bank Wire</option>
+                            <option value="NEFT_RTGS">NEFT / RTGS</option>
+                            <option value="COMPANY_CHECK">Company Check</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="detail_pdate" class="form-label small fw-semibold text-dark">Payment Date <span class="text-danger">*</span></label>
+                        <input type="date" name="payment_date" id="detail_pdate" class="form-control" value="{{ now|date:'Y-m-d' }}" required>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary shadow-sm">
+                        <i class="fa-solid fa-arrow-right me-1"></i> Confirm &amp; Disburse Payment
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<script>
+    // BUG-006: Lock background scrolling to eliminate dual overlapping vertical scrollbars on modals
+    document.querySelectorAll('.modal').forEach(function(modalEl) {
+        modalEl.addEventListener('show.bs.modal', function() {
+            document.body.style.overflow = 'hidden';
+            document.documentElement.style.overflow = 'hidden';
+        });
+        modalEl.addEventListener('hidden.bs.modal', function() {
+            document.body.style.overflow = '';
+            document.documentElement.style.overflow = '';
+        });
+    });
+</script>
+{% endblock %}
