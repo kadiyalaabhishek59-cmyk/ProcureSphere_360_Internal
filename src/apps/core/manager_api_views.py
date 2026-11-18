@@ -36,14 +36,6 @@ class ManagerKPIsAPIView(APIView):
     permission_classes = [IsAuthenticated, IsProcurementManager]
 
     def get(self, request):
-        role_code = getattr(request.user, "role_code", None) or (
-            request.user.role.code if getattr(request.user, "role", None) else None
-        )
-        if role_code != Role.PROC_MGR:
-            return Response(
-                {"error": {"code": "PERMISSION_DENIED", "message": "You do not have permission to perform this action."}},
-                status=status.HTTP_403_FORBIDDEN,
-            )
         now = timezone.now()
         org = get_user_org(request.user)
 

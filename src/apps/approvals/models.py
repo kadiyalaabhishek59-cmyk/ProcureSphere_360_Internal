@@ -235,6 +235,9 @@ class ApprovalPolicy(TimeStampedModel):
             elif self.cost_center_id and self.cost_center and self.cost_center.department:
                 self.organization = self.cost_center.department.organization
 
+        if "update_fields" in kwargs and kwargs["update_fields"] is not None:
+            kwargs["update_fields"] = list(set(kwargs["update_fields"]) | {"status", "is_active"})
+
         super().save(*args, **kwargs)
 
     def __str__(self):
