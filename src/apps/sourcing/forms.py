@@ -23,7 +23,13 @@ DATETIME_INPUT = forms.DateTimeInput(
 
 
 class SourcingEventForm(forms.Form):
-    title = forms.CharField(max_length=255, widget=forms.TextInput(attrs={"class": "form-control"}))
+    title = forms.CharField(
+        max_length=255,
+        widget=forms.TextInput(attrs={
+            "class": "form-control",
+            "placeholder": "e.g. RFQ – Office Supplies Q1 2026",
+        }),
+    )
     event_type = forms.ChoiceField(
         choices=SourcingEvent.EVENT_TYPE_CHOICES,
         widget=forms.Select(attrs={"class": "form-select"}),
@@ -42,31 +48,57 @@ class SourcingEventForm(forms.Form):
         widget=DATETIME_INPUT, input_formats=SUPPORTED_DATETIME_FORMATS, label="Bid deadline"
     )
     description = forms.CharField(
-        widget=forms.Textarea(attrs={"rows": 3, "class": "form-control"}),
+        widget=forms.Textarea(attrs={
+            "rows": 3,
+            "class": "form-control",
+            "placeholder": "Describe the goods or services required, quantities, delivery location, and any special conditions…",
+        }),
         label="Scope / requirements",
     )
     technical_requirements = forms.CharField(
-        required=False, widget=forms.Textarea(attrs={"rows": 4, "class": "form-control"})
+        required=False,
+        widget=forms.Textarea(attrs={
+            "rows": 4,
+            "class": "form-control",
+            "placeholder": "List technical specifications, certifications, compliance standards, or quality criteria vendors must meet…",
+        }),
     )
     commercial_requirements = forms.CharField(
-        required=False, widget=forms.Textarea(attrs={"rows": 4, "class": "form-control"})
+        required=False,
+        widget=forms.Textarea(attrs={
+            "rows": 4,
+            "class": "form-control",
+            "placeholder": "Specify pricing format, payment terms, delivery milestones, warranty conditions, or penalty clauses…",
+        }),
     )
     required_documents = forms.CharField(
         required=False,
-        widget=forms.Textarea(attrs={"rows": 2, "class": "form-control"}),
+        widget=forms.Textarea(attrs={
+            "rows": 2,
+            "class": "form-control",
+            "placeholder": "e.g. Company registration certificate, ISO certification, financial statements, past PO references…",
+        }),
         label="Required supporting documents",
     )
     technical_weight = forms.DecimalField(
         min_value=0,
         max_value=100,
         initial=Decimal("50"),
-        widget=forms.NumberInput(attrs={"class": "form-control", "step": "0.01"}),
+        widget=forms.NumberInput(attrs={
+            "class": "form-control",
+            "step": "0.01",
+            "placeholder": "e.g. 50",
+        }),
     )
     commercial_weight = forms.DecimalField(
         min_value=0,
         max_value=100,
         initial=Decimal("50"),
-        widget=forms.NumberInput(attrs={"class": "form-control", "step": "0.01"}),
+        widget=forms.NumberInput(attrs={
+            "class": "form-control",
+            "step": "0.01",
+            "placeholder": "e.g. 50",
+        }),
     )
 
     def __init__(self, *args, **kwargs):
