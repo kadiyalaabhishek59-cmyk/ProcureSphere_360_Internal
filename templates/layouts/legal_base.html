@@ -159,7 +159,7 @@
                     <a href="/approvals/inbox/" class="unified-navlink {% if '/approvals/' in request.path %}active-nav-item{% endif %}">
                         Approvals Inbox
                     </a>
-                    <a href="/vendors/" class="unified-navlink {% if request.path == '/vendors/' %}active-nav-item{% endif %}">
+                    <a href="/vendors/" class="unified-navlink {% if '/vendors/' in request.path or request.path == '/vendors' %}active-nav-item{% endif %}">
                         Vendor Directory
                     </a>
 

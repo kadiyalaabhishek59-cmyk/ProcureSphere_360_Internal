@@ -48,13 +48,16 @@ class CanManageSupplierInvoice(BasePermission):
 
         # Vendors cannot pay, run match, create line-item invoices via internal endpoint, or access match exceptions
         if is_vendor:
-            basename = getattr(view, "basename", "")
-            action = getattr(view, "action", "")
-            if "exception" in basename or "exception" in action:
+            basename = getattr(view, "basename", "") or ""
+            action = getattr(view, "action", "") or ""
+            view_name = view.__class__.__name__
+            if "exception" in basename or "exception" in action or "MatchException" in view_name:
                 return False
             if action in ["create_invoice", "pay_invoice", "pay", "run_match", "run_3_way_match"]:
                 return False
             if request.method in SAFE_METHODS:
+                return True
+            if request.method == "POST" and (action in ["create", None, ""] or "SupplierInvoice" in view_name):
                 return True
             return False
 
@@ -519,10 +522,24 @@ class SupplierInvoiceViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["post"], url_path="pay")
     def pay_invoice(self, request, pk=None):
+        try:
+            data = request.data
+        except Exception as parse_err:
+            return Response(
+                {
+                    "error": {
+                        "code": "VALIDATION_ERROR",
+                        "message": "Malformed JSON payload in request body.",
+                        "details": str(parse_err),
+                    }
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         invoice = self.get_object()
-        payment_reference = request.data.get("payment_reference")
-        payment_method = request.data.get("payment_method", "ACH_TRANSFER")
-        payment_date = request.data.get("payment_date")
+        payment_reference = data.get("payment_reference") if isinstance(data, dict) else None
+        payment_method = data.get("payment_method", "ACH_TRANSFER") if isinstance(data, dict) else "ACH_TRANSFER"
+        payment_date = data.get("payment_date") if isinstance(data, dict) else None
         try:
             paid_invoice = mark_invoice_paid_service(
                 invoice=invoice,

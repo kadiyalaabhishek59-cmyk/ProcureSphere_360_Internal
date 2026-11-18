@@ -118,7 +118,7 @@
             <a href="{% url 'receipt_stock_handoff' grn_id=grn.id %}" class="btn btn-success text-white rounded-pill px-4 fw-bold shadow-sm">
                 <i class="fa-solid fa-dolly me-1"></i> Hand Off to Stock
             </a>
-            <a href="{% url 'receipt_inspect' grn_id=grn.id %}" class="btn btn-outline-warning rounded-pill px-3 fw-semibold text-dark">
+            <a href="{% url 'receipt_inspect' grn_id=grn.id %}" class="btn btn-outline-secondary rounded-pill px-3 fw-semibold">
                 <i class="fa-solid fa-clipboard-check me-1"></i> Quality Inspection
             </a>
             <a href="{% url 'order_detail' po.id %}" class="btn btn-outline-secondary rounded-pill px-3 fw-semibold">
@@ -129,7 +129,7 @@
             <a href="{% url 'receipt_stock_handoff' grn_id=grn.id %}" class="btn btn-outline-primary rounded-pill px-3 fw-semibold">
                 <i class="fa-solid fa-warehouse me-1"></i> Stock Handoff Details
             </a>
-            <a href="{% url 'receipt_inspect' grn_id=grn.id %}" class="btn btn-outline-warning rounded-pill px-3 fw-semibold text-dark">
+            <a href="{% url 'receipt_inspect' grn_id=grn.id %}" class="btn btn-outline-secondary rounded-pill px-3 fw-semibold">
                 <i class="fa-solid fa-clipboard-check me-1"></i> Quality Inspection
             </a>
             <a href="{% url 'order_detail' po.id %}" class="btn btn-outline-secondary rounded-pill px-3 fw-semibold">
@@ -137,7 +137,7 @@
             </a>
         {% else %}
             <!-- Stage: All items rejected or other terminal state -->
-            <a href="{% url 'receipt_inspect' grn_id=grn.id %}" class="btn btn-outline-warning rounded-pill px-3 fw-semibold text-dark">
+            <a href="{% url 'receipt_inspect' grn_id=grn.id %}" class="btn btn-outline-secondary rounded-pill px-3 fw-semibold">
                 <i class="fa-solid fa-clipboard-check me-1"></i> Quality Inspection
             </a>
             <a href="{% url 'receipts_rejections_queue' %}" class="btn btn-outline-danger rounded-pill px-3 fw-semibold">
@@ -499,10 +499,10 @@
                             </div>
                             {% endif %}
 
-                            <!-- Quantity Correction Modal for line {{ line.id }} -->
+                            <!-- Quantity Correction Modal for line {{ line.id }} (BUG-009) -->
                             <div class="modal fade" id="correctLineModal{{ line.id }}" tabindex="-1" aria-hidden="true">
                                 <div class="modal-dialog">
-                                    <form method="POST" action="{% url 'receipt_line_correct' line_id=line.id %}" class="modal-content border-0 shadow rounded-4 text-start">
+                                    <form method="POST" action="{% url 'receipt_line_correct' line_id=line.id %}" class="modal-content border-0 shadow rounded-4 text-start" onsubmit="return validateCorrectionForm(this);">
                                         {% csrf_token %}
                                         <div class="modal-header border-bottom bg-light">
                                             <h5 class="modal-title fw-bold text-dark">
@@ -537,8 +537,10 @@
 
                                             <div class="mb-3">
                                                 <label class="form-label small fw-bold text-dark">Correction Reason <span class="text-danger">*</span></label>
-                                                <input type="text" name="reason" class="form-control" placeholder="e.g. Waybill recount discrepancy, supplier shipment note adjustment" required>
-                                                <div class="form-text small">Mandatory to preserve audit trail and compliance integrity.</div>
+                                                <input type="text" name="reason" class="form-control" 
+                                                       minlength="5" maxlength="255" pattern=".*[A-Za-z]{3,}.*"
+                                                       placeholder="e.g. Waybill recount discrepancy, supplier shipment note adjustment" required>
+                                                <div class="form-text small text-muted">Minimum 5 characters. Must contain meaningful audit explanation (not pure numbers or symbols).</div>
                                             </div>
 
                                             <div class="mb-3">
@@ -653,4 +655,21 @@
         </div>
     </div>
 </div>
+
+<script>
+function validateCorrectionForm(form) {
+    const reasonInput = form.querySelector('input[name="reason"]');
+    if (!reasonInput) return true;
+    const val = reasonInput.value.trim();
+    const hasLetters = /[A-Za-z]{3,}/.test(val);
+    const isPureDigits = /^[\d\s\-_.,]+$/.test(val);
+    const isRepeating = /^(.)\1{4,}$/.test(val);
+    if (!val || val.length < 5 || isPureDigits || !hasLetters || isRepeating) {
+        alert('Please enter a valid descriptive correction reason (minimum 5 characters, containing letters, not pure numbers or repetitive characters).');
+        reasonInput.focus();
+        return false;
+    }
+    return true;
+}
+</script>
 {% endblock %}

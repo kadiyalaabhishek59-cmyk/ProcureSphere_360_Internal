@@ -4,14 +4,22 @@
 {% block page_heading %}{% if is_stores_receiver %}Receivable Purchase Orders{% else %}Purchase Orders Register{% endif %}{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-3">
     <div>
         {% if is_stores_receiver %}
-        <span class="badge bg-secondary px-3 py-2 text-uppercase mb-2">
-            <i class="fa-solid fa-box-open me-1"></i> Stores & Receiving Desk
-        </span>
-        <h2 class="fw-bold text-dark mb-1">Receivable Purchase Orders</h2>
-        <p class="text-muted mb-0">Purchase orders eligible for goods receiving, inspection, and GRN generation (Issued, Acknowledged, Partial Receipt).</p>
+            {% if active_tab == 'deliveries' %}
+            <span class="badge bg-primary px-3 py-2 text-uppercase mb-2">
+                <i class="fa-solid fa-truck-ramp-box me-1"></i> Delivery Tracking &amp; Schedules
+            </span>
+            <h2 class="fw-bold text-dark mb-1">PO Deliveries</h2>
+            <p class="text-muted mb-0">Track expected vendor shipments, fulfillment progress, and delivery schedules across active purchase orders.</p>
+            {% else %}
+            <span class="badge bg-secondary px-3 py-2 text-uppercase mb-2">
+                <i class="fa-solid fa-box-open me-1"></i> Inbound Receiving Desk
+            </span>
+            <h2 class="fw-bold text-dark mb-1">Receive PO Goods</h2>
+            <p class="text-muted mb-0">Purchase orders eligible for goods receiving, inspection, and GRN generation (Issued, Acknowledged, Partial Receipt).</p>
+            {% endif %}
         {% else %}
         <h2 class="fw-bold text-dark mb-1"><i class="fa-solid fa-file-contract text-primary me-2"></i> Purchase Orders Register</h2>
         <p class="text-muted mb-0">View and track purchase orders across all vendors and cost centers.</p>
@@ -25,6 +33,22 @@
     </div>
     {% endif %}
 </div>
+
+{% if is_stores_receiver %}
+<!-- Nav Tabs Differentiating Receive PO Goods vs PO Deliveries (BUG-001) -->
+<ul class="nav nav-pills gap-2 mb-4 p-1 bg-white rounded-pill border shadow-sm d-inline-flex">
+    <li class="nav-item">
+        <a class="nav-link rounded-pill px-4 fw-semibold {% if active_tab != 'deliveries' %}active{% else %}text-muted{% endif %}" href="{% url 'orders_list' %}">
+            <i class="fa-solid fa-box-open me-2"></i> Receive PO Goods
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link rounded-pill px-4 fw-semibold {% if active_tab == 'deliveries' %}active{% else %}text-muted{% endif %}" href="{% url 'orders_list' %}?tab=deliveries">
+            <i class="fa-solid fa-truck-fast me-2"></i> PO Deliveries
+        </a>
+    </li>
+</ul>
+{% endif %}
 
 {% if messages %}
 <div class="mb-4">
@@ -64,6 +88,9 @@
                         <th class="ps-4 text-uppercase text-secondary small fw-bold py-3">PO Number</th>
                         <th class="text-uppercase text-secondary small fw-bold py-3">Vendor</th>
                         <th class="text-uppercase text-secondary small fw-bold py-3 text-center">PO Status</th>
+                        {% if is_stores_receiver and active_tab == 'deliveries' %}
+                        <th class="text-uppercase text-secondary small fw-bold py-3 text-center">Delivery Stage</th>
+                        {% endif %}
                         <th class="text-uppercase text-secondary small fw-bold py-3 text-end">Total Amount</th>
                         <th class="text-uppercase text-secondary small fw-bold py-3 text-center">Created Date</th>
                         <th class="pe-4 text-uppercase text-secondary small fw-bold py-3 text-end">Action</th>
@@ -103,12 +130,41 @@
                                 <span class="badge bg-secondary rounded-pill px-3">{{ item.get_status_display|default:item.status }}</span>
                             {% endif %}
                         </td>
+                        {% if is_stores_receiver and active_tab == 'deliveries' %}
+                        <td class="text-center">
+                            {% if item.status == 'PARTIAL_RECEIPT' %}
+                                <span class="badge bg-warning-subtle text-warning border border-warning px-2 py-1 small fw-semibold">
+                                    <i class="fa-solid fa-truck-ramp-box me-1"></i> Deliveries In Progress
+                                </span>
+                            {% else %}
+                                <span class="badge bg-info-subtle text-info border border-info px-2 py-1 small fw-semibold">
+                                    <i class="fa-solid fa-clock me-1"></i> Awaiting 1st Delivery
+                                </span>
+                            {% endif %}
+                        </td>
+                        {% endif %}
                         <td class="text-end fw-bold text-dark">₹{{ item.total_amount|floatformat:2 }}</td>
                         <td class="text-center text-muted small">{{ item.created_at|date:"M d, Y" }}</td>
                         <td class="pe-4 text-end">
+                            {% if is_stores_receiver and active_tab != 'deliveries' %}
+                            <a href="{% url 'receipt_create' po_id=item.pk %}" class="btn btn-sm btn-primary rounded-pill px-3 fw-semibold me-1 shadow-sm">
+                                <i class="fa-solid fa-box-open me-1"></i> Receive
+                            </a>
+                            <a href="{% url 'order_detail' item.pk %}" class="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-semibold">
+                                <i class="fa-solid fa-eye me-1"></i> View Details
+                            </a>
+                            {% elif is_stores_receiver and active_tab == 'deliveries' %}
+                            <a href="{% url 'order_detail' item.pk %}" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-semibold">
+                                <i class="fa-solid fa-truck-ramp-box me-1"></i> Track Deliveries
+                            </a>
+                            <a href="{% url 'receipt_create' po_id=item.pk %}" class="btn btn-sm btn-light border rounded-pill px-2 fw-semibold ms-1 text-primary" title="Record Receipt for this Delivery">
+                                <i class="fa-solid fa-plus"></i>
+                            </a>
+                            {% else %}
                             <a href="{% url 'order_detail' item.pk %}" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-semibold">
                                 <i class="fa-solid fa-eye me-1"></i> View Details
                             </a>
+                            {% endif %}
                         </td>
                     </tr>
                     {% endfor %}

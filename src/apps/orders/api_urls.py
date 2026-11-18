@@ -508,6 +508,39 @@ class PurchaseOrderViewSet(viewsets.ModelViewSet):
                 )
             raise
 
+    def get_object(self):
+        lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
+        lookup_val = self.kwargs.get(lookup_url_kwarg)
+
+        import uuid
+        is_valid_uuid = False
+        try:
+            uuid.UUID(str(lookup_val))
+            is_valid_uuid = True
+        except (ValueError, AttributeError, TypeError):
+            is_valid_uuid = False
+
+        from django.db.models import Q
+        queryset = self.filter_queryset(self.get_queryset())
+        if is_valid_uuid:
+            obj = queryset.filter(Q(pk=lookup_val) | Q(po_number__iexact=str(lookup_val))).first()
+        else:
+            obj = queryset.filter(po_number__iexact=str(lookup_val)).first()
+
+        if not obj:
+            base_qs = scope_purchase_orders_queryset(PurchaseOrder.objects.all(), self.request.user)
+            if is_valid_uuid:
+                obj = base_qs.filter(Q(pk=lookup_val) | Q(po_number__iexact=str(lookup_val))).first()
+            else:
+                obj = base_qs.filter(po_number__iexact=str(lookup_val)).first()
+
+        if not obj:
+            from rest_framework.exceptions import NotFound
+            raise NotFound(f"Purchase Order '{lookup_val}' not found.")
+
+        self.check_object_permissions(self.request, obj)
+        return obj
+
     def get_queryset(self):
         user = self.request.user
         qs = scope_purchase_orders_queryset(self.queryset, user)
@@ -845,8 +878,19 @@ class PurchaseOrderViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["post"], url_path="issue")
     def issue(self, request, pk=None):
         """APPROVED -> ISSUED. Notifies the vendor and requester."""
-        # DEF-007: Standardize lookup through get_object() to ensure uniform scoping and state checks
+        # DEF-009: Standardize lookup through get_object() and enforce invalid transition check (HTTP 400 on DRAFT)
         po = self.get_object()
+        if po.status != PurchaseOrder.STATUS_APPROVED:
+            return Response(
+                {
+                    "error": {
+                        "code": "INVALID_STATE",
+                        "message": f"Cannot issue Purchase Order in status '{po.status}'. PO must be in APPROVED status.",
+                        "details": {"status": [f"Cannot issue PO in status '{po.status}'."]},
+                    }
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         return self._run_lifecycle_action(
             issue_purchase_order_service, po=po, actor=request.user
         )

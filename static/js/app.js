@@ -642,11 +642,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 return; // Cleanly remain on the dashboard
             }
 
-            // 2. If user signed out, NEVER display dashboard: redirect immediately to login!
-            if (sessionStorage.getItem('ps360_user_signed_out') === 'true' ||
-                localStorage.getItem('ps360_user_signed_out') ||
-                document.cookie.includes('ps360_user_signed_out=1') ||
-                document.cookie.includes('ps360_just_logged_out=1')) {
+            // 2. If user explicitly signed out, redirect immediately to login
+            if (sessionStorage.getItem('ps360_user_signed_out') === 'true') {
                 window.location.replace('/login/?reason=signed_out');
                 return;
             }
@@ -974,9 +971,7 @@ document.addEventListener('DOMContentLoaded', function () {
         window.addEventListener('pageshow', function () {
             if (isDashboardRoot(window.location.pathname)) {
                 try {
-                    if (sessionStorage.getItem('ps360_user_signed_out') === 'true' ||
-                        localStorage.getItem('ps360_user_signed_out') ||
-                        document.cookie.includes('ps360_user_signed_out=1')) {
+                    if (sessionStorage.getItem('ps360_user_signed_out') === 'true') {
                         window.location.replace('/login/?reason=signed_out');
                         return;
                     }
@@ -1082,7 +1077,17 @@ document.addEventListener('DOMContentLoaded', function () {
                     return;
                 }
 
-                // Case 4: Back navigation while on a Dashboard Root
+                // Case 4: Back navigation returning to Dashboard Root from a subpage
+                // If the user stepped back onto the dashboard root at the guard barrier (isPsGuard: true),
+                // they have simply returned to the dashboard. Stay on dashboard and do NOT show modal!
+                if (currentlyOnRoot && e.state && e.state.isPsGuard) {
+                    sessionStorage.removeItem('ps360_user_signed_out');
+                    localStorage.removeItem('ps360_user_signed_out');
+                    document.cookie = "ps360_user_signed_out=; path=/; max-age=0";
+                    document.cookie = "ps360_just_logged_out=; path=/; max-age=0";
+                    return;
+                }
+
                 let cameFromSubpage = false;
                 try {
                     if (sessionStorage.getItem('ps_visited_subpage') === 'true' ||

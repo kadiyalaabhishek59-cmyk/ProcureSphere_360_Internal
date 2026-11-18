@@ -21,6 +21,7 @@ from apps.receipts.services import (
     handoff_goods_to_stock_service,
     process_vendor_return_service,
     record_inspection_service,
+    validate_audit_reason_text,
 )
 
 
@@ -293,11 +294,20 @@ def _parse_single_inspection_line(request, line):
     elif not passed:
         qty_rejected = line.quantity_received
 
-    if qty_rejected > Decimal("0.00") and not rejection_reason:
-        return (
-            None,
-            f"Rejection reason is required when rejecting items for '{line.po_line.item_description}'.",
-        )
+    if qty_rejected > Decimal("0.00") or not passed:
+        raw_reason = rejection_reason or notes
+        if not raw_reason:
+            return (
+                None,
+                f"Rejection reason is required when rejecting items for '{line.po_line.item_description}'.",
+            )
+        try:
+            rejection_reason = validate_audit_reason_text(
+                raw_reason,
+                field_name=f"Rejection reason for '{line.po_line.item_description}'",
+            )
+        except ValidationError as ve:
+            return None, (ve.message if hasattr(ve, "message") else str(ve))
 
     item_data = {
         "receipt_line_id": line_id_str,
@@ -354,8 +364,23 @@ def receipt_inspect_view(request, grn_id):
         return redirect("receipt_detail", grn_id=grn.id)
 
     lines = grn.lines.all()
+    all_lines_inspected = lines.exists() and all(
+        hasattr(l, "inspection") and l.inspection is not None for l in lines
+    )
+    is_finalized = all_lines_inspected or grn.overall_inspection_status in [
+        "PASSED",
+        "FAILED",
+        "REJECTED",
+    ]
 
     if request.method == "POST":
+        if is_finalized:
+            messages.warning(
+                request,
+                f"Quality inspection for Goods Receipt {grn.grn_number} is already finalized and locked. Inspection records cannot be modified.",
+            )
+            return redirect("receipt_detail", grn_id=grn.id)
+
         inspection_items, validation_errors = _extract_inspection_form_data(request, lines)
 
         if validation_errors:
@@ -364,7 +389,7 @@ def receipt_inspect_view(request, grn_id):
             return render(
                 request,
                 "receipts/receipt_inspect.html",
-                {"grn": grn, "po": grn.po, "lines": lines},
+                {"grn": grn, "po": grn.po, "lines": lines, "is_finalized": is_finalized},
             )
 
         if not inspection_items:
@@ -372,7 +397,7 @@ def receipt_inspect_view(request, grn_id):
             return render(
                 request,
                 "receipts/receipt_inspect.html",
-                {"grn": grn, "po": grn.po, "lines": lines},
+                {"grn": grn, "po": grn.po, "lines": lines, "is_finalized": is_finalized},
             )
 
         try:
@@ -392,20 +417,20 @@ def receipt_inspect_view(request, grn_id):
             return render(
                 request,
                 "receipts/receipt_inspect.html",
-                {"grn": grn, "po": grn.po, "lines": lines},
+                {"grn": grn, "po": grn.po, "lines": lines, "is_finalized": is_finalized},
             )
         except Exception as e:
             messages.error(request, f"Error recording inspection: {str(e)}")
             return render(
                 request,
                 "receipts/receipt_inspect.html",
-                {"grn": grn, "po": grn.po, "lines": lines},
+                {"grn": grn, "po": grn.po, "lines": lines, "is_finalized": is_finalized},
             )
 
     return render(
         request,
         "receipts/receipt_inspect.html",
-        {"grn": grn, "po": grn.po, "lines": lines},
+        {"grn": grn, "po": grn.po, "lines": lines, "is_finalized": is_finalized},
     )
 
 
@@ -996,6 +1021,7 @@ def receipt_line_correct_view(request, line_id):
         notes = request.POST.get("notes", "").strip()
 
         try:
+            clean_reason = validate_audit_reason_text(reason, field_name="Correction reason")
             new_qty_recv = Decimal(new_qty_recv_raw)
             new_qty_acc = Decimal(new_qty_acc_raw) if new_qty_acc_raw else None
             correct_receipt_line_quantity_service(
@@ -1003,7 +1029,7 @@ def receipt_line_correct_view(request, line_id):
                 corrected_by=request.user,
                 new_quantity_received=new_qty_recv,
                 new_quantity_accepted=new_qty_acc,
-                reason=reason,
+                reason=clean_reason,
                 correction_notes=notes,
             )
             messages.success(

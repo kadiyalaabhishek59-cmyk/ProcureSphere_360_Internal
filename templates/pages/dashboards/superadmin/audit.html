@@ -134,24 +134,37 @@
         </div>
     </div>
     {% if page_obj.has_other_pages %}
-    <div class="card-footer bg-white p-3 border-top-0 d-flex justify-content-center">
-        <ul class="pagination pagination-sm mb-0 flex-wrap justify-content-center">
+    <div class="card-footer bg-white border-top py-3 px-4 d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <span class="small text-muted">
+            Showing <span class="fw-semibold text-dark">{{ page_obj.start_index }}</span> to <span class="fw-semibold text-dark">{{ page_obj.end_index }}</span> of <span class="fw-semibold text-dark">{{ page_obj.paginator.count }}</span> audit logs
+        </span>
+        <ul class="pagination pagination-sm mb-0 align-items-center">
             {% if page_obj.has_previous %}
-            <li class="page-item"><a class="page-link text-danger" href="?page={{ page_obj.previous_page_number }}">Previous</a></li>
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a></li>
             {% else %}
             <li class="page-item disabled"><span class="page-link">Previous</span></li>
             {% endif %}
             
             {% for num in page_obj.paginator.page_range %}
-                {% if page_obj.number == num %}
-                <li class="page-item active"><span class="page-link bg-danger border-danger">{{ num }}</span></li>
-                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                <li class="page-item"><a class="page-link text-danger" href="?page={{ num }}">{{ num }}</a></li>
+                {% if page_obj.paginator.num_pages <= 7 %}
+                    {% if page_obj.number == num %}
+                    <li class="page-item active" aria-current="page"><span class="page-link">{{ num }}</span></li>
+                    {% else %}
+                    <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+                    {% endif %}
+                {% else %}
+                    {% if page_obj.number == num %}
+                    <li class="page-item active" aria-current="page"><span class="page-link">{{ num }}</span></li>
+                    {% elif num == 1 or num == page_obj.paginator.num_pages or num >= page_obj.number|add:'-2' and num <= page_obj.number|add:'2' %}
+                    <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+                    {% elif num == page_obj.number|add:'-3' and num > 1 or num == page_obj.number|add:'3' and num < page_obj.paginator.num_pages %}
+                    <li class="page-item disabled"><span class="page-link ellipsis">&hellip;</span></li>
+                    {% endif %}
                 {% endif %}
             {% endfor %}
             
             {% if page_obj.has_next %}
-            <li class="page-item"><a class="page-link text-danger" href="?page={{ page_obj.next_page_number }}">Next</a></li>
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a></li>
             {% else %}
             <li class="page-item disabled"><span class="page-link">Next</span></li>
             {% endif %}

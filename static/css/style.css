@@ -2283,5 +2283,102 @@ img.dashboard-brand-logo {
     }
 }
 
+/* ========================================================================= */
+/* UNIVERSAL ENTERPRISE PAGINATION DESIGN SYSTEM                             */
+/* Consistent, accessible, modern pagination applied across all modules      */
+/* ========================================================================= */
+.pagination {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 5px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    list-style: none !important;
+}
+
+.pagination .page-item {
+    margin: 0 !important;
+}
+
+.pagination .page-link {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-width: 36px !important;
+    height: 36px !important;
+    padding: 0 12px !important;
+    font-size: 0.8125rem !important; /* 13px */
+    font-weight: 500 !important;
+    color: #475569 !important; /* Slate 600 */
+    background-color: #FFFFFF !important;
+    border: 1px solid #E2E8F0 !important; /* Slate 200 */
+    border-radius: 8px !important;
+    text-decoration: none !important;
+    transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    user-select: none !important;
+    line-height: 1 !important;
+}
+
+.pagination .page-link:hover:not(.disabled):not(:disabled) {
+    color: #1D4ED8 !important; /* Blue 700 */
+    background-color: #EFF6FF !important; /* Blue 50 */
+    border-color: #BFDBFE !important; /* Blue 200 */
+    transform: translateY(-1px) !important;
+    box-shadow: 0 2px 4px rgba(37, 99, 235, 0.08) !important;
+}
+
+.pagination .page-link:focus,
+.pagination .page-link:focus-visible {
+    outline: none !important;
+    border-color: #3B82F6 !important;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2) !important;
+}
+
+/* Active Page State */
+.pagination .page-item.active .page-link,
+.pagination .page-link.active {
+    color: #FFFFFF !important;
+    background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%) !important;
+    border-color: #1D4ED8 !important;
+    font-weight: 600 !important;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3) !important;
+    transform: none !important;
+    cursor: default !important;
+    pointer-events: none !important;
+}
+
+/* Disabled State */
+.pagination .page-item.disabled .page-link,
+.pagination .page-link:disabled,
+.pagination .page-link.disabled {
+    color: #94A3B8 !important; /* Slate 400 */
+    background-color: #F8FAFC !important; /* Slate 50 */
+    border-color: #E2E8F0 !important;
+    opacity: 0.65 !important;
+    cursor: not-allowed !important;
+    pointer-events: none !important;
+    box-shadow: none !important;
+    transform: none !important;
+}
+
+/* Ellipsis / Separator */
+.pagination .page-item.disabled .page-link.ellipsis,
+.pagination .page-link.ellipsis {
+    border-color: transparent !important;
+    background-color: transparent !important;
+    color: #64748B !important;
+    font-size: 1rem !important;
+    min-width: 24px !important;
+    padding: 0 4px !important;
+    letter-spacing: 2px !important;
+}
+
+/* Card footer wrapper styling */
+.card-footer:has(.pagination) {
+    background-color: #FFFFFF !important;
+    border-top: 1px solid #E2E8F0 !important;
+}
+
+
 
 

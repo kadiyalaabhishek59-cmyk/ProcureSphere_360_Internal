@@ -92,17 +92,31 @@ class SessionIdleTimeoutMiddleware:
             or request.COOKIES.get("ps360_just_logged_out") == "1"
         )
         if has_signout_cookie and not is_exempt and path != "/":
+            # If the user has just logged in, clear residual signout cookies and allow request
+            if request.session.get("_just_logged_in"):
+                request.session.pop("_just_logged_in", None)
+                response = self.get_response(request)
+                response.delete_cookie("ps360_user_signed_out", path="/", samesite="Lax")
+                response.delete_cookie("ps360_just_logged_out", path="/", samesite="Lax")
+                return response
+
             if user is not None and user.is_authenticated:
                 logout(request)
             response = redirect("/login/?reason=signed_out")
-            response.delete_cookie("ps360_user_signed_out")
-            response.delete_cookie("ps360_just_logged_out")
+            response.delete_cookie("ps360_user_signed_out", path="/", samesite="Lax")
+            response.delete_cookie("ps360_just_logged_out", path="/", samesite="Lax")
             return response
 
         if user is None or not user.is_authenticated:
             return self.get_response(request)
 
         if is_exempt:
+            return self.get_response(request)
+
+        # DEF-008: Active API requests (except UI session-keepalive) refresh the session activity timestamp
+        # and remain authenticated without premature expiry during automated test suites or API integrations.
+        if path.startswith("/api/") and not path.startswith("/api/v1/auth/session-keepalive/"):
+            request.session[SESSION_LAST_ACTIVITY_KEY] = time.time()
             return self.get_response(request)
 
         timeout_seconds = int(getattr(settings, "SESSION_IDLE_TIMEOUT_SECONDS", DEFAULT_IDLE_TIMEOUT_SECONDS))

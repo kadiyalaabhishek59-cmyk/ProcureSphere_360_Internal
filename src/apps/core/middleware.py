@@ -203,15 +203,6 @@ class VendorPortalIsolationMiddleware:
 
             if is_vendor:
                 path = request.path.rstrip("/")
-                # DEF-003: Allow vendor read-only access to /api/v1/contracts so DRF can serve
-                # vendor-isolated contracts (CanViewContract and get_contracts_qs),
-                # while strictly blocking vendor mutations (POST, PUT, PATCH, DELETE) and buyer endpoints.
-                if (
-                    path == "/api/v1/contracts"
-                    or path.startswith("/api/v1/contracts/")
-                ) and request.method in ("GET", "HEAD", "OPTIONS"):
-                    return self.get_response(request)
-
                 for prefix in self.BLOCKED_INTERNAL_PREFIXES:
                     if path == prefix or path.startswith(prefix + "/"):
                         if request.path.startswith("/api/"):

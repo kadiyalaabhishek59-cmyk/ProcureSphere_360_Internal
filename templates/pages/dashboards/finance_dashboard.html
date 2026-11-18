@@ -272,21 +272,29 @@
                 {% if open_match_exceptions.has_other_pages %}
                 <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top flex-wrap gap-2">
                     <span class="text-muted small">
-                        Showing {{ open_match_exceptions.start_index }}–{{ open_match_exceptions.end_index }} of {{ metrics.pending_match_exceptions }} exceptions
+                        Showing <span class="fw-semibold text-dark">{{ open_match_exceptions.start_index }}–{{ open_match_exceptions.end_index }}</span> of <span class="fw-semibold text-dark">{{ metrics.pending_match_exceptions }}</span> exceptions
                     </span>
                     <nav aria-label="Exceptions pagination">
                         <ul class="pagination pagination-sm mb-0">
                             {% if open_match_exceptions.has_previous %}
                             <li class="page-item">
-                                <a class="page-link rounded-pill px-3 me-1" href="?dept={{ selected_dept_id }}&cost_center={{ selected_cc_id }}&page={{ open_match_exceptions.previous_page_number }}">Previous</a>
+                                <a class="page-link" href="?dept={{ selected_dept_id }}&cost_center={{ selected_cc_id }}&page={{ open_match_exceptions.previous_page_number }}">Previous</a>
+                            </li>
+                            {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">Previous</span>
                             </li>
                             {% endif %}
                             <li class="page-item active">
-                                <span class="page-link rounded-pill px-3">{{ open_match_exceptions.number }} / {{ open_match_exceptions.paginator.num_pages }}</span>
+                                <span class="page-link">{{ open_match_exceptions.number }} / {{ open_match_exceptions.paginator.num_pages }}</span>
                             </li>
                             {% if open_match_exceptions.has_next %}
                             <li class="page-item">
-                                <a class="page-link rounded-pill px-3 ms-1" href="?dept={{ selected_dept_id }}&cost_center={{ selected_cc_id }}&page={{ open_match_exceptions.next_page_number }}">Next</a>
+                                <a class="page-link" href="?dept={{ selected_dept_id }}&cost_center={{ selected_cc_id }}&page={{ open_match_exceptions.next_page_number }}">Next</a>
+                            </li>
+                            {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">Next</span>
                             </li>
                             {% endif %}
                         </ul>

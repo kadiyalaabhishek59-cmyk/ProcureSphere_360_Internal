@@ -1,4 +1,5 @@
 {% extends base_layout|default:'layouts/legal_base.html' %}
+{% load humanize core_tags %}
 
 {% block title %}{{ contract.contract_number }} - Contract SLA Workspace{% endblock %}
 
@@ -59,11 +60,11 @@
 </div>
 
 <!-- Header Card -->
-<div class="glass-card-dark p-4 mb-4 shadow-sm">
-    <div class="row align-items-center">
-        <div class="col-lg-8">
-            <div class="d-flex align-items-center gap-2 mb-2">
-                <span class="badge bg-secondary text-white rounded-pill px-3 py-1 fw-bold"><code>{{ contract.contract_number }}</code></span>
+<div class="glass-card-dark p-4 mb-4 shadow-sm overflow-hidden">
+    <div class="row align-items-center g-3">
+        <div class="col-lg-7" style="min-width: 0;">
+            <div class="d-flex align-items-center flex-wrap gap-2 mb-2">
+                <span class="badge bg-secondary text-white rounded-pill px-3 py-1 fw-bold font-monospace">{{ contract.contract_number }}</span>
                 <span class="badge bg-light text-dark rounded-pill px-3 py-1 fw-bold">Version {{ contract.version }}</span>
                 {% if contract.status == 'ACTIVE' %}
                     <span class="badge bg-success text-white rounded-pill px-3 py-1">ACTIVE</span>
@@ -79,17 +80,19 @@
                     <span class="badge bg-secondary text-white rounded-pill px-3 py-1">{{ contract.status }}</span>
                 {% endif %}
             </div>
-            <h2 class="fw-bold text-white mb-2">{{ contract.title }}</h2>
-            <div class="text-white-50 small">
-                <span class="me-3"><i class="fa-solid fa-building me-1"></i> Supplier: <strong class="text-white">{{ contract.vendor.legal_name }}</strong></span>
-                <span class="me-3"><i class="fa-solid fa-user me-1"></i> Owner: <strong class="text-white">{{ contract.contract_owner.email }}</strong></span>
+            <h2 class="fw-bold text-white mb-2 text-break" style="word-break: break-word; overflow-wrap: anywhere;">{{ contract.title }}</h2>
+            <div class="text-white-50 small d-flex flex-wrap gap-y-1">
+                <span class="me-3 text-break"><i class="fa-solid fa-building me-1"></i> Supplier: <strong class="text-white">{{ contract.vendor.legal_name }}</strong></span>
+                <span class="me-3 text-break"><i class="fa-solid fa-user me-1"></i> Owner: <strong class="text-white">{{ contract.contract_owner.email }}</strong></span>
                 <span><i class="fa-solid fa-calendar me-1"></i> Created: <strong class="text-white">{{ contract.created_at|date:"M d, Y" }}</strong></span>
             </div>
         </div>
-        <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
-            <div class="text-white-50 small text-uppercase fw-semibold mb-1">Contract Value</div>
-            <div class="display-6 fw-bold text-success">₹{{ contract.contract_value|floatformat:2 }}</div>
-            <div class="text-white-50 small mt-1">
+        <div class="col-lg-5 text-lg-end mt-3 mt-lg-0" style="min-width: 0;">
+            <div class="text-white-50 small text-uppercase fw-semibold mb-1" style="letter-spacing: 0.05em;">Contract Value</div>
+            <div class="fw-bold text-success text-break" style="font-size: clamp(1.4rem, 2.5vw, 2.2rem); line-height: 1.2; word-break: break-word; overflow-wrap: anywhere;" title="₹{{ contract.contract_value|floatformat:2|intcomma }}">
+                ₹{{ contract.contract_value|floatformat:2|intcomma }}
+            </div>
+            <div class="text-white-50 small mt-1 text-break">
                 Term: {{ contract.start_date|date:"M d, Y" }} &ndash; {{ contract.end_date|date:"M d, Y" }}
             </div>
         </div>
@@ -146,7 +149,7 @@
                         <tbody>
                             <tr>
                                 <th class="text-muted w-35 py-2">Contract Number</th>
-                                <td class="fw-bold text-navy py-2"><code>{{ contract.contract_number }}</code></td>
+                                <td class="fw-bold text-navy py-2"><span class="font-monospace text-navy">{{ contract.contract_number }}</span></td>
                             </tr>
                             <tr>
                                 <th class="text-muted py-2">Vendor Name</th>
@@ -154,7 +157,7 @@
                             </tr>
                             <tr>
                                 <th class="text-muted py-2">Contract Value</th>
-                                <td class="fw-bold text-success py-2">₹{{ contract.contract_value|floatformat:2 }}</td>
+                                <td class="fw-bold text-success py-2 font-monospace">₹{{ contract.contract_value|floatformat:2|intcomma }}</td>
                             </tr>
                             <tr>
                                 <th class="text-muted py-2">Current Version</th>
@@ -171,13 +174,13 @@
                             {% if contract.sourcing_event %}
                             <tr>
                                 <th class="text-muted py-2">Linked RFQ/Sourcing</th>
-                                <td class="py-2"><a href="{% url 'sourcing_detail' event_id=contract.sourcing_event.id %}" class="fw-semibold"><code>{{ contract.sourcing_event.event_number }}</code> - {{ contract.sourcing_event.title }}</a></td>
+                                <td class="py-2"><a href="{% url 'sourcing_detail' event_id=contract.sourcing_event.id %}" class="fw-semibold"><span class="font-monospace">{{ contract.sourcing_event.event_number }}</span> - {{ contract.sourcing_event.title }}</a></td>
                             </tr>
                             {% endif %}
                             {% if contract.po %}
                             <tr>
                                 <th class="text-muted py-2">Linked Purchase Order</th>
-                                <td class="py-2"><a href="/purchase-orders/" class="fw-semibold"><code>{{ contract.po.po_number }}</code></a></td>
+                                <td class="py-2"><a href="/purchase-orders/" class="fw-semibold"><span class="font-monospace">{{ contract.po.po_number }}</span></a></td>
                             </tr>
                             {% endif %}
                         </tbody>
@@ -239,7 +242,7 @@
                         <tr>
                             <td class="ps-3"><span class="badge bg-dark">v{{ ver.version_number }}</span></td>
                             <td class="fw-semibold text-dark">{{ ver.amendment_summary }}</td>
-                            <td class="fw-bold text-success">₹{{ ver.contract_value|floatformat:2 }}</td>
+                            <td class="fw-bold text-success font-monospace">₹{{ ver.contract_value|floatformat:2|intcomma }}</td>
                             <td class="small text-muted">{{ ver.start_date|date:"M d, Y" }} &rarr; {{ ver.end_date|date:"M d, Y" }}</td>
                             <td class="small">{{ ver.approved_by.email }}</td>
                             <td class="small text-muted">{{ ver.created_at|date:"M d, Y H:i" }}</td>
@@ -464,7 +467,7 @@
                             <td class="ps-3 small text-muted">{{ log.timestamp|date:"M d, Y H:i:s" }}</td>
                             <td class="fw-bold small">{{ log.actor.email|default:"System" }}</td>
                             <td><span class="badge bg-dark">{{ log.action }}</span></td>
-                            <td class="small"><code>{{ log.new_state }}</code></td>
+                            <td class="small">{{ log|format_audit_updated_state }}</td>
                         </tr>
                         {% empty %}
                         <tr><td colspan="4" class="text-center py-4 text-muted">No audit trail records found.</td></tr>

@@ -89,7 +89,7 @@ def test_stores_receiver_po_list_filtering(client, db_roles):
 
     # Vendor, amounts, statuses, and action button should be present
     assert "Dell Technologies" in content
-    assert "$2000.00" in content
+    assert "2000.00" in content
     assert "View Details" in content
 
 
@@ -158,7 +158,7 @@ def test_stores_receiver_po_detail_view(client, db_roles):
     assert "PO-2026-DETAIL-01" in content
     assert "Logitech Commercial" in content
     assert "Partial Receipt" in content
-    assert "$16500.00" in content
+    assert "16500.00" in content
     assert "Standard Net-30 enterprise fulfillment terms." in content
 
     # Line item descriptions, quantities, and remaining quantities

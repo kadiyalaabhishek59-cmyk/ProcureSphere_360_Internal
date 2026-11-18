@@ -1033,7 +1033,29 @@ def custom_404_view(request, exception=None):
             },
             status=404,
         )
-    return render(request, "404.html", status=404)
+    user = getattr(request, "user", None)
+    role_code = None
+    target_dashboard_url = "/dashboard/"
+    if user and user.is_authenticated:
+        from apps.accounts.models import Role
+        role_code = getattr(user, "role_code", None) or (
+            user.role.code if getattr(user, "role", None) else None
+        )
+        if role_code == Role.LEGAL_MGR:
+            target_dashboard_url = "/legal/"
+        else:
+            try:
+                target_dashboard_url = get_dashboard_url_for_user(user)
+            except Exception:
+                target_dashboard_url = "/dashboard/"
+    else:
+        target_dashboard_url = "/login/"
+
+    context = {
+        "role_code": role_code,
+        "target_dashboard_url": target_dashboard_url,
+    }
+    return render(request, "404.html", context, status=404)
 
 
 def custom_500_view(request):
@@ -1143,6 +1165,20 @@ def protected_media_view(request, file_path):
 
     full_path = os.path.join(settings.MEDIA_ROOT, normalized_path)
     if not os.path.exists(full_path) or not os.path.isfile(full_path):
+        base_name = os.path.basename(normalized_path)
+        # Resilient fallback: Check if file belongs to a VendorDocument and stream directly
+        if "vendor" in normalized_path.lower() or "kyc" in normalized_path.lower():
+            try:
+                from apps.vendors.models import VendorDocument
+                doc = (
+                    VendorDocument.objects.filter(file__endswith=base_name).select_related("vendor").first()
+                    or VendorDocument.objects.filter(file__icontains=base_name).select_related("vendor").first()
+                )
+                if doc:
+                    from apps.vendors.views import vendor_document_download_view
+                    return vendor_document_download_view(request, doc.vendor.id, doc.id)
+            except Exception:
+                pass
         raise Http404("Document not found.")
 
     content_type, _ = mimetypes.guess_type(full_path)

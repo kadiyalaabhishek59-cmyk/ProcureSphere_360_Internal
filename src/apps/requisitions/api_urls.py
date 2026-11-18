@@ -97,12 +97,27 @@ class PurchaseRequisitionSerializer(serializers.ModelSerializer):
         ]
 
     def get_resolved_route(self, obj):
-        from apps.approvals.models import ApprovalPolicy
-        from apps.approvals.services import evaluate_approval_chain
+        # Cache route evaluations on serializer context/request to prevent N+1 query storms and gateway timeouts
+        cache = self.context.get("_route_cache")
+        if cache is None and "request" in self.context:
+            cache = getattr(self.context["request"], "_route_cache", None)
+            if cache is None:
+                cache = {}
+                setattr(self.context["request"], "_route_cache", cache)
 
         amount = getattr(obj, "total_amount", None) or Decimal("0.00")
         dept = getattr(obj, "department", None)
         cc = getattr(obj, "cost_center", None)
+        dept_id = str(getattr(obj, "department_id", None))
+        cc_id = str(getattr(obj, "cost_center_id", None))
+        cache_key = (dept_id, cc_id, str(amount))
+
+        if cache is not None and cache_key in cache:
+            return cache[cache_key]
+
+        from apps.approvals.models import ApprovalPolicy
+        from apps.approvals.services import evaluate_approval_chain
+
         try:
             chain = evaluate_approval_chain(
                 module=ApprovalPolicy.MODULE_PR,
@@ -127,7 +142,10 @@ class PurchaseRequisitionSerializer(serializers.ModelSerializer):
                     "approver": spec_approver.email if spec_approver else None,
                     "is_mandatory": s.get("is_mandatory", True),
                 })
-            return {"steps": steps}
+            res = {"steps": steps}
+            if cache is not None:
+                cache[cache_key] = res
+            return res
         except Exception:
             return {"steps": []}
 
@@ -461,20 +479,24 @@ class PurchaseRequisitionViewSet(viewsets.ModelViewSet):
             if user.department_id:
                 from apps.organization.models import Department
 
-                depts_with_approvers = Department.objects.filter(
-                    organization=user_org,
-                    users__role__code=Role.DEPT_APPROVER,
-                    users__is_active=True,
-                ).exclude(id=user.department_id)
+                depts_with_approvers = list(
+                    Department.objects.filter(
+                        organization=user_org,
+                        users__role__code=Role.DEPT_APPROVER,
+                        users__is_active=True,
+                    ).exclude(id=user.department_id).values_list("id", flat=True)
+                )
 
-                qs = self.queryset.filter(
+                dept_q = (
                     Q(department_id=user.department_id)
                     | Q(cost_center__manager=user)
-                    | (
+                )
+                if user_org:
+                    dept_q |= (
                         Q(department__organization=user_org)
-                        & ~Q(department__in=depts_with_approvers)
+                        & ~Q(department_id__in=depts_with_approvers)
                     )
-                ).distinct()
+                qs = self.queryset.filter(dept_q).distinct()
             elif user_org:
                 qs = self.queryset.filter(
                     Q(department__organization=user_org) | Q(cost_center__manager=user)

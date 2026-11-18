@@ -97,6 +97,8 @@ DJANGO_APPS = [
 
     "django.contrib.staticfiles",
 
+    "django.contrib.humanize",
+
 ]
 
 

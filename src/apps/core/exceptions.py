@@ -1,4 +1,5 @@
 import decimal
+import json
 
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import DataError
@@ -9,6 +10,7 @@ from rest_framework.exceptions import (
     AuthenticationFailed,
     NotAuthenticated,
     NotFound,
+    ParseError,
     PermissionDenied,
     Throttled,
 )
@@ -53,6 +55,19 @@ def custom_exception_handler(exc, context):
     }
     """
     req_id = _get_active_request_id(context)
+
+    if isinstance(exc, (ParseError, json.JSONDecodeError)):
+        return Response(
+            {
+                "error": {
+                    "code": "VALIDATION_ERROR",
+                    "message": "Malformed JSON payload in request body.",
+                    "details": str(exc),
+                    "request_id": req_id,
+                }
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
     if isinstance(exc, (decimal.InvalidOperation, OverflowError, DataError, ValueError)):
         return Response(

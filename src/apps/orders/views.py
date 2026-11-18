@@ -35,12 +35,16 @@ def list_view(request):
         return redirect("requisitions_list")
 
     scoped_qs = scope_purchase_orders_queryset(PurchaseOrder.objects.all(), user)
+    active_tab = request.GET.get("tab", "receive").strip().lower()
+    if active_tab != "deliveries":
+        active_tab = "receive"
+
     if role_code == Role.STORES_RECEIVER:
-        # Stores / Receiver sees only POs eligible for receiving
+        # Stores / Receiver sees POs eligible for receiving; prefetch receipts for delivery tracking
         items = (
             scoped_qs.filter(status__in=RECEIVABLE_PO_STATUSES)
             .select_related("vendor", "cost_center")
-            .prefetch_related("lines")
+            .prefetch_related("lines", "receipts")
             .order_by("-created_at")
         )
     else:
@@ -64,6 +68,7 @@ def list_view(request):
         "querystring": querystring,
         "role_code": role_code,
         "is_stores_receiver": role_code == Role.STORES_RECEIVER,
+        "active_tab": active_tab,
         "receivable_statuses": RECEIVABLE_PO_STATUSES,
         "can_generate_po": getattr(user, "is_superuser", False)
         or role_code in (Role.PROC_EXEC, Role.PROC_MGR, Role.SUPER_ADMIN),

@@ -13,10 +13,10 @@
         <p class="text-muted mb-0">Record and review physical goods receipts, delivery notes, and quality inspections.</p>
     </div>
     <div class="d-flex align-items-center gap-2">
-        <a href="{% url 'orders_list' %}" class="btn btn-primary rounded-pill px-4 fw-semibold shadow-sm">
+        <button type="button" class="btn btn-primary rounded-pill px-4 fw-semibold shadow-sm" data-bs-toggle="modal" data-bs-target="#recordGoodsReceiptModal" id="btnRecordGoodsReceipt">
             <i class="fa-solid fa-plus me-1"></i> Record Goods Receipt
-        </a>
-        <a href="{% url 'orders_list' %}" class="btn btn-outline-secondary rounded-pill px-3 fw-semibold">
+        </button>
+        <a href="{% url 'orders_list' %}?tab=deliveries" class="btn btn-outline-secondary rounded-pill px-3 fw-semibold" id="btnViewPendingDeliveries">
             <i class="fa-solid fa-truck-ramp-box me-1"></i> View Pending Deliveries
         </a>
     </div>
@@ -239,36 +239,44 @@
 
         <!-- Server-side Pagination Footer -->
         {% if page_obj.has_other_pages %}
-        <div class="card-footer bg-white border-top py-3 px-4 d-flex justify-content-between align-items-center">
+        <div class="card-footer bg-white border-top py-3 px-4 d-flex flex-wrap justify-content-between align-items-center gap-3">
             <span class="small text-muted">
-                Showing page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }} ({{ total_count }} items)
+                Showing <span class="fw-semibold text-dark">{{ page_obj.start_index }}</span> to <span class="fw-semibold text-dark">{{ page_obj.end_index }}</span> of <span class="fw-semibold text-dark">{{ total_count }}</span> items
             </span>
             <nav aria-label="GRN pagination">
-                <ul class="pagination pagination-sm mb-0">
+                <ul class="pagination pagination-sm mb-0 align-items-center">
                     {% if page_obj.has_previous %}
                     <li class="page-item">
-                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if query_string %}&{{ query_string }}{% endif %}">&laquo; Prev</a>
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if query_string %}&{{ query_string }}{% endif %}" aria-label="Previous">&laquo; Prev</a>
                     </li>
                     {% else %}
-                    <li class="page-item disabled"><span class="page-link">&laquo; Prev</span></li>
+                    <li class="page-item disabled"><span class="page-link" aria-label="Previous">&laquo; Prev</span></li>
                     {% endif %}
 
                     {% for num in page_obj.paginator.page_range %}
-                        {% if page_obj.number == num %}
-                        <li class="page-item active"><span class="page-link">{{ num }}</span></li>
-                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ num }}{% if query_string %}&{{ query_string }}{% endif %}">{{ num }}</a>
-                        </li>
+                        {% if page_obj.paginator.num_pages <= 7 %}
+                            {% if page_obj.number == num %}
+                            <li class="page-item active" aria-current="page"><span class="page-link">{{ num }}</span></li>
+                            {% else %}
+                            <li class="page-item"><a class="page-link" href="?page={{ num }}{% if query_string %}&{{ query_string }}{% endif %}">{{ num }}</a></li>
+                            {% endif %}
+                        {% else %}
+                            {% if page_obj.number == num %}
+                            <li class="page-item active" aria-current="page"><span class="page-link">{{ num }}</span></li>
+                            {% elif num == 1 or num == page_obj.paginator.num_pages or num >= page_obj.number|add:'-2' and num <= page_obj.number|add:'2' %}
+                            <li class="page-item"><a class="page-link" href="?page={{ num }}{% if query_string %}&{{ query_string }}{% endif %}">{{ num }}</a></li>
+                            {% elif num == page_obj.number|add:'-3' and num > 1 or num == page_obj.number|add:'3' and num < page_obj.paginator.num_pages %}
+                            <li class="page-item disabled"><span class="page-link ellipsis">&hellip;</span></li>
+                            {% endif %}
                         {% endif %}
                     {% endfor %}
 
                     {% if page_obj.has_next %}
                     <li class="page-item">
-                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if query_string %}&{{ query_string }}{% endif %}">Next &raquo;</a>
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if query_string %}&{{ query_string }}{% endif %}" aria-label="Next">Next &raquo;</a>
                     </li>
                     {% else %}
-                    <li class="page-item disabled"><span class="page-link">Next &raquo;</span></li>
+                    <li class="page-item disabled"><span class="page-link" aria-label="Next">Next &raquo;</span></li>
                     {% endif %}
                 </ul>
             </nav>
@@ -276,4 +284,84 @@
         {% endif %}
     </div>
 </div>
+
+<!-- Record Goods Receipt Modal (BUG-010, BUG-011) -->
+<div class="modal fade" id="recordGoodsReceiptModal" tabindex="-1" aria-labelledby="recordGoodsReceiptModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-bottom px-4 pt-4 pb-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="bg-primary-subtle text-primary rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;">
+                        <i class="fa-solid fa-box-open fs-5"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title fw-bold text-dark mb-0" id="recordGoodsReceiptModalLabel">Record Goods Receipt Note</h5>
+                        <p class="text-muted small mb-0">Select an approved, receivable purchase order to record inbound shipments and generate a GRN.</p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                {% if open_pos %}
+                <div class="mb-3">
+                    <label for="grnModalPoSearch" class="form-label small fw-semibold text-secondary">Quick Filter PO</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+                        <input type="text" id="grnModalPoSearch" class="form-control bg-light border-start-0" placeholder="Type PO number or vendor name..." onkeyup="filterGrnModalPos()">
+                    </div>
+                </div>
+                <div class="list-group rounded-3 border" style="max-height: 360px; overflow-y: auto;" id="grnModalPoList">
+                    {% for po in open_pos %}
+                    <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center p-3 grn-modal-po-item" data-search="{{ po.po_number }} {{ po.vendor.legal_name }}">
+                        <div>
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <span class="font-monospace fw-bold text-primary">{{ po.po_number }}</span>
+                                <span class="badge bg-secondary-subtle text-secondary border small">{{ po.get_status_display }}</span>
+                            </div>
+                            <div class="small fw-semibold text-dark">{{ po.vendor.legal_name }}</div>
+                            <small class="text-muted">Total: ₹{{ po.total_amount|floatformat:2 }} &bull; Created {{ po.created_at|date:"M d, Y" }}</small>
+                        </div>
+                        <a href="{% url 'receipt_create' po_id=po.id %}" class="btn btn-sm btn-primary rounded-pill px-3 fw-semibold shadow-sm">
+                            <i class="fa-solid fa-file-circle-plus me-1"></i> Record Receipt &rarr;
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                        <i class="fa-solid fa-boxes-packing text-muted fs-3"></i>
+                    </div>
+                    <h6 class="fw-bold text-dark">No Receivable POs Found</h6>
+                    <p class="text-muted small mb-3">All purchase orders are currently completed or not yet issued for receiving.</p>
+                    <a href="{% url 'orders_list' %}" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                        View Purchase Orders Register &rarr;
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+            <div class="modal-footer border-top bg-light px-4 py-3 d-flex justify-content-between">
+                <a href="{% url 'orders_list' %}" class="btn btn-link text-decoration-none text-muted small p-0">
+                    <i class="fa-solid fa-list me-1"></i> Browse full PO Register
+                </a>
+                <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function filterGrnModalPos() {
+    const query = (document.getElementById('grnModalPoSearch')?.value || '').toLowerCase().trim();
+    const items = document.querySelectorAll('.grn-modal-po-item');
+    items.forEach(item => {
+        const text = (item.getAttribute('data-search') || '').toLowerCase();
+        if (!query || text.includes(query)) {
+            item.classList.remove('d-none');
+        } else {
+            item.classList.add('d-none');
+        }
+    });
+}
+</script>
 {% endblock %}

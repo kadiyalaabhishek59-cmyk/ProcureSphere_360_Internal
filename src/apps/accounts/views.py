@@ -40,8 +40,8 @@ def portal_login_view(request):
                     "You have been signed out of your session."
                 )
             response = render(request, "pages/login.html", context)
-            response.delete_cookie("ps360_just_logged_out")
-            response.delete_cookie("ps360_user_signed_out")
+            response.delete_cookie("ps360_just_logged_out", path="/", samesite="Lax")
+            response.delete_cookie("ps360_user_signed_out", path="/", samesite="Lax")
             return response
 
         from apps.core.views import get_dashboard_url_for_user
@@ -100,6 +100,7 @@ def portal_login_view(request):
 
             login(request, user)
             request.session["_last_activity_ts"] = time.time()
+            request.session["_just_logged_in"] = True
 
 
 
@@ -151,8 +152,8 @@ def portal_login_view(request):
                     response = JsonResponse({"ok": True, "redirect": change_url})
                 else:
                     response = redirect(change_url)
-                response.delete_cookie("ps360_just_logged_out")
-                response.delete_cookie("ps360_user_signed_out")
+                response.delete_cookie("ps360_just_logged_out", path="/", samesite="Lax")
+                response.delete_cookie("ps360_user_signed_out", path="/", samesite="Lax")
                 return response
 
             next_url = request.GET.get("next") or request.POST.get("next")
@@ -169,8 +170,8 @@ def portal_login_view(request):
                 response = JsonResponse({"ok": True, "redirect": next_url})
             else:
                 response = redirect(next_url)
-            response.delete_cookie("ps360_just_logged_out")
-            response.delete_cookie("ps360_user_signed_out")
+            response.delete_cookie("ps360_just_logged_out", path="/", samesite="Lax")
+            response.delete_cookie("ps360_user_signed_out", path="/", samesite="Lax")
             return response
 
         else:

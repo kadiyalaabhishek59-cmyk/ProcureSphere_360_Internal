@@ -18,7 +18,7 @@
         display: none;
     }
     .verdict-card {
-        border: 2px solid #dee2e6;
+        border: 2px solid #94A3B8;
         border-radius: 0.5rem;
         padding: 0.6rem 1rem;
         text-align: center;
@@ -30,25 +30,30 @@
         align-items: center;
         justify-content: center;
         gap: 0.4rem;
-        background-color: #ffffff;
-        color: #6c757d;
+        background-color: #F8FAFC;
+        color: #0F172A; /* High contrast: 14:1 */
     }
     .verdict-option:hover .verdict-card {
-        border-color: #adb5bd;
+        border-color: #475569;
+        background-color: #F1F5F9;
     }
-    /* Active PASS State */
+    /* Active PASS State: WCAG AA/AAA compliant high contrast (BUG-006) */
     .verdict-option input[value="true"]:checked + .verdict-card {
-        background-color: #d1e7dd;
-        border-color: #198754;
-        color: #0f5132;
-        box-shadow: 0 2px 6px rgba(25, 135, 84, 0.2);
+        background-color: #15803D !important;
+        border-color: #14532D !important;
+        color: #FFFFFF !important;
+        box-shadow: 0 2px 6px rgba(20, 83, 45, 0.35);
     }
-    /* Active FAIL State */
+    /* Active FAIL State: WCAG AA/AAA compliant high contrast (BUG-006) */
     .verdict-option input[value="false"]:checked + .verdict-card {
-        background-color: #f8d7da;
-        border-color: #dc3545;
-        color: #842029;
-        box-shadow: 0 2px 6px rgba(220, 53, 69, 0.2);
+        background-color: #B91C1C !important;
+        border-color: #7F1D1D !important;
+        color: #FFFFFF !important;
+        box-shadow: 0 2px 6px rgba(127, 29, 29, 0.35);
+    }
+    .verdict-option input:disabled + .verdict-card {
+        opacity: 0.85;
+        cursor: not-allowed;
     }
     /* Line Card State Accents */
     .line-card-pass {
@@ -118,16 +123,32 @@
                 <span class="small fw-bold">Choose PASS or FAIL:</span>
             </div>
             <div class="col-12 col-lg d-flex flex-wrap gap-2">
-                <span class="badge bg-success bg-opacity-15 text-success border border-success border-opacity-25 px-2 py-1 small fw-semibold">
-                    <i class="fa-solid fa-circle-check me-1"></i> PASS &rarr; Accepted to Stock Handoff
+                <span class="badge px-3 py-2 fw-bold text-uppercase rounded-pill shadow-sm" style="background-color: #064E3B; color: #FFFFFF; font-size: 0.8rem; letter-spacing: 0.5px;">
+                    <i class="fa-solid fa-circle-check me-1 text-white"></i> PASS &rarr; Accepted to Stock Handoff
                 </span>
-                <span class="badge bg-danger bg-opacity-15 text-danger border border-danger border-opacity-25 px-2 py-1 small fw-semibold">
-                    <i class="fa-solid fa-circle-xmark me-1"></i> FAIL &rarr; Record Rejection &amp; Return Details
+                <span class="badge px-3 py-2 fw-bold text-uppercase rounded-pill shadow-sm" style="background-color: #7F1D1D; color: #FFFFFF; font-size: 0.8rem; letter-spacing: 0.5px;">
+                    <i class="fa-solid fa-circle-xmark me-1 text-white"></i> FAIL &rarr; Record Rejection &amp; Return Details
                 </span>
             </div>
         </div>
     </div>
 </div>
+
+{% if is_finalized %}
+<!-- Finalized & Locked Notice Banner (BUG-007) -->
+<div class="alert alert-secondary border border-secondary border-opacity-25 shadow-sm rounded-4 mb-4 p-3 d-flex align-items-center gap-3">
+    <div class="rounded-circle bg-secondary bg-opacity-10 p-3 text-secondary d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+        <i class="fa-solid fa-lock fs-5"></i>
+    </div>
+    <div class="flex-grow-1">
+        <div class="d-flex align-items-center gap-2 mb-1">
+            <h6 class="fw-bold text-dark mb-0">Quality Inspection Finalized &amp; Locked</h6>
+            <span class="badge bg-secondary">Immutable Audit Record</span>
+        </div>
+        <p class="text-muted small mb-0">This Goods Receipt has already completed quality inspection. All line verdicts, inspected quantities, and notes are locked to maintain audit trail integrity.</p>
+    </div>
+</div>
+{% endif %}
 
 <form method="POST" action="{% url 'receipt_inspect' grn_id=grn.id %}" id="inspectionForm">
     {% csrf_token %}
@@ -195,6 +216,7 @@
                             <label class="verdict-option" for="pass_{{ line.id }}">
                                 <input type="radio" name="passed_{{ line.id }}" id="pass_{{ line.id }}" value="true"
                                        {% if not line.inspection or line.inspection.passed %}checked{% endif %}
+                                       {% if is_finalized %}disabled{% endif %}
                                        data-line-id="{{ line.id }}" data-received-qty="{{ line.quantity_received }}"
                                        onchange="handleVerdictChange('{{ line.id }}')">
                                 <div class="verdict-card">
@@ -204,6 +226,7 @@
                             <label class="verdict-option" for="fail_{{ line.id }}">
                                 <input type="radio" name="passed_{{ line.id }}" id="fail_{{ line.id }}" value="false"
                                        {% if line.inspection and not line.inspection.passed %}checked{% endif %}
+                                       {% if is_finalized %}disabled{% endif %}
                                        data-line-id="{{ line.id }}" data-received-qty="{{ line.quantity_received }}"
                                        onchange="handleVerdictChange('{{ line.id }}')">
                                 <div class="verdict-card">
@@ -227,7 +250,8 @@
                         </label>
                         <input type="text" class="form-control rounded-3" id="inspection_notes_{{ line.id }}" name="inspection_notes_{{ line.id }}"
                                placeholder="e.g. Packaging intact, seal verified, visual & QA testing passed..."
-                               value="{% if line.inspection %}{{ line.inspection.inspection_notes }}{% endif %}">
+                               value="{% if line.inspection %}{{ line.inspection.inspection_notes }}{% endif %}"
+                               {% if is_finalized %}disabled readonly{% endif %}>
                     </div>
 
                     <!-- Rejection Controls Section (Revealed only when FAIL is selected) -->
@@ -247,7 +271,8 @@
                                     <input type="number" step="0.01" min="0" max="{{ line.quantity_received }}" 
                                            class="form-control rounded-3 text-danger fw-bold font-monospace" 
                                            id="rejected_quantity_{{ line.id }}" name="rejected_quantity_{{ line.id }}"
-                                           value="{% if line.quantity_rejected > 0 %}{{ line.quantity_rejected|floatformat:2 }}{% elif line.inspection and not line.inspection.passed %}{{ line.quantity_received|floatformat:2 }}{% else %}0.00{% endif %}">
+                                           value="{% if line.quantity_rejected > 0 %}{{ line.quantity_rejected|floatformat:2 }}{% elif line.inspection and not line.inspection.passed %}{{ line.quantity_received|floatformat:2 }}{% else %}0.00{% endif %}"
+                                           {% if is_finalized %}disabled readonly{% endif %}>
                                     <div class="form-text small text-muted">Max: {{ line.quantity_received|floatformat:2 }} {{ line.po_line.uom|default:"EA" }}</div>
                                 </div>
 
@@ -257,14 +282,18 @@
                                     </label>
                                     <input type="text" class="form-control rounded-3" 
                                            id="rejection_reason_{{ line.id }}" name="rejection_reason_{{ line.id }}"
+                                           minlength="5" maxlength="255" pattern=".*[A-Za-z]{3,}.*"
                                            placeholder="e.g. Physical transit damage, broken seals, non-conforming specs..."
-                                           value="{% if line.latest_rejection %}{{ line.latest_rejection.rejection_reason }}{% endif %}">
+                                           value="{% if line.latest_rejection %}{{ line.latest_rejection.rejection_reason }}{% endif %}"
+                                           {% if is_finalized %}disabled readonly{% endif %}>
+                                    <div class="form-text small text-muted">Minimum 5 characters. Must describe the non-conformance for compliance audit trail.</div>
                                 </div>
 
                                 <div class="col-md-3 d-flex align-items-center">
                                     <div class="form-check mt-3">
                                         <input class="form-check-input" type="checkbox" id="returned_to_vendor_{{ line.id }}" name="returned_to_vendor_{{ line.id }}"
-                                               {% if line.latest_rejection and line.latest_rejection.returned_to_vendor %}checked{% endif %}>
+                                               {% if line.latest_rejection and line.latest_rejection.returned_to_vendor %}checked{% endif %}
+                                               {% if is_finalized %}disabled{% endif %}>
                                         <label class="form-check-label fw-semibold text-dark small" for="returned_to_vendor_{{ line.id }}">
                                             Mark as Returned to Vendor
                                         </label>
@@ -279,14 +308,27 @@
         </div>
     </div>
 
-    <!-- Form Actions Footer -->
+    <!-- Form Actions Footer (BUG-007: Lock finalized inspections) -->
     <div class="d-flex justify-content-between align-items-center pt-2 mb-5">
         <a href="{% url 'receipt_detail' grn.id %}" class="btn btn-outline-secondary rounded-pill px-4 fw-semibold">
-            <i class="fa-solid fa-xmark me-1"></i> Cancel
+            <i class="fa-solid fa-arrow-left me-1"></i> Back to GRN Details
         </a>
-        <button type="submit" class="btn btn-warning rounded-pill px-5 py-2 fw-bold text-dark shadow-sm">
+        {% if is_finalized %}
+        <div class="d-flex align-items-center gap-2">
+            <button type="button" class="btn btn-secondary rounded-pill px-4 fw-semibold" disabled id="btnInspectionLocked">
+                <i class="fa-solid fa-lock me-2"></i> Inspection Finalized &amp; Locked
+            </button>
+            {% if grn.can_hand_off_to_stock %}
+            <a href="{% url 'receipt_stock_handoff' grn_id=grn.id %}" class="btn btn-primary rounded-pill px-4 fw-semibold shadow-sm">
+                <i class="fa-solid fa-warehouse me-2"></i> Proceed to Stock Handoff &rarr;
+            </a>
+            {% endif %}
+        </div>
+        {% else %}
+        <button type="submit" class="btn btn-warning rounded-pill px-5 py-2 fw-bold text-dark shadow-sm" id="btnSaveInspection">
             <i class="fa-solid fa-check-double me-1"></i> Save Quality Inspection
         </button>
+        {% endif %}
     </div>
 </form>
 
@@ -365,6 +407,32 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
+
+    const form = document.getElementById('inspectionForm');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            let hasError = false;
+            document.querySelectorAll('.rejection-section:not(.d-none)').forEach(function(sec) {
+                const lineId = sec.id.replace('rejection_section_', '');
+                const reasonInput = document.getElementById('rejection_reason_' + lineId);
+                if (reasonInput) {
+                    const val = reasonInput.value.trim();
+                    const hasLetters = /[A-Za-z]{3,}/.test(val);
+                    const isPureDigits = /^[\d\s\-_.,]+$/.test(val);
+                    const isRepeating = /^(.)\1{4,}$/.test(val);
+                    if (!val || val.length < 5 || isPureDigits || !hasLetters || isRepeating) {
+                        e.preventDefault();
+                        hasError = true;
+                        reasonInput.classList.add('is-invalid');
+                        reasonInput.focus();
+                        alert('Please enter a valid descriptive rejection reason (minimum 5 characters, containing letters, not pure numbers or repeating characters).');
+                    } else {
+                        reasonInput.classList.remove('is-invalid');
+                    }
+                }
+            });
+        });
+    }
 });
 </script>
 {% endblock %}

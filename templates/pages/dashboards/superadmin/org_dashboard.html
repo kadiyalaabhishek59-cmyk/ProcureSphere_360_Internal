@@ -995,31 +995,40 @@
                     <!-- PAGINATION -->
 
                     {% if users_page_obj.has_other_pages %}
-
-                    <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top small">
-
-                        <span class="text-muted">Showing {{ users_page_obj.start_index }} to {{ users_page_obj.end_index }} of {{ users_page_obj.paginator.count }} users</span>
-
-                        <ul class="pagination pagination-sm mb-0">
-
+                    <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top small flex-wrap gap-2">
+                        <span class="text-muted">Showing <span class="fw-semibold text-dark">{{ users_page_obj.start_index }}</span> to <span class="fw-semibold text-dark">{{ users_page_obj.end_index }}</span> of <span class="fw-semibold text-dark">{{ users_page_obj.paginator.count }}</span> users</span>
+                        <ul class="pagination pagination-sm mb-0 align-items-center">
                             {% if users_page_obj.has_previous %}
-
                             <li class="page-item"><a class="page-link" href="?tab=users&users_page={{ users_page_obj.previous_page_number }}&q_user={{ q_user }}&role={{ role_filter }}&dept={{ dept_filter }}&status={{ status_filter }}">Previous</a></li>
-
+                            {% else %}
+                            <li class="page-item disabled"><span class="page-link">Previous</span></li>
                             {% endif %}
 
-                            <li class="page-item active"><span class="page-link">{{ users_page_obj.number }} / {{ users_page_obj.paginator.num_pages }}</span></li>
+                            {% for num in users_page_obj.paginator.page_range %}
+                                {% if users_page_obj.paginator.num_pages <= 7 %}
+                                    {% if users_page_obj.number == num %}
+                                    <li class="page-item active" aria-current="page"><span class="page-link">{{ num }}</span></li>
+                                    {% else %}
+                                    <li class="page-item"><a class="page-link" href="?tab=users&users_page={{ num }}&q_user={{ q_user }}&role={{ role_filter }}&dept={{ dept_filter }}&status={{ status_filter }}">{{ num }}</a></li>
+                                    {% endif %}
+                                {% else %}
+                                    {% if users_page_obj.number == num %}
+                                    <li class="page-item active" aria-current="page"><span class="page-link">{{ num }}</span></li>
+                                    {% elif num == 1 or num == users_page_obj.paginator.num_pages or num >= users_page_obj.number|add:'-2' and num <= users_page_obj.number|add:'2' %}
+                                    <li class="page-item"><a class="page-link" href="?tab=users&users_page={{ num }}&q_user={{ q_user }}&role={{ role_filter }}&dept={{ dept_filter }}&status={{ status_filter }}">{{ num }}</a></li>
+                                    {% elif num == users_page_obj.number|add:'-3' and num > 1 or num == users_page_obj.number|add:'3' and num < users_page_obj.paginator.num_pages %}
+                                    <li class="page-item disabled"><span class="page-link ellipsis">&hellip;</span></li>
+                                    {% endif %}
+                                {% endif %}
+                            {% endfor %}
 
                             {% if users_page_obj.has_next %}
-
                             <li class="page-item"><a class="page-link" href="?tab=users&users_page={{ users_page_obj.next_page_number }}&q_user={{ q_user }}&role={{ role_filter }}&dept={{ dept_filter }}&status={{ status_filter }}">Next</a></li>
-
+                            {% else %}
+                            <li class="page-item disabled"><span class="page-link">Next</span></li>
                             {% endif %}
-
                         </ul>
-
                     </div>
-
                     {% endif %}
 
                 </div>

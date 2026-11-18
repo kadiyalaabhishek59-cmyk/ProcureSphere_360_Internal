@@ -728,6 +728,14 @@
     </div>
 
     <script>
+        // Clean up any stale signout cookies or storage markers on login page
+        try {
+            sessionStorage.removeItem('ps360_user_signed_out');
+            localStorage.removeItem('ps360_user_signed_out');
+            document.cookie = "ps360_user_signed_out=; path=/; max-age=0; SameSite=Lax";
+            document.cookie = "ps360_just_logged_out=; path=/; max-age=0; SameSite=Lax";
+        } catch (e) {}
+
         // Character stays strictly in idle stage (no animations/reactions)
         function setLoginCharState(state) {
             const img = document.getElementById('login-char-img');

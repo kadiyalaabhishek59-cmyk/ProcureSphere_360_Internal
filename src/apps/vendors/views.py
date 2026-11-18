@@ -1,4 +1,5 @@
 import json
+import mimetypes
 
 from django.conf import settings
 from django.contrib import messages
@@ -81,14 +82,20 @@ def _get_scoped_vendor_or_404(request, vendor_id, select_category=False):
     qs = Vendor.objects.all()
     if select_category:
         qs = qs.select_related("category")
+    role_code = getattr(request.user, "role_code", None) or (
+        request.user.role.code if getattr(request.user, "role", None) else None
+    )
     scoped_org = getattr(request.user, "effective_organization", None)
-    if scoped_org and not request.user.is_superuser:
+    if scoped_org and not request.user.is_superuser and role_code not in [Role.SUPER_ADMIN, Role.LEGAL_MGR]:
         from django.db.models import Q
-        qs = qs.filter(Q(organization=scoped_org) | Q(organization__isnull=True) | Q(created_by__organization=scoped_org) | Q(created_by__department__organization=scoped_org))
+        qs = qs.filter(
+            Q(organization=scoped_org)
+            | Q(organization__isnull=True)
+            | Q(created_by__organization=scoped_org)
+            | Q(created_by__department__organization=scoped_org)
+            | Q(credential_dispatches__user__organization=scoped_org)
+        ).distinct()
     else:
-        role_code = getattr(request.user, "role_code", None) or (
-            request.user.role.code if getattr(request.user, "role", None) else None
-        )
         if not (
             request.user.is_superuser
             or getattr(request.user, "is_staff", False)
@@ -587,11 +594,24 @@ def vendor_document_download_view(request, vendor_id, doc_id):
         },
     )
 
-    # 1. Try opening and streaming existing file from storage
+    # 1. Try opening and streaming existing file from storage (or redirect to S3 URL)
     if getattr(doc, "file", None) and doc.file.name:
+        storage = getattr(doc.file, "storage", None)
         try:
-            return FileResponse(doc.file.open("rb"), as_attachment=False, filename=filename)
-        except (FileNotFoundError, ValueError, OSError):
+            if storage and not storage.__class__.__name__.startswith("FileSystemStorage"):
+                file_url = doc.file.url
+                if file_url and file_url.startswith(("http://", "https://")):
+                    return redirect(file_url)
+        except Exception:
+            pass
+
+        try:
+            file_obj = doc.file.open("rb")
+            content_type, _ = mimetypes.guess_type(filename)
+            response = FileResponse(file_obj, as_attachment=False, content_type=content_type or "application/pdf", filename=filename)
+            response["Content-Disposition"] = f'inline; filename="{filename}"'
+            return response
+        except (FileNotFoundError, ValueError, OSError, Exception):
             pass
 
     # 2. Resilient Fallback: If physical file is missing from storage (e.g. Render ephemeral disk
