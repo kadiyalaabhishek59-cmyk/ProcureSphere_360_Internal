@@ -19,12 +19,14 @@
             </div>
             <div class="col-md-6">
                 <label class="form-label text-dark fw-semibold small">Supplier Invoice Number *</label>
-                <input type="text" name="invoice_number" class="form-control"
+                <input type="text" name="invoice_number" id="modalInvoiceNumberInput" class="form-control"
                        placeholder="e.g. INV-CISCO-99182"
-                       pattern="^[A-Za-z0-9]([A-Za-z0-9\-_/]{0,48}[A-Za-z0-9])?$"
+                       pattern="^[A-Za-z0-9][A-Za-z0-9\-_/]{1,48}[A-Za-z0-9]$"
                        minlength="3" maxlength="50"
+                       autocomplete="off"
                        title="Alphanumeric invoice number (3–50 chars). Hyphens, underscores, slashes allowed. No special characters like !@#$%^&*()." required>
-                <div class="form-text small text-muted">Format: alphanumeric (e.g. INV-CISCO-99182). No special characters.</div>
+                <div class="invalid-feedback fw-semibold" id="modalInvoiceNumberFeedback">A unique alphanumeric invoice number is required (3–50 chars).</div>
+                <div class="form-text small text-muted">Format: alphanumeric (e.g. INV-CISCO-99182). No special characters (!@#$%).</div>
             </div>
         </div>
 
@@ -72,3 +74,63 @@
         </button>
     </div>
 </form>
+
+<script>
+    (function() {
+        const invInput = document.getElementById('modalInvoiceNumberInput');
+        const feedbackEl = document.getElementById('modalInvoiceNumberFeedback');
+        const form = invInput ? invInput.closest('form') : null;
+
+        function validateModalInv() {
+            if (!invInput) return true;
+            const val = (invInput.value || '').trim();
+            const invPattern = /^[A-Za-z0-9][A-Za-z0-9\-_/]{1,48}[A-Za-z0-9]$/;
+            const hasSpecialChars = /[^A-Za-z0-9\-_/]/.test(val);
+
+            if (!val) {
+                invInput.classList.remove('is-valid');
+                invInput.classList.add('is-invalid');
+                if (feedbackEl) feedbackEl.textContent = 'Supplier Invoice Number is required.';
+                return false;
+            } else if (hasSpecialChars) {
+                invInput.classList.remove('is-valid');
+                invInput.classList.add('is-invalid');
+                if (feedbackEl) feedbackEl.textContent = 'Invalid Invoice Number format. Special characters like !@#$%^&*() are prohibited. Only alphanumeric characters, hyphens (-), underscores (_), and slashes (/) are permitted.';
+                return false;
+            } else if (val.length < 3 || val.length > 50) {
+                invInput.classList.remove('is-valid');
+                invInput.classList.add('is-invalid');
+                if (feedbackEl) feedbackEl.textContent = 'Invoice Number must be between 3 and 50 characters in length.';
+                return false;
+            } else if (!invPattern.test(val)) {
+                invInput.classList.remove('is-valid');
+                invInput.classList.add('is-invalid');
+                if (feedbackEl) feedbackEl.textContent = 'Invalid Invoice Number format. Must start and end with an alphanumeric character (e.g., INV-CISCO-99182).';
+                return false;
+            } else {
+                invInput.classList.remove('is-invalid');
+                invInput.classList.add('is-valid');
+                if (feedbackEl) feedbackEl.textContent = '';
+                return true;
+            }
+        }
+
+        if (invInput) {
+            ['input', 'keyup', 'change', 'blur'].forEach(function(evt) {
+                invInput.addEventListener(evt, validateModalInv);
+            });
+        }
+
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                if (!validateModalInv() || !form.checkValidity()) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (invInput) invInput.focus();
+                    form.classList.add('was-validated');
+                    return false;
+                }
+            });
+        }
+    })();
+</script>

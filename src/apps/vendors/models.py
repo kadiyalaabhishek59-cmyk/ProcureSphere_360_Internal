@@ -53,9 +53,7 @@ class Vendor(TimeStampedModel):
     pan_number = models.CharField(
         max_length=10, blank=True, default="", validators=[validate_pan_number]
     )
-    gstin = models.CharField(
-        max_length=15, blank=True, default="", validators=[validate_gstin]
-    )
+    gstin = models.CharField(max_length=15, blank=True, default="", validators=[validate_gstin])
     registration_number = models.CharField(max_length=100, blank=True)
 
     category = models.ForeignKey(VendorCategory, on_delete=models.PROTECT, related_name="vendors")
@@ -140,7 +138,7 @@ class Vendor(TimeStampedModel):
         super().save(*args, **kwargs)
 
     class Meta:
-        ordering = ["-created_at"]
+        ordering = ["-created_at", "-id"]
         indexes = [
             models.Index(fields=["status"], name="vendor_st_idx"),
             models.Index(fields=["status", "-updated_at"], name="vendor_st_upd_idx"),
@@ -317,7 +315,7 @@ class VendorDocumentReviewHistory(TimeStampedModel):
     new_status = models.CharField(max_length=30, blank=True, default="")
 
     class Meta:
-        ordering = ["-created_at"]
+        ordering = ["-created_at", "-id"]
 
     def __str__(self):
         return f"{self.document.title} - {self.action} ({self.created_at:%Y-%m-%d})"
@@ -368,7 +366,7 @@ class VendorRiskRecord(TimeStampedModel):
     )
 
     class Meta:
-        ordering = ["-created_at"]
+        ordering = ["-created_at", "-id"]
         indexes = [
             models.Index(fields=["vendor", "-created_at"], name="vendor_risk_v_ts_idx"),
             models.Index(fields=["risk_level"], name="vendor_risk_lvl_idx"),
@@ -437,7 +435,7 @@ class VendorCredentialDispatch(TimeStampedModel):
     legal_notes = models.TextField(blank=True)
 
     class Meta:
-        ordering = ["-created_at"]
+        ordering = ["-created_at", "-id"]
 
     def __str__(self):
         return f"{self.vendor_id} -> {self.sent_to} [{self.status}]"

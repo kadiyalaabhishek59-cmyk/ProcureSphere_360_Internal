@@ -90,12 +90,16 @@ def create_contract_service(
         raise ValidationError("Renewal notice period must be a positive number of days.")
 
     # Prevent duplicate contracts with identical title, vendor, and term dates (DEF-018 / TC-CON-053)
-    if Contract.objects.filter(
-        vendor=vendor,
-        title__iexact=title.strip(),
-        start_date=start_date,
-        end_date=end_date,
-    ).exclude(status__in=[Contract.STATUS_TERMINATED, Contract.STATUS_DRAFT]).exists():
+    if (
+        Contract.objects.filter(
+            vendor=vendor,
+            title__iexact=title.strip(),
+            start_date=start_date,
+            end_date=end_date,
+        )
+        .exclude(status=Contract.STATUS_TERMINATED)
+        .exists()
+    ):
         raise ValidationError(
             f"A contract with title '{title.strip()}' for vendor '{vendor.legal_name}' with the same start and end dates already exists."
         )
@@ -130,7 +134,9 @@ def create_contract_service(
         for attempt in range(15):
             try:
                 with transaction.atomic():
-                    cand_number = generate_document_number(Contract, "contract_number", "CON", offset=attempt)
+                    cand_number = generate_document_number(
+                        Contract, "contract_number", "CON", offset=attempt
+                    )
                     contract = Contract.objects.create(
                         contract_number=cand_number,
                         title=title.strip(),
@@ -218,7 +224,9 @@ def approve_legal_review_service(*, contract: Contract, user: User, notes: str =
     Approves legal review, moving contract to BUSINESS_APPROVAL state.
     """
     role_code = _get_user_role_code(user)
-    if not (getattr(user, "is_superuser", False) or role_code in [Role.LEGAL_MGR, Role.SUPER_ADMIN]):
+    if not (
+        getattr(user, "is_superuser", False) or role_code in [Role.LEGAL_MGR, Role.SUPER_ADMIN]
+    ):
         raise ValidationError(
             "Permission Denied: Only Legal Managers or Super Admins can approve legal reviews."
         )
@@ -265,7 +273,9 @@ def reject_legal_review_service(*, contract: Contract, user: User, reason: str) 
     Rejects legal review, returning contract to DRAFT state for corrections.
     """
     role_code = _get_user_role_code(user)
-    if not (getattr(user, "is_superuser", False) or role_code in [Role.LEGAL_MGR, Role.SUPER_ADMIN]):
+    if not (
+        getattr(user, "is_superuser", False) or role_code in [Role.LEGAL_MGR, Role.SUPER_ADMIN]
+    ):
         raise ValidationError(
             "Permission Denied: Only Legal Managers or Super Admins can reject legal reviews."
         )
@@ -391,8 +401,14 @@ def create_contract_version_service(
             "Permission Denied: Only Legal Managers, Procurement Managers, or Super Admins can amend contracts."
         )
 
-    if contract.status in [Contract.STATUS_DRAFT, Contract.STATUS_TERMINATED, Contract.STATUS_EXPIRED]:
-        raise ValidationError(f"Contracts in status '{contract.status}' cannot be amended. Only active/executed contracts can be amended.")
+    if contract.status in [
+        Contract.STATUS_DRAFT,
+        Contract.STATUS_TERMINATED,
+        Contract.STATUS_EXPIRED,
+    ]:
+        raise ValidationError(
+            f"Contracts in status '{contract.status}' cannot be amended. Only active/executed contracts can be amended."
+        )
 
     if not amendment_summary or not str(amendment_summary).strip():
         raise ValidationError("Amendment summary is required.")
@@ -477,6 +493,7 @@ def add_contract_milestone_service(
     if not due_date:
         raise ValidationError("Milestone due date is required.")
     import datetime
+
     if isinstance(due_date, (datetime.date, datetime.datetime)):
         d_val = due_date.date() if isinstance(due_date, datetime.datetime) else due_date
     else:
@@ -485,9 +502,13 @@ def add_contract_milestone_service(
         except (ValueError, TypeError):
             raise ValidationError(f"Invalid due date format '{due_date}'. Expected YYYY-MM-DD.")
     if contract.start_date and d_val < contract.start_date:
-        raise ValidationError(f"Milestone due date ({d_val}) cannot be earlier than contract start date ({contract.start_date}).")
+        raise ValidationError(
+            f"Milestone due date ({d_val}) cannot be earlier than contract start date ({contract.start_date})."
+        )
     if contract.end_date and d_val > contract.end_date:
-        raise ValidationError(f"Milestone due date ({d_val}) cannot be later than contract end date ({contract.end_date}).")
+        raise ValidationError(
+            f"Milestone due date ({d_val}) cannot be later than contract end date ({contract.end_date})."
+        )
     if amount is not None and Decimal(str(amount)) < Decimal("0.00"):
         raise ValidationError("Milestone amount cannot be negative.")
 
@@ -558,7 +579,9 @@ def add_contract_obligation_service(
         raise ValidationError("Responsible party is required.")
     valid_parties = ["VENDOR", "BUYER", "INTERNAL", "LEGAL", "PROCUREMENT", "MUTUAL", "BOTH"]
     if responsible_party.strip().upper() not in valid_parties:
-        raise ValidationError(f"Invalid responsible_party '{responsible_party}'. Allowed values: {', '.join(valid_parties)}.")
+        raise ValidationError(
+            f"Invalid responsible_party '{responsible_party}'. Allowed values: {', '.join(valid_parties)}."
+        )
 
     obligation = ContractObligation.objects.create(
         contract=contract,
@@ -633,6 +656,7 @@ def upload_contract_document_service(
     allowed_extensions = ["pdf", "docx", "doc", "xlsx", "xls", "png", "jpg", "jpeg", "txt"]
     if hasattr(file, "read") or hasattr(file, "size"):
         from apps.core.validators import validate_file_upload
+
         validate_file_upload(file, allowed_extensions=allowed_extensions)
 
     file_name = ""
@@ -645,6 +669,7 @@ def upload_contract_document_service(
         raise ValidationError("File must have a valid extension.")
 
     import os
+
     ext = os.path.splitext(file_name)[1].lstrip(".").lower()
     if ext not in allowed_extensions:
         raise ValidationError(

@@ -395,7 +395,9 @@
                                pattern="^[A-Za-z0-9][A-Za-z0-9\-_/]{4,48}[A-Za-z0-9]$"
                                minlength="6" maxlength="50"
                                title="Alphanumeric reference or UTR (6-50 chars). Hyphens (-) and slashes (/) permitted. Disallowed special characters like !@#$%^&*() are prohibited."
+                               autocomplete="off"
                                required>
+                        <div class="invalid-feedback fw-semibold" id="detail_pref_feedback">Please enter a valid Transaction Reference / UTR #.</div>
                         <div class="form-text small text-muted">Format: 6–50 alphanumeric characters (e.g. UTR-2026-981023, CMS123456789). No special characters (!@#$%).</div>
                     </div>
                     <div class="mb-3">
@@ -425,6 +427,71 @@
 {% endif %}
 
 <script>
+    // BUG-005: Real-time UTR client-side validation
+    (function() {
+        const prefInput = document.getElementById('detail_pref');
+        const feedbackEl = document.getElementById('detail_pref_feedback');
+        const paymentForm = prefInput ? prefInput.closest('form') : null;
+
+        function validateDetailUtr() {
+            if (!prefInput) return true;
+            const val = prefInput.value.trim();
+            const utrPattern = /^[A-Za-z0-9][A-Za-z0-9\-_/]{4,48}[A-Za-z0-9]$/;
+            const hasSpecialChars = /[^A-Za-z0-9\-_/]/.test(val);
+
+            if (!val) {
+                prefInput.classList.remove('is-valid');
+                prefInput.classList.add('is-invalid');
+                if (feedbackEl) feedbackEl.textContent = 'Transaction Reference / UTR # is required.';
+                return false;
+            } else if (hasSpecialChars) {
+                prefInput.classList.remove('is-valid');
+                prefInput.classList.add('is-invalid');
+                if (feedbackEl) feedbackEl.textContent = 'Invalid UTR format. Special characters like !@#$%^&*() are prohibited. Only alphanumeric characters, hyphens (-), and slashes (/) are permitted.';
+                return false;
+            } else if (val.length < 6 || val.length > 50) {
+                prefInput.classList.remove('is-valid');
+                prefInput.classList.add('is-invalid');
+                if (feedbackEl) feedbackEl.textContent = 'Payment Reference / UTR must be between 6 and 50 characters in length.';
+                return false;
+            } else if (!utrPattern.test(val)) {
+                prefInput.classList.remove('is-valid');
+                prefInput.classList.add('is-invalid');
+                if (feedbackEl) feedbackEl.textContent = 'Invalid UTR format. Must start and end with an alphanumeric character (e.g. UTR-2026-981023, CMS1234567890).';
+                return false;
+            } else {
+                prefInput.classList.remove('is-invalid');
+                prefInput.classList.add('is-valid');
+                if (feedbackEl) feedbackEl.textContent = '';
+                return true;
+            }
+        }
+
+        if (prefInput) {
+            ['input', 'keyup', 'change', 'blur'].forEach(function(evt) {
+                prefInput.addEventListener(evt, validateDetailUtr);
+            });
+        }
+
+        if (paymentForm) {
+            paymentForm.addEventListener('submit', function(e) {
+                const isValid = validateDetailUtr();
+                if (!isValid || !paymentForm.checkValidity()) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (prefInput) prefInput.focus();
+                    paymentForm.classList.add('was-validated');
+                    return false;
+                }
+                const btn = paymentForm.querySelector('button[type="submit"]');
+                if (btn) {
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Processing...';
+                }
+            });
+        }
+    })();
+
     // BUG-006: Lock background scrolling to eliminate dual overlapping vertical scrollbars on modals
     document.querySelectorAll('.modal').forEach(function(modalEl) {
         modalEl.addEventListener('show.bs.modal', function() {

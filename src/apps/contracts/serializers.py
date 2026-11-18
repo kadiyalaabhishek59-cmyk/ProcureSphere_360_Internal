@@ -81,6 +81,7 @@ class ContractSerializer(serializers.ModelSerializer):
         if obj.status != Contract.STATUS_TERMINATED:
             return None
         from apps.audit.models import AuditLog
+
         log = (
             AuditLog.objects.filter(
                 target_model="Contract",
@@ -98,6 +99,7 @@ class ContractSerializer(serializers.ModelSerializer):
         if obj.status != Contract.STATUS_TERMINATED:
             return None
         from apps.audit.models import AuditLog
+
         log = (
             AuditLog.objects.filter(
                 target_model="Contract",
@@ -117,13 +119,21 @@ class ContractSerializer(serializers.ModelSerializer):
         start_date = attrs.get("start_date", getattr(self.instance, "start_date", None))
         end_date = attrs.get("end_date", getattr(self.instance, "end_date", None))
         if self.instance is None and title and vendor and start_date and end_date:
-            if Contract.objects.filter(
-                vendor=vendor,
-                title__iexact=str(title).strip(),
-                start_date=start_date,
-                end_date=end_date,
-            ).exclude(status__in=[Contract.STATUS_TERMINATED, Contract.STATUS_DRAFT]).exists():
+            if (
+                Contract.objects.filter(
+                    vendor=vendor,
+                    title__iexact=str(title).strip(),
+                    start_date=start_date,
+                    end_date=end_date,
+                )
+                .exclude(status=Contract.STATUS_TERMINATED)
+                .exists()
+            ):
                 raise serializers.ValidationError(
-                    {"title": ["A contract with the same title, vendor, and term dates already exists."]}
+                    {
+                        "title": [
+                            "A contract with the same title, vendor, and term dates already exists."
+                        ]
+                    }
                 )
         return attrs

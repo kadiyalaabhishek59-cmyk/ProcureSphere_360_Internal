@@ -1,0 +1,3394 @@
+{
+  "env": {
+    "executed_at": "2026-11-13 11:34:53",
+    "database": "PostgreSQL dev (127.0.0.1:15432/procuresphere_db)",
+    "settings": "config.settings.dev (Django 4.2.30)",
+    "client": "Django test client (force_login), GET-only",
+    "missing_role_users": [],
+    "org_dashboard_org": "Hewlett Packard Enterprise (HPE-GLOBAL)",
+    "total_users_in_db": 17
+  },
+  "results": [
+    {
+      "tc_id": "UAT-001",
+      "dashboard": "Requester Dashboard",
+      "test_type": "Positive",
+      "role": "REQUESTER",
+      "user": "requester@hpe.com",
+      "url": "/requester/",
+      "expected": "HTTP 200 + dashboard template + no server error",
+      "actual_status": 200,
+      "result": "PASS",
+      "detail": "HTTP 200; rendered templates: base.html, layouts/requester_base.html, pages/dashboards/requester_dashboard.html, partials/global_navbar.html",
+      "duration_ms": 107.9,
+      "templates": [
+        "base.html",
+        "layouts/requester_base.html",
+        "pages/dashboards/requester_dashboard.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_header.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {
+        "metrics": {
+          "total_my_prs": "3",
+          "pending_prs": "1",
+          "approved_prs": "0"
+        }
+      }
+    },
+    {
+      "tc_id": "UAT-002",
+      "dashboard": "Requester Dashboard",
+      "test_type": "Positive",
+      "role": "SUPER_ADMIN",
+      "user": "admin@hpe.com",
+      "url": "/requester/",
+      "expected": "HTTP 200 + dashboard template + no server error",
+      "actual_status": 200,
+      "result": "PASS",
+      "detail": "HTTP 200; rendered templates: base.html, layouts/requester_base.html, pages/dashboards/requester_dashboard.html, partials/global_navbar.html",
+      "duration_ms": 20.2,
+      "templates": [
+        "base.html",
+        "layouts/requester_base.html",
+        "pages/dashboards/requester_dashboard.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_header.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {
+        "metrics": {
+          "total_my_prs": "0",
+          "pending_prs": "0",
+          "approved_prs": "0"
+        }
+      }
+    },
+    {
+      "tc_id": "UAT-003",
+      "dashboard": "Requester Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "DEPT_APPROVER",
+      "user": "approver@hpe.com",
+      "url": "/requester/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 28.0,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-004",
+      "dashboard": "Requester Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "PROC_EXEC",
+      "user": "procexec@hpe.com",
+      "url": "/requester/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 18.2,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/proc_exec_sidebar.html",
+        "partials/sidebar_header.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-005",
+      "dashboard": "Requester Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "PROC_MGR",
+      "user": "procmgr@hpe.com",
+      "url": "/requester/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 10.1,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-006",
+      "dashboard": "Requester Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "FINANCE_AP",
+      "user": "finance@hpe.com",
+      "url": "/requester/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 9.2,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-007",
+      "dashboard": "Requester Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "STORES_RECEIVER",
+      "user": "receiver@hpe.com",
+      "url": "/requester/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 8.5,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-008",
+      "dashboard": "Requester Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "LEGAL_MGR",
+      "user": "legal@hpe.com",
+      "url": "/requester/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 12.1,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-009",
+      "dashboard": "Requester Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "AUDITOR",
+      "user": "auditor@hpe.com",
+      "url": "/requester/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 8.2,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-010",
+      "dashboard": "Requester Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "VENDOR_USER",
+      "user": "vendoruser@cisco.com",
+      "url": "/requester/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 8.4,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-011",
+      "dashboard": "Requester Dashboard",
+      "test_type": "Negative (Auth)",
+      "role": "ANONYMOUS",
+      "user": "anonymous",
+      "url": "/requester/",
+      "expected": "Redirect to login \u2014 dashboard NOT served",
+      "actual_status": 200,
+      "result": "PASS",
+      "detail": "HTTP 200; landed on: pages/login.html",
+      "duration_ms": 6.2,
+      "templates": [
+        "pages/login.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-012",
+      "dashboard": "Department Approver Dashboard",
+      "test_type": "Positive",
+      "role": "DEPT_APPROVER",
+      "user": "approver@hpe.com",
+      "url": "/approver/",
+      "expected": "HTTP 200 + dashboard template + no server error",
+      "actual_status": 200,
+      "result": "PASS",
+      "detail": "HTTP 200; rendered templates: base.html, layouts/approver_base.html, pages/dashboards/approver_dashboard.html, partials/global_navbar.html",
+      "duration_ms": 63.6,
+      "templates": [
+        "base.html",
+        "layouts/approver_base.html",
+        "pages/dashboards/approver_dashboard.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_header.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {
+        "metrics": {
+          "total_prs_count": "3",
+          "pending_count": "1",
+          "approved_count": "0",
+          "available_budget": "114671.66",
+          "is_budget_overdrawn": "False",
+          "budget_overrun_amount": "0.0",
+          "budget_overrun_count": "0"
+        }
+      }
+    },
+    {
+      "tc_id": "UAT-013",
+      "dashboard": "Department Approver Dashboard",
+      "test_type": "Positive",
+      "role": "SUPER_ADMIN",
+      "user": "admin@hpe.com",
+      "url": "/approver/",
+      "expected": "HTTP 200 + dashboard template + no server error",
+      "actual_status": 200,
+      "result": "PASS",
+      "detail": "HTTP 200; rendered templates: base.html, layouts/approver_base.html, pages/dashboards/approver_dashboard.html, partials/global_navbar.html",
+      "duration_ms": 35.0,
+      "templates": [
+        "base.html",
+        "layouts/approver_base.html",
+        "pages/dashboards/approver_dashboard.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_header.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {
+        "metrics": {
+          "total_prs_count": "0",
+          "pending_count": "0",
+          "approved_count": "0",
+          "available_budget": "0.0",
+          "is_budget_overdrawn": "False",
+          "budget_overrun_amount": "0.0",
+          "budget_overrun_count": "0"
+        }
+      }
+    },
+    {
+      "tc_id": "UAT-014",
+      "dashboard": "Department Approver Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "REQUESTER",
+      "user": "requester@hpe.com",
+      "url": "/approver/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 8.6,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-015",
+      "dashboard": "Department Approver Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "PROC_EXEC",
+      "user": "procexec@hpe.com",
+      "url": "/approver/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 10.2,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/proc_exec_sidebar.html",
+        "partials/sidebar_header.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-016",
+      "dashboard": "Department Approver Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "PROC_MGR",
+      "user": "procmgr@hpe.com",
+      "url": "/approver/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 8.5,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-017",
+      "dashboard": "Department Approver Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "FINANCE_AP",
+      "user": "finance@hpe.com",
+      "url": "/approver/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 9.6,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-018",
+      "dashboard": "Department Approver Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "STORES_RECEIVER",
+      "user": "receiver@hpe.com",
+      "url": "/approver/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 8.6,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-019",
+      "dashboard": "Department Approver Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "LEGAL_MGR",
+      "user": "legal@hpe.com",
+      "url": "/approver/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 9.8,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-020",
+      "dashboard": "Department Approver Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "AUDITOR",
+      "user": "auditor@hpe.com",
+      "url": "/approver/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 8.5,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-021",
+      "dashboard": "Department Approver Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "VENDOR_USER",
+      "user": "vendoruser@cisco.com",
+      "url": "/approver/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 8.4,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-022",
+      "dashboard": "Department Approver Dashboard",
+      "test_type": "Negative (Auth)",
+      "role": "ANONYMOUS",
+      "user": "anonymous",
+      "url": "/approver/",
+      "expected": "Redirect to login \u2014 dashboard NOT served",
+      "actual_status": 200,
+      "result": "PASS",
+      "detail": "HTTP 200; landed on: pages/login.html",
+      "duration_ms": 2.3,
+      "templates": [
+        "pages/login.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-023",
+      "dashboard": "Procurement Executive Dashboard",
+      "test_type": "Positive",
+      "role": "PROC_EXEC",
+      "user": "procexec@hpe.com",
+      "url": "/procurement/",
+      "expected": "HTTP 200 + dashboard template + no server error",
+      "actual_status": 200,
+      "result": "PASS",
+      "detail": "HTTP 200; rendered templates: base.html, pages/dashboards/procurement_dashboard.html, partials/global_navbar.html, partials/proc_exec_sidebar.html",
+      "duration_ms": 87.0,
+      "templates": [
+        "base.html",
+        "pages/dashboards/procurement_dashboard.html",
+        "partials/global_navbar.html",
+        "partials/proc_exec_sidebar.html",
+        "partials/sidebar_header.html",
+        "partials/sidebar_toggle_button.html",
+        "sourcing/partials/status_badge.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-024",
+      "dashboard": "Procurement Executive Dashboard",
+      "test_type": "Positive",
+      "role": "SUPER_ADMIN",
+      "user": "admin@hpe.com",
+      "url": "/procurement/",
+      "expected": "HTTP 200 + dashboard template + no server error",
+      "actual_status": 200,
+      "result": "PASS",
+      "detail": "HTTP 200; rendered templates: base.html, pages/dashboards/procurement_dashboard.html, partials/global_navbar.html, partials/sidebar_toggle_button.html",
+      "duration_ms": 62.8,
+      "templates": [
+        "base.html",
+        "pages/dashboards/procurement_dashboard.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html",
+        "sourcing/partials/status_badge.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-025",
+      "dashboard": "Procurement Executive Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "REQUESTER",
+      "user": "requester@hpe.com",
+      "url": "/procurement/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 10.2,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-026",
+      "dashboard": "Procurement Executive Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "DEPT_APPROVER",
+      "user": "approver@hpe.com",
+      "url": "/procurement/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 17.9,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-027",
+      "dashboard": "Procurement Executive Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "PROC_MGR",
+      "user": "procmgr@hpe.com",
+      "url": "/procurement/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 10.8,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-028",
+      "dashboard": "Procurement Executive Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "FINANCE_AP",
+      "user": "finance@hpe.com",
+      "url": "/procurement/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 9.6,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-029",
+      "dashboard": "Procurement Executive Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "STORES_RECEIVER",
+      "user": "receiver@hpe.com",
+      "url": "/procurement/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 9.4,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-030",
+      "dashboard": "Procurement Executive Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "LEGAL_MGR",
+      "user": "legal@hpe.com",
+      "url": "/procurement/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 10.4,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-031",
+      "dashboard": "Procurement Executive Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "AUDITOR",
+      "user": "auditor@hpe.com",
+      "url": "/procurement/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 10.1,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-032",
+      "dashboard": "Procurement Executive Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "VENDOR_USER",
+      "user": "vendoruser@cisco.com",
+      "url": "/procurement/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 8.7,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-033",
+      "dashboard": "Procurement Executive Dashboard",
+      "test_type": "Negative (Auth)",
+      "role": "ANONYMOUS",
+      "user": "anonymous",
+      "url": "/procurement/",
+      "expected": "Redirect to login \u2014 dashboard NOT served",
+      "actual_status": 200,
+      "result": "PASS",
+      "detail": "HTTP 200; landed on: pages/login.html",
+      "duration_ms": 2.4,
+      "templates": [
+        "pages/login.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-034",
+      "dashboard": "Finance / AP Dashboard",
+      "test_type": "Positive",
+      "role": "FINANCE_AP",
+      "user": "finance@hpe.com",
+      "url": "/finance/",
+      "expected": "HTTP 200 + dashboard template + no server error",
+      "actual_status": 200,
+      "result": "PASS",
+      "detail": "HTTP 200; rendered templates: base.html, layouts/finance_base.html, pages/dashboards/finance_dashboard.html, partials/global_navbar.html",
+      "duration_ms": 115.2,
+      "templates": [
+        "base.html",
+        "layouts/finance_base.html",
+        "pages/dashboards/finance_dashboard.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_header.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {
+        "metrics": {
+          "pending_match_exceptions": "0",
+          "pending_budget_exceptions": "0",
+          "pending_pr_approvals": "0",
+          "ready_for_payment": "0",
+          "committed_spend": "73248.34",
+          "actual_spend": "68991.34"
+        }
+      }
+    },
+    {
+      "tc_id": "UAT-035",
+      "dashboard": "Finance / AP Dashboard",
+      "test_type": "Positive",
+      "role": "SUPER_ADMIN",
+      "user": "admin@hpe.com",
+      "url": "/finance/",
+      "expected": "HTTP 200 + dashboard template + no server error",
+      "actual_status": 200,
+      "result": "PASS",
+      "detail": "HTTP 200; rendered templates: base.html, layouts/finance_base.html, pages/dashboards/finance_dashboard.html, partials/global_navbar.html",
+      "duration_ms": 103.0,
+      "templates": [
+        "base.html",
+        "layouts/finance_base.html",
+        "pages/dashboards/finance_dashboard.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_header.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {
+        "metrics": {
+          "pending_match_exceptions": "0",
+          "pending_budget_exceptions": "0",
+          "pending_pr_approvals": "0",
+          "ready_for_payment": "0",
+          "committed_spend": "73248.34",
+          "actual_spend": "68991.34"
+        }
+      }
+    },
+    {
+      "tc_id": "UAT-036",
+      "dashboard": "Finance / AP Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "REQUESTER",
+      "user": "requester@hpe.com",
+      "url": "/finance/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 9.7,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-037",
+      "dashboard": "Finance / AP Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "DEPT_APPROVER",
+      "user": "approver@hpe.com",
+      "url": "/finance/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 17.7,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-038",
+      "dashboard": "Finance / AP Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "PROC_EXEC",
+      "user": "procexec@hpe.com",
+      "url": "/finance/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 10.1,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/proc_exec_sidebar.html",
+        "partials/sidebar_header.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-039",
+      "dashboard": "Finance / AP Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "PROC_MGR",
+      "user": "procmgr@hpe.com",
+      "url": "/finance/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 8.3,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-040",
+      "dashboard": "Finance / AP Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "STORES_RECEIVER",
+      "user": "receiver@hpe.com",
+      "url": "/finance/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 8.2,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-041",
+      "dashboard": "Finance / AP Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "LEGAL_MGR",
+      "user": "legal@hpe.com",
+      "url": "/finance/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 9.7,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-042",
+      "dashboard": "Finance / AP Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "AUDITOR",
+      "user": "auditor@hpe.com",
+      "url": "/finance/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 8.0,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-043",
+      "dashboard": "Finance / AP Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "VENDOR_USER",
+      "user": "vendoruser@cisco.com",
+      "url": "/finance/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 8.3,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-044",
+      "dashboard": "Finance / AP Dashboard",
+      "test_type": "Negative (Auth)",
+      "role": "ANONYMOUS",
+      "user": "anonymous",
+      "url": "/finance/",
+      "expected": "Redirect to login \u2014 dashboard NOT served",
+      "actual_status": 200,
+      "result": "PASS",
+      "detail": "HTTP 200; landed on: pages/login.html",
+      "duration_ms": 2.4,
+      "templates": [
+        "pages/login.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-045",
+      "dashboard": "Stores / Receiver Dashboard",
+      "test_type": "Positive",
+      "role": "STORES_RECEIVER",
+      "user": "receiver@hpe.com",
+      "url": "/stores/",
+      "expected": "HTTP 200 + dashboard template + no server error",
+      "actual_status": 200,
+      "result": "PASS",
+      "detail": "HTTP 200; rendered templates: base.html, layouts/stores_base.html, pages/dashboards/stores_dashboard.html, partials/global_navbar.html",
+      "duration_ms": 113.7,
+      "templates": [
+        "base.html",
+        "layouts/stores_base.html",
+        "pages/dashboards/stores_dashboard.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_header.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {
+        "metrics": {
+          "total_grns": "5",
+          "pending_inspections": "1",
+          "passed_receipts": "4",
+          "failed_receipts": "0",
+          "partially_inspected_receipts": "0",
+          "total_inspections": "4",
+          "pending_deliveries": "0",
+          "partially_received_pos": "0",
+          "completed_pos": "5",
+          "total_rejections": "0",
+          "returned_to_vendor_count": "0",
+          "pending_vendor_returns_count": "0"
+        }
+      }
+    },
+    {
+      "tc_id": "UAT-046",
+      "dashboard": "Stores / Receiver Dashboard",
+      "test_type": "Positive",
+      "role": "SUPER_ADMIN",
+      "user": "admin@hpe.com",
+      "url": "/stores/",
+      "expected": "HTTP 200 + dashboard template + no server error",
+      "actual_status": 200,
+      "result": "PASS",
+      "detail": "HTTP 200; rendered templates: base.html, layouts/stores_base.html, pages/dashboards/stores_dashboard.html, partials/global_navbar.html",
+      "duration_ms": 94.4,
+      "templates": [
+        "base.html",
+        "layouts/stores_base.html",
+        "pages/dashboards/stores_dashboard.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_header.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {
+        "metrics": {
+          "total_grns": "5",
+          "pending_inspections": "1",
+          "passed_receipts": "4",
+          "failed_receipts": "0",
+          "partially_inspected_receipts": "0",
+          "total_inspections": "4",
+          "pending_deliveries": "0",
+          "partially_received_pos": "0",
+          "completed_pos": "5",
+          "total_rejections": "0",
+          "returned_to_vendor_count": "0",
+          "pending_vendor_returns_count": "0"
+        }
+      }
+    },
+    {
+      "tc_id": "UAT-047",
+      "dashboard": "Stores / Receiver Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "REQUESTER",
+      "user": "requester@hpe.com",
+      "url": "/stores/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 9.2,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-048",
+      "dashboard": "Stores / Receiver Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "DEPT_APPROVER",
+      "user": "approver@hpe.com",
+      "url": "/stores/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 14.1,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-049",
+      "dashboard": "Stores / Receiver Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "PROC_EXEC",
+      "user": "procexec@hpe.com",
+      "url": "/stores/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 10.3,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/proc_exec_sidebar.html",
+        "partials/sidebar_header.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-050",
+      "dashboard": "Stores / Receiver Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "PROC_MGR",
+      "user": "procmgr@hpe.com",
+      "url": "/stores/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 11.4,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-051",
+      "dashboard": "Stores / Receiver Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "FINANCE_AP",
+      "user": "finance@hpe.com",
+      "url": "/stores/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 10.1,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-052",
+      "dashboard": "Stores / Receiver Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "LEGAL_MGR",
+      "user": "legal@hpe.com",
+      "url": "/stores/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 10.3,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-053",
+      "dashboard": "Stores / Receiver Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "AUDITOR",
+      "user": "auditor@hpe.com",
+      "url": "/stores/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 8.5,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-054",
+      "dashboard": "Stores / Receiver Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "VENDOR_USER",
+      "user": "vendoruser@cisco.com",
+      "url": "/stores/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 10.0,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-055",
+      "dashboard": "Stores / Receiver Dashboard",
+      "test_type": "Negative (Auth)",
+      "role": "ANONYMOUS",
+      "user": "anonymous",
+      "url": "/stores/",
+      "expected": "Redirect to login \u2014 dashboard NOT served",
+      "actual_status": 200,
+      "result": "PASS",
+      "detail": "HTTP 200; landed on: pages/login.html",
+      "duration_ms": 2.5,
+      "templates": [
+        "pages/login.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-056",
+      "dashboard": "Legal / Contracts Dashboard",
+      "test_type": "Positive",
+      "role": "LEGAL_MGR",
+      "user": "legal@hpe.com",
+      "url": "/legal/",
+      "expected": "HTTP 200 + dashboard template + no server error",
+      "actual_status": 200,
+      "result": "PASS",
+      "detail": "HTTP 200; rendered templates: base.html, layouts/legal_base.html, pages/dashboards/legal_dashboard.html, partials/global_navbar.html",
+      "duration_ms": 157.6,
+      "templates": [
+        "base.html",
+        "layouts/legal_base.html",
+        "pages/dashboards/legal_dashboard.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_header.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {
+        "metrics": {
+          "total_contracts": "1",
+          "active_contracts": "1",
+          "pending_legal_review": "0",
+          "expiring_soon": "0",
+          "total_contract_value": "62000.0",
+          "open_obligations": "0",
+          "overdue_obligations": "0",
+          "open_milestones": "1",
+          "pending_vendor_verifications": "20"
+        }
+      }
+    },
+    {
+      "tc_id": "UAT-057",
+      "dashboard": "Legal / Contracts Dashboard",
+      "test_type": "Positive",
+      "role": "SUPER_ADMIN",
+      "user": "admin@hpe.com",
+      "url": "/legal/",
+      "expected": "HTTP 200 + dashboard template + no server error",
+      "actual_status": 200,
+      "result": "PASS",
+      "detail": "HTTP 200; rendered templates: base.html, layouts/legal_base.html, pages/dashboards/legal_dashboard.html, partials/global_navbar.html",
+      "duration_ms": 134.1,
+      "templates": [
+        "base.html",
+        "layouts/legal_base.html",
+        "pages/dashboards/legal_dashboard.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_header.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {
+        "metrics": {
+          "total_contracts": "1",
+          "active_contracts": "1",
+          "pending_legal_review": "0",
+          "expiring_soon": "0",
+          "total_contract_value": "62000.0",
+          "open_obligations": "0",
+          "overdue_obligations": "0",
+          "open_milestones": "1",
+          "pending_vendor_verifications": "20"
+        }
+      }
+    },
+    {
+      "tc_id": "UAT-058",
+      "dashboard": "Legal / Contracts Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "REQUESTER",
+      "user": "requester@hpe.com",
+      "url": "/legal/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 10.4,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-059",
+      "dashboard": "Legal / Contracts Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "DEPT_APPROVER",
+      "user": "approver@hpe.com",
+      "url": "/legal/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 16.2,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-060",
+      "dashboard": "Legal / Contracts Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "PROC_EXEC",
+      "user": "procexec@hpe.com",
+      "url": "/legal/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 11.3,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/proc_exec_sidebar.html",
+        "partials/sidebar_header.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-061",
+      "dashboard": "Legal / Contracts Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "PROC_MGR",
+      "user": "procmgr@hpe.com",
+      "url": "/legal/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 9.3,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-062",
+      "dashboard": "Legal / Contracts Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "FINANCE_AP",
+      "user": "finance@hpe.com",
+      "url": "/legal/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 9.4,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-063",
+      "dashboard": "Legal / Contracts Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "STORES_RECEIVER",
+      "user": "receiver@hpe.com",
+      "url": "/legal/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 10.4,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-064",
+      "dashboard": "Legal / Contracts Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "AUDITOR",
+      "user": "auditor@hpe.com",
+      "url": "/legal/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 8.7,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-065",
+      "dashboard": "Legal / Contracts Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "VENDOR_USER",
+      "user": "vendoruser@cisco.com",
+      "url": "/legal/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 9.2,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-066",
+      "dashboard": "Legal / Contracts Dashboard",
+      "test_type": "Negative (Auth)",
+      "role": "ANONYMOUS",
+      "user": "anonymous",
+      "url": "/legal/",
+      "expected": "Redirect to login \u2014 dashboard NOT served",
+      "actual_status": 200,
+      "result": "PASS",
+      "detail": "HTTP 200; landed on: pages/login.html",
+      "duration_ms": 2.4,
+      "templates": [
+        "pages/login.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-067",
+      "dashboard": "Procurement Manager Dashboard",
+      "test_type": "Positive",
+      "role": "PROC_MGR",
+      "user": "procmgr@hpe.com",
+      "url": "/manager/",
+      "expected": "HTTP 200 + dashboard template + no server error",
+      "actual_status": 200,
+      "result": "PASS",
+      "detail": "HTTP 200; rendered templates: base.html, manager/base_manager.html, manager/dashboard.html, partials/global_navbar.html",
+      "duration_ms": 14.5,
+      "templates": [
+        "base.html",
+        "manager/base_manager.html",
+        "manager/dashboard.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_header.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-068",
+      "dashboard": "Procurement Manager Dashboard",
+      "test_type": "Positive",
+      "role": "SUPER_ADMIN",
+      "user": "admin@hpe.com",
+      "url": "/manager/",
+      "expected": "HTTP 200 + dashboard template + no server error",
+      "actual_status": 200,
+      "result": "PASS",
+      "detail": "HTTP 200; rendered templates: base.html, manager/base_manager.html, manager/dashboard.html, partials/global_navbar.html",
+      "duration_ms": 12.7,
+      "templates": [
+        "base.html",
+        "manager/base_manager.html",
+        "manager/dashboard.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_header.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-069",
+      "dashboard": "Procurement Manager Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "REQUESTER",
+      "user": "requester@hpe.com",
+      "url": "/manager/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 8.5,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-070",
+      "dashboard": "Procurement Manager Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "DEPT_APPROVER",
+      "user": "approver@hpe.com",
+      "url": "/manager/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 13.8,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-071",
+      "dashboard": "Procurement Manager Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "PROC_EXEC",
+      "user": "procexec@hpe.com",
+      "url": "/manager/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 11.4,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/proc_exec_sidebar.html",
+        "partials/sidebar_header.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-072",
+      "dashboard": "Procurement Manager Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "FINANCE_AP",
+      "user": "finance@hpe.com",
+      "url": "/manager/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 12.2,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-073",
+      "dashboard": "Procurement Manager Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "STORES_RECEIVER",
+      "user": "receiver@hpe.com",
+      "url": "/manager/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 8.8,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-074",
+      "dashboard": "Procurement Manager Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "LEGAL_MGR",
+      "user": "legal@hpe.com",
+      "url": "/manager/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 9.9,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-075",
+      "dashboard": "Procurement Manager Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "AUDITOR",
+      "user": "auditor@hpe.com",
+      "url": "/manager/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 12.9,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-076",
+      "dashboard": "Procurement Manager Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "VENDOR_USER",
+      "user": "vendoruser@cisco.com",
+      "url": "/manager/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 9.8,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-077",
+      "dashboard": "Procurement Manager Dashboard",
+      "test_type": "Negative (Auth)",
+      "role": "ANONYMOUS",
+      "user": "anonymous",
+      "url": "/manager/",
+      "expected": "Redirect to login \u2014 dashboard NOT served",
+      "actual_status": 200,
+      "result": "PASS",
+      "detail": "HTTP 200; landed on: pages/login.html",
+      "duration_ms": 2.2,
+      "templates": [
+        "pages/login.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-078",
+      "dashboard": "Compliance / Auditor Dashboard",
+      "test_type": "Positive",
+      "role": "AUDITOR",
+      "user": "auditor@hpe.com",
+      "url": "/audit/",
+      "expected": "HTTP 200 + dashboard template + no server error",
+      "actual_status": 200,
+      "result": "PASS",
+      "detail": "HTTP 200; rendered templates: audit/base_auditor.html, base.html, pages/dashboards/auditor_dashboard.html, partials/global_navbar.html",
+      "duration_ms": 172.4,
+      "templates": [
+        "audit/base_auditor.html",
+        "base.html",
+        "pages/dashboards/auditor_dashboard.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_header.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {
+        "metrics": {
+          "total_audit_logs": "1349",
+          "total_approvals": "16",
+          "total_rejections": "1",
+          "total_logins": "892",
+          "total_exports": "48",
+          "open_exceptions": "0",
+          "suspended_vendors": "0",
+          "overdue_obligations": "0",
+          "compliance_rate": "37.5"
+        }
+      }
+    },
+    {
+      "tc_id": "UAT-079",
+      "dashboard": "Compliance / Auditor Dashboard",
+      "test_type": "Positive",
+      "role": "SUPER_ADMIN",
+      "user": "admin@hpe.com",
+      "url": "/audit/",
+      "expected": "HTTP 200 + dashboard template + no server error",
+      "actual_status": 200,
+      "result": "PASS",
+      "detail": "HTTP 200; rendered templates: audit/base_auditor.html, base.html, pages/dashboards/auditor_dashboard.html, partials/global_navbar.html",
+      "duration_ms": 157.9,
+      "templates": [
+        "audit/base_auditor.html",
+        "base.html",
+        "pages/dashboards/auditor_dashboard.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_header.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {
+        "metrics": {
+          "total_audit_logs": "1349",
+          "total_approvals": "16",
+          "total_rejections": "1",
+          "total_logins": "892",
+          "total_exports": "48",
+          "open_exceptions": "0",
+          "suspended_vendors": "0",
+          "overdue_obligations": "0",
+          "compliance_rate": "37.5"
+        }
+      }
+    },
+    {
+      "tc_id": "UAT-080",
+      "dashboard": "Compliance / Auditor Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "REQUESTER",
+      "user": "requester@hpe.com",
+      "url": "/audit/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 9.6,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-081",
+      "dashboard": "Compliance / Auditor Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "DEPT_APPROVER",
+      "user": "approver@hpe.com",
+      "url": "/audit/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 15.8,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-082",
+      "dashboard": "Compliance / Auditor Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "PROC_EXEC",
+      "user": "procexec@hpe.com",
+      "url": "/audit/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 10.7,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/proc_exec_sidebar.html",
+        "partials/sidebar_header.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-083",
+      "dashboard": "Compliance / Auditor Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "PROC_MGR",
+      "user": "procmgr@hpe.com",
+      "url": "/audit/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 9.0,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-084",
+      "dashboard": "Compliance / Auditor Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "FINANCE_AP",
+      "user": "finance@hpe.com",
+      "url": "/audit/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 9.6,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-085",
+      "dashboard": "Compliance / Auditor Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "STORES_RECEIVER",
+      "user": "receiver@hpe.com",
+      "url": "/audit/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 9.1,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-086",
+      "dashboard": "Compliance / Auditor Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "LEGAL_MGR",
+      "user": "legal@hpe.com",
+      "url": "/audit/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 10.3,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-087",
+      "dashboard": "Compliance / Auditor Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "VENDOR_USER",
+      "user": "vendoruser@cisco.com",
+      "url": "/audit/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 8.7,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-088",
+      "dashboard": "Compliance / Auditor Dashboard",
+      "test_type": "Negative (Auth)",
+      "role": "ANONYMOUS",
+      "user": "anonymous",
+      "url": "/audit/",
+      "expected": "Redirect to login \u2014 dashboard NOT served",
+      "actual_status": 200,
+      "result": "PASS",
+      "detail": "HTTP 200; landed on: pages/login.html",
+      "duration_ms": 2.5,
+      "templates": [
+        "pages/login.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-089",
+      "dashboard": "Super Admin Dashboard",
+      "test_type": "Positive",
+      "role": "SUPER_ADMIN",
+      "user": "admin@hpe.com",
+      "url": "/superadmin/",
+      "expected": "HTTP 200 + dashboard template + no server error",
+      "actual_status": 200,
+      "result": "PASS",
+      "detail": "HTTP 200; rendered templates: base.html, layouts/superadmin_base.html, pages/dashboards/superadmin_dashboard.html, partials/global_navbar.html",
+      "duration_ms": 28.2,
+      "templates": [
+        "base.html",
+        "layouts/superadmin_base.html",
+        "pages/dashboards/superadmin_dashboard.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_header.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {
+        "metrics": {
+          "total_users": "10",
+          "allocated_budget": "250000.00",
+          "pending_pr_count": "1",
+          "pending_exceptions": "0",
+          "audits_today": "108"
+        }
+      }
+    },
+    {
+      "tc_id": "UAT-090",
+      "dashboard": "Super Admin Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "REQUESTER",
+      "user": "requester@hpe.com",
+      "url": "/superadmin/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: (no template)",
+      "duration_ms": 5.2,
+      "templates": [],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-091",
+      "dashboard": "Super Admin Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "DEPT_APPROVER",
+      "user": "approver@hpe.com",
+      "url": "/superadmin/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: (no template)",
+      "duration_ms": 5.5,
+      "templates": [],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-092",
+      "dashboard": "Super Admin Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "PROC_EXEC",
+      "user": "procexec@hpe.com",
+      "url": "/superadmin/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: (no template)",
+      "duration_ms": 5.2,
+      "templates": [],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-093",
+      "dashboard": "Super Admin Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "PROC_MGR",
+      "user": "procmgr@hpe.com",
+      "url": "/superadmin/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: (no template)",
+      "duration_ms": 5.9,
+      "templates": [],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-094",
+      "dashboard": "Super Admin Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "FINANCE_AP",
+      "user": "finance@hpe.com",
+      "url": "/superadmin/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: (no template)",
+      "duration_ms": 6.2,
+      "templates": [],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-095",
+      "dashboard": "Super Admin Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "STORES_RECEIVER",
+      "user": "receiver@hpe.com",
+      "url": "/superadmin/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: (no template)",
+      "duration_ms": 6.0,
+      "templates": [],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-096",
+      "dashboard": "Super Admin Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "LEGAL_MGR",
+      "user": "legal@hpe.com",
+      "url": "/superadmin/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: (no template)",
+      "duration_ms": 5.3,
+      "templates": [],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-097",
+      "dashboard": "Super Admin Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "AUDITOR",
+      "user": "auditor@hpe.com",
+      "url": "/superadmin/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: (no template)",
+      "duration_ms": 5.6,
+      "templates": [],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-098",
+      "dashboard": "Super Admin Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "VENDOR_USER",
+      "user": "vendoruser@cisco.com",
+      "url": "/superadmin/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 8.4,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-099",
+      "dashboard": "Super Admin Dashboard",
+      "test_type": "Negative (Auth)",
+      "role": "ANONYMOUS",
+      "user": "anonymous",
+      "url": "/superadmin/",
+      "expected": "Redirect to login \u2014 dashboard NOT served",
+      "actual_status": 200,
+      "result": "PASS",
+      "detail": "HTTP 200; landed on: pages/login.html",
+      "duration_ms": 2.3,
+      "templates": [
+        "pages/login.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-100",
+      "dashboard": "Vendor Portal Dashboard",
+      "test_type": "Positive",
+      "role": "VENDOR_USER",
+      "user": "vendoruser@cisco.com",
+      "url": "/vendor/",
+      "expected": "HTTP 200 + dashboard template + no server error",
+      "actual_status": 200,
+      "result": "PASS",
+      "detail": "HTTP 200; rendered templates: base.html, layouts/vendor_base.html, pages/dashboards/vendor_dashboard.html, partials/global_navbar.html",
+      "duration_ms": 60.1,
+      "templates": [
+        "base.html",
+        "layouts/vendor_base.html",
+        "pages/dashboards/vendor_dashboard.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_header.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {
+        "metrics": {
+          "active_rfq_invitations": "0",
+          "bids_in_draft": "0",
+          "submitted_bids": "7",
+          "upcoming_deadlines": "0",
+          "pending_clarifications": "1",
+          "pos_requiring_ack": "0",
+          "active_pos": "0",
+          "kyc_compliance_status": "ACTIVE",
+          "unread_notifications": "17"
+        }
+      }
+    },
+    {
+      "tc_id": "UAT-101",
+      "dashboard": "Vendor Portal Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "SUPER_ADMIN",
+      "user": "admin@hpe.com",
+      "url": "/vendor/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 12.4,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-102",
+      "dashboard": "Vendor Portal Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "REQUESTER",
+      "user": "requester@hpe.com",
+      "url": "/vendor/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 8.5,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-103",
+      "dashboard": "Vendor Portal Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "DEPT_APPROVER",
+      "user": "approver@hpe.com",
+      "url": "/vendor/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 13.7,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-104",
+      "dashboard": "Vendor Portal Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "PROC_EXEC",
+      "user": "procexec@hpe.com",
+      "url": "/vendor/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 10.0,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/proc_exec_sidebar.html",
+        "partials/sidebar_header.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-105",
+      "dashboard": "Vendor Portal Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "PROC_MGR",
+      "user": "procmgr@hpe.com",
+      "url": "/vendor/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 8.5,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-106",
+      "dashboard": "Vendor Portal Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "FINANCE_AP",
+      "user": "finance@hpe.com",
+      "url": "/vendor/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 8.6,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-107",
+      "dashboard": "Vendor Portal Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "STORES_RECEIVER",
+      "user": "receiver@hpe.com",
+      "url": "/vendor/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 9.0,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-108",
+      "dashboard": "Vendor Portal Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "LEGAL_MGR",
+      "user": "legal@hpe.com",
+      "url": "/vendor/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 9.5,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-109",
+      "dashboard": "Vendor Portal Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "AUDITOR",
+      "user": "auditor@hpe.com",
+      "url": "/vendor/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 8.3,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-110",
+      "dashboard": "Vendor Portal Dashboard",
+      "test_type": "Negative (Auth)",
+      "role": "ANONYMOUS",
+      "user": "anonymous",
+      "url": "/vendor/",
+      "expected": "Redirect to login \u2014 dashboard NOT served",
+      "actual_status": 200,
+      "result": "PASS",
+      "detail": "HTTP 200; landed on: pages/login.html",
+      "duration_ms": 2.2,
+      "templates": [
+        "pages/login.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-111",
+      "dashboard": "Vendor Bid Portal Monitor",
+      "test_type": "Positive",
+      "role": "SUPER_ADMIN",
+      "user": "admin@hpe.com",
+      "url": "/sourcing/bid-portal/",
+      "expected": "HTTP 200 + dashboard template + no server error",
+      "actual_status": 200,
+      "result": "PASS",
+      "detail": "HTTP 200; rendered templates: base.html, layouts/superadmin_base.html, partials/global_navbar.html, partials/messages.html",
+      "duration_ms": 33.4,
+      "templates": [
+        "base.html",
+        "layouts/superadmin_base.html",
+        "partials/global_navbar.html",
+        "partials/messages.html",
+        "partials/report_pagination.html",
+        "partials/sidebar_header.html",
+        "partials/sidebar_toggle_button.html",
+        "sourcing/bid_portal_dashboard.html"
+      ],
+      "context": {
+        "metrics": {
+          "open_windows": "0",
+          "scheduled": "0",
+          "closing_soon": "0",
+          "awaiting_response": "0",
+          "drafts": "0",
+          "submitted": "0",
+          "amended": "0",
+          "withdrawn": "0"
+        }
+      }
+    },
+    {
+      "tc_id": "UAT-112",
+      "dashboard": "Vendor Bid Portal Monitor",
+      "test_type": "Positive",
+      "role": "PROC_EXEC",
+      "user": "procexec@hpe.com",
+      "url": "/sourcing/bid-portal/",
+      "expected": "HTTP 200 + dashboard template + no server error",
+      "actual_status": 200,
+      "result": "PASS",
+      "detail": "HTTP 200; rendered templates: base.html, partials/global_navbar.html, partials/messages.html, partials/proc_exec_sidebar.html",
+      "duration_ms": 30.1,
+      "templates": [
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/messages.html",
+        "partials/proc_exec_sidebar.html",
+        "partials/report_pagination.html",
+        "partials/sidebar_header.html",
+        "partials/sidebar_toggle_button.html",
+        "sourcing/bid_portal_dashboard.html"
+      ],
+      "context": {
+        "metrics": {
+          "open_windows": "0",
+          "scheduled": "0",
+          "closing_soon": "0",
+          "awaiting_response": "0",
+          "drafts": "0",
+          "submitted": "0",
+          "amended": "0",
+          "withdrawn": "0"
+        }
+      }
+    },
+    {
+      "tc_id": "UAT-113",
+      "dashboard": "Vendor Bid Portal Monitor",
+      "test_type": "Positive",
+      "role": "PROC_MGR",
+      "user": "procmgr@hpe.com",
+      "url": "/sourcing/bid-portal/",
+      "expected": "HTTP 200 + dashboard template + no server error",
+      "actual_status": 200,
+      "result": "PASS",
+      "detail": "HTTP 200; rendered templates: base.html, manager/base_manager.html, partials/global_navbar.html, partials/messages.html",
+      "duration_ms": 28.8,
+      "templates": [
+        "base.html",
+        "manager/base_manager.html",
+        "partials/global_navbar.html",
+        "partials/messages.html",
+        "partials/report_pagination.html",
+        "partials/sidebar_header.html",
+        "partials/sidebar_toggle_button.html",
+        "sourcing/bid_portal_dashboard.html"
+      ],
+      "context": {
+        "metrics": {
+          "open_windows": "0",
+          "scheduled": "0",
+          "closing_soon": "0",
+          "awaiting_response": "0",
+          "drafts": "0",
+          "submitted": "0",
+          "amended": "0",
+          "withdrawn": "0"
+        }
+      }
+    },
+    {
+      "tc_id": "UAT-114",
+      "dashboard": "Vendor Bid Portal Monitor",
+      "test_type": "Positive",
+      "role": "AUDITOR",
+      "user": "auditor@hpe.com",
+      "url": "/sourcing/bid-portal/",
+      "expected": "HTTP 200 + dashboard template + no server error",
+      "actual_status": 200,
+      "result": "PASS",
+      "detail": "HTTP 200; rendered templates: audit/base_auditor.html, base.html, partials/global_navbar.html, partials/messages.html",
+      "duration_ms": 28.7,
+      "templates": [
+        "audit/base_auditor.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/messages.html",
+        "partials/report_pagination.html",
+        "partials/sidebar_header.html",
+        "partials/sidebar_toggle_button.html",
+        "sourcing/bid_portal_dashboard.html"
+      ],
+      "context": {
+        "metrics": {
+          "open_windows": "0",
+          "scheduled": "0",
+          "closing_soon": "0",
+          "awaiting_response": "0",
+          "drafts": "0",
+          "submitted": "0",
+          "amended": "0",
+          "withdrawn": "0"
+        }
+      }
+    },
+    {
+      "tc_id": "UAT-115",
+      "dashboard": "Vendor Bid Portal Monitor",
+      "test_type": "Negative (RBAC)",
+      "role": "REQUESTER",
+      "user": "requester@hpe.com",
+      "url": "/sourcing/bid-portal/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 10.2,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-116",
+      "dashboard": "Vendor Bid Portal Monitor",
+      "test_type": "Negative (RBAC)",
+      "role": "DEPT_APPROVER",
+      "user": "approver@hpe.com",
+      "url": "/sourcing/bid-portal/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 15.8,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-117",
+      "dashboard": "Vendor Bid Portal Monitor",
+      "test_type": "Negative (RBAC)",
+      "role": "FINANCE_AP",
+      "user": "finance@hpe.com",
+      "url": "/sourcing/bid-portal/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 10.0,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-118",
+      "dashboard": "Vendor Bid Portal Monitor",
+      "test_type": "Negative (RBAC)",
+      "role": "STORES_RECEIVER",
+      "user": "receiver@hpe.com",
+      "url": "/sourcing/bid-portal/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 10.3,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-119",
+      "dashboard": "Vendor Bid Portal Monitor",
+      "test_type": "Negative (RBAC)",
+      "role": "LEGAL_MGR",
+      "user": "legal@hpe.com",
+      "url": "/sourcing/bid-portal/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 10.3,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-120",
+      "dashboard": "Vendor Bid Portal Monitor",
+      "test_type": "Negative (RBAC)",
+      "role": "VENDOR_USER",
+      "user": "vendoruser@cisco.com",
+      "url": "/sourcing/bid-portal/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 9.4,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-121",
+      "dashboard": "Vendor Bid Portal Monitor",
+      "test_type": "Negative (Auth)",
+      "role": "ANONYMOUS",
+      "user": "anonymous",
+      "url": "/sourcing/bid-portal/",
+      "expected": "Redirect to login \u2014 dashboard NOT served",
+      "actual_status": 200,
+      "result": "PASS",
+      "detail": "HTTP 200; landed on: pages/login.html",
+      "duration_ms": 2.7,
+      "templates": [
+        "pages/login.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-122",
+      "dashboard": "Evaluation & Award Dashboard",
+      "test_type": "Positive",
+      "role": "SUPER_ADMIN",
+      "user": "admin@hpe.com",
+      "url": "/sourcing/evaluation/",
+      "expected": "HTTP 200 + dashboard template + no server error",
+      "actual_status": 200,
+      "result": "PASS",
+      "detail": "HTTP 200; rendered templates: base.html, layouts/superadmin_base.html, partials/global_navbar.html, partials/messages.html",
+      "duration_ms": 35.6,
+      "templates": [
+        "base.html",
+        "layouts/superadmin_base.html",
+        "partials/global_navbar.html",
+        "partials/messages.html",
+        "partials/sidebar_header.html",
+        "partials/sidebar_toggle_button.html",
+        "sourcing/evaluation_dashboard.html",
+        "sourcing/partials/status_badge.html"
+      ],
+      "context": {
+        "metrics": {
+          "technical": "5",
+          "commercial": "1",
+          "approval": "0",
+          "awarded": "6",
+          "awarded_without_po": "2"
+        }
+      }
+    },
+    {
+      "tc_id": "UAT-123",
+      "dashboard": "Evaluation & Award Dashboard",
+      "test_type": "Positive",
+      "role": "PROC_EXEC",
+      "user": "procexec@hpe.com",
+      "url": "/sourcing/evaluation/",
+      "expected": "HTTP 200 + dashboard template + no server error",
+      "actual_status": 200,
+      "result": "PASS",
+      "detail": "HTTP 200; rendered templates: base.html, partials/global_navbar.html, partials/messages.html, partials/proc_exec_sidebar.html",
+      "duration_ms": 45.2,
+      "templates": [
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/messages.html",
+        "partials/proc_exec_sidebar.html",
+        "partials/sidebar_header.html",
+        "partials/sidebar_toggle_button.html",
+        "sourcing/evaluation_dashboard.html",
+        "sourcing/partials/status_badge.html"
+      ],
+      "context": {
+        "metrics": {
+          "technical": "5",
+          "commercial": "1",
+          "approval": "0",
+          "awarded": "6",
+          "awarded_without_po": "2"
+        }
+      }
+    },
+    {
+      "tc_id": "UAT-124",
+      "dashboard": "Evaluation & Award Dashboard",
+      "test_type": "Positive",
+      "role": "PROC_MGR",
+      "user": "procmgr@hpe.com",
+      "url": "/sourcing/evaluation/",
+      "expected": "HTTP 200 + dashboard template + no server error",
+      "actual_status": 200,
+      "result": "PASS",
+      "detail": "HTTP 200; rendered templates: base.html, manager/base_manager.html, partials/global_navbar.html, partials/messages.html",
+      "duration_ms": 34.3,
+      "templates": [
+        "base.html",
+        "manager/base_manager.html",
+        "partials/global_navbar.html",
+        "partials/messages.html",
+        "partials/sidebar_header.html",
+        "partials/sidebar_toggle_button.html",
+        "sourcing/evaluation_dashboard.html",
+        "sourcing/partials/status_badge.html"
+      ],
+      "context": {
+        "metrics": {
+          "technical": "5",
+          "commercial": "1",
+          "approval": "0",
+          "awarded": "6",
+          "awarded_without_po": "2"
+        }
+      }
+    },
+    {
+      "tc_id": "UAT-125",
+      "dashboard": "Evaluation & Award Dashboard",
+      "test_type": "Positive",
+      "role": "AUDITOR",
+      "user": "auditor@hpe.com",
+      "url": "/sourcing/evaluation/",
+      "expected": "HTTP 200 + dashboard template + no server error",
+      "actual_status": 200,
+      "result": "PASS",
+      "detail": "HTTP 200; rendered templates: audit/base_auditor.html, base.html, partials/global_navbar.html, partials/messages.html",
+      "duration_ms": 28.3,
+      "templates": [
+        "audit/base_auditor.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/messages.html",
+        "partials/sidebar_header.html",
+        "partials/sidebar_toggle_button.html",
+        "sourcing/evaluation_dashboard.html",
+        "sourcing/partials/status_badge.html"
+      ],
+      "context": {
+        "metrics": {
+          "technical": "5",
+          "commercial": "1",
+          "approval": "0",
+          "awarded": "6",
+          "awarded_without_po": "2"
+        }
+      }
+    },
+    {
+      "tc_id": "UAT-126",
+      "dashboard": "Evaluation & Award Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "REQUESTER",
+      "user": "requester@hpe.com",
+      "url": "/sourcing/evaluation/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 9.2,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-127",
+      "dashboard": "Evaluation & Award Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "DEPT_APPROVER",
+      "user": "approver@hpe.com",
+      "url": "/sourcing/evaluation/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 15.8,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-128",
+      "dashboard": "Evaluation & Award Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "FINANCE_AP",
+      "user": "finance@hpe.com",
+      "url": "/sourcing/evaluation/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 10.7,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-129",
+      "dashboard": "Evaluation & Award Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "STORES_RECEIVER",
+      "user": "receiver@hpe.com",
+      "url": "/sourcing/evaluation/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 11.1,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-130",
+      "dashboard": "Evaluation & Award Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "LEGAL_MGR",
+      "user": "legal@hpe.com",
+      "url": "/sourcing/evaluation/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 11.0,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-131",
+      "dashboard": "Evaluation & Award Dashboard",
+      "test_type": "Negative (RBAC)",
+      "role": "VENDOR_USER",
+      "user": "vendoruser@cisco.com",
+      "url": "/sourcing/evaluation/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 9.7,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-132",
+      "dashboard": "Evaluation & Award Dashboard",
+      "test_type": "Negative (Auth)",
+      "role": "ANONYMOUS",
+      "user": "anonymous",
+      "url": "/sourcing/evaluation/",
+      "expected": "Redirect to login \u2014 dashboard NOT served",
+      "actual_status": 200,
+      "result": "PASS",
+      "detail": "HTTP 200; landed on: pages/login.html",
+      "duration_ms": 2.4,
+      "templates": [
+        "pages/login.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-133",
+      "dashboard": "Reports Hub",
+      "test_type": "Positive",
+      "role": "SUPER_ADMIN",
+      "user": "admin@hpe.com",
+      "url": "/reports/",
+      "expected": "HTTP 200 + dashboard template + no server error",
+      "actual_status": 200,
+      "result": "PASS",
+      "detail": "HTTP 200; rendered templates: base.html, layouts/superadmin_base.html, pages/reports/dashboard.html, partials/global_navbar.html",
+      "duration_ms": 16.3,
+      "templates": [
+        "base.html",
+        "layouts/superadmin_base.html",
+        "pages/reports/dashboard.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_header.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-134",
+      "dashboard": "Reports Hub",
+      "test_type": "Positive",
+      "role": "REQUESTER",
+      "user": "requester@hpe.com",
+      "url": "/reports/",
+      "expected": "HTTP 200 + dashboard template + no server error",
+      "actual_status": 200,
+      "result": "PASS",
+      "detail": "HTTP 200; rendered templates: base.html, layouts/requester_base.html, pages/reports/dashboard.html, partials/global_navbar.html",
+      "duration_ms": 10.0,
+      "templates": [
+        "base.html",
+        "layouts/requester_base.html",
+        "pages/reports/dashboard.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_header.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-135",
+      "dashboard": "Reports Hub",
+      "test_type": "Positive",
+      "role": "DEPT_APPROVER",
+      "user": "approver@hpe.com",
+      "url": "/reports/",
+      "expected": "HTTP 200 + dashboard template + no server error",
+      "actual_status": 200,
+      "result": "PASS",
+      "detail": "HTTP 200; rendered templates: base.html, layouts/approver_base.html, pages/reports/dashboard.html, partials/global_navbar.html",
+      "duration_ms": 15.1,
+      "templates": [
+        "base.html",
+        "layouts/approver_base.html",
+        "pages/reports/dashboard.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_header.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-136",
+      "dashboard": "Reports Hub",
+      "test_type": "Positive",
+      "role": "PROC_EXEC",
+      "user": "procexec@hpe.com",
+      "url": "/reports/",
+      "expected": "HTTP 200 + dashboard template + no server error",
+      "actual_status": 200,
+      "result": "PASS",
+      "detail": "HTTP 200; rendered templates: base.html, pages/reports/dashboard.html, partials/global_navbar.html, partials/proc_exec_sidebar.html",
+      "duration_ms": 11.0,
+      "templates": [
+        "base.html",
+        "pages/reports/dashboard.html",
+        "partials/global_navbar.html",
+        "partials/proc_exec_sidebar.html",
+        "partials/sidebar_header.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-137",
+      "dashboard": "Reports Hub",
+      "test_type": "Positive",
+      "role": "PROC_MGR",
+      "user": "procmgr@hpe.com",
+      "url": "/reports/",
+      "expected": "HTTP 200 + dashboard template + no server error",
+      "actual_status": 200,
+      "result": "PASS",
+      "detail": "HTTP 200; rendered templates: base.html, manager/base_manager.html, pages/reports/dashboard.html, partials/global_navbar.html",
+      "duration_ms": 16.1,
+      "templates": [
+        "base.html",
+        "manager/base_manager.html",
+        "pages/reports/dashboard.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_header.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-138",
+      "dashboard": "Reports Hub",
+      "test_type": "Positive",
+      "role": "FINANCE_AP",
+      "user": "finance@hpe.com",
+      "url": "/reports/",
+      "expected": "HTTP 200 + dashboard template + no server error",
+      "actual_status": 200,
+      "result": "PASS",
+      "detail": "HTTP 200; rendered templates: base.html, layouts/finance_base.html, pages/reports/dashboard.html, partials/global_navbar.html",
+      "duration_ms": 10.2,
+      "templates": [
+        "base.html",
+        "layouts/finance_base.html",
+        "pages/reports/dashboard.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_header.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-139",
+      "dashboard": "Reports Hub",
+      "test_type": "Positive",
+      "role": "STORES_RECEIVER",
+      "user": "receiver@hpe.com",
+      "url": "/reports/",
+      "expected": "HTTP 200 + dashboard template + no server error",
+      "actual_status": 200,
+      "result": "PASS",
+      "detail": "HTTP 200; rendered templates: base.html, layouts/stores_base.html, pages/reports/dashboard.html, partials/global_navbar.html",
+      "duration_ms": 10.9,
+      "templates": [
+        "base.html",
+        "layouts/stores_base.html",
+        "pages/reports/dashboard.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_header.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-140",
+      "dashboard": "Reports Hub",
+      "test_type": "Positive",
+      "role": "LEGAL_MGR",
+      "user": "legal@hpe.com",
+      "url": "/reports/",
+      "expected": "HTTP 200 + dashboard template + no server error",
+      "actual_status": 200,
+      "result": "PASS",
+      "detail": "HTTP 200; rendered templates: base.html, layouts/legal_base.html, pages/reports/dashboard.html, partials/global_navbar.html",
+      "duration_ms": 11.4,
+      "templates": [
+        "base.html",
+        "layouts/legal_base.html",
+        "pages/reports/dashboard.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_header.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-141",
+      "dashboard": "Reports Hub",
+      "test_type": "Positive",
+      "role": "AUDITOR",
+      "user": "auditor@hpe.com",
+      "url": "/reports/",
+      "expected": "HTTP 200 + dashboard template + no server error",
+      "actual_status": 200,
+      "result": "PASS",
+      "detail": "HTTP 200; rendered templates: audit/base_auditor.html, base.html, pages/reports/dashboard.html, partials/global_navbar.html",
+      "duration_ms": 9.6,
+      "templates": [
+        "audit/base_auditor.html",
+        "base.html",
+        "pages/reports/dashboard.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_header.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-142",
+      "dashboard": "Reports Hub",
+      "test_type": "Negative (RBAC)",
+      "role": "VENDOR_USER",
+      "user": "vendoruser@cisco.com",
+      "url": "/reports/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 8.2,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-143",
+      "dashboard": "Reports Hub",
+      "test_type": "Negative (Auth)",
+      "role": "ANONYMOUS",
+      "user": "anonymous",
+      "url": "/reports/",
+      "expected": "Redirect to login \u2014 dashboard NOT served",
+      "actual_status": 200,
+      "result": "PASS",
+      "detail": "HTTP 200; landed on: pages/login.html",
+      "duration_ms": 2.5,
+      "templates": [
+        "pages/login.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-144",
+      "dashboard": "Organization Dashboard (per org)",
+      "test_type": "Positive",
+      "role": "SUPER_ADMIN",
+      "user": "admin@hpe.com",
+      "url": "/superadmin/organizations/7c23aeef-a3b6-4b50-8489-4601c0175581/",
+      "expected": "HTTP 200 + dashboard template + no server error",
+      "actual_status": 200,
+      "result": "PASS",
+      "detail": "HTTP 200; rendered templates: base.html, layouts/superadmin_base.html, pages/dashboards/superadmin/org_dashboard.html, partials/global_navbar.html",
+      "duration_ms": 193.3,
+      "templates": [
+        "base.html",
+        "layouts/superadmin_base.html",
+        "pages/dashboards/superadmin/org_dashboard.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_header.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-145",
+      "dashboard": "Organization Dashboard (per org)",
+      "test_type": "Negative (RBAC)",
+      "role": "REQUESTER",
+      "user": "requester@hpe.com",
+      "url": "/superadmin/organizations/7c23aeef-a3b6-4b50-8489-4601c0175581/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: (no template)",
+      "duration_ms": 5.5,
+      "templates": [],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-146",
+      "dashboard": "Organization Dashboard (per org)",
+      "test_type": "Negative (RBAC)",
+      "role": "DEPT_APPROVER",
+      "user": "approver@hpe.com",
+      "url": "/superadmin/organizations/7c23aeef-a3b6-4b50-8489-4601c0175581/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: (no template)",
+      "duration_ms": 5.2,
+      "templates": [],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-147",
+      "dashboard": "Organization Dashboard (per org)",
+      "test_type": "Negative (RBAC)",
+      "role": "PROC_EXEC",
+      "user": "procexec@hpe.com",
+      "url": "/superadmin/organizations/7c23aeef-a3b6-4b50-8489-4601c0175581/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: (no template)",
+      "duration_ms": 5.3,
+      "templates": [],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-148",
+      "dashboard": "Organization Dashboard (per org)",
+      "test_type": "Negative (RBAC)",
+      "role": "PROC_MGR",
+      "user": "procmgr@hpe.com",
+      "url": "/superadmin/organizations/7c23aeef-a3b6-4b50-8489-4601c0175581/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: (no template)",
+      "duration_ms": 5.2,
+      "templates": [],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-149",
+      "dashboard": "Organization Dashboard (per org)",
+      "test_type": "Negative (RBAC)",
+      "role": "FINANCE_AP",
+      "user": "finance@hpe.com",
+      "url": "/superadmin/organizations/7c23aeef-a3b6-4b50-8489-4601c0175581/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: (no template)",
+      "duration_ms": 5.5,
+      "templates": [],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-150",
+      "dashboard": "Organization Dashboard (per org)",
+      "test_type": "Negative (RBAC)",
+      "role": "STORES_RECEIVER",
+      "user": "receiver@hpe.com",
+      "url": "/superadmin/organizations/7c23aeef-a3b6-4b50-8489-4601c0175581/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: (no template)",
+      "duration_ms": 6.4,
+      "templates": [],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-151",
+      "dashboard": "Organization Dashboard (per org)",
+      "test_type": "Negative (RBAC)",
+      "role": "LEGAL_MGR",
+      "user": "legal@hpe.com",
+      "url": "/superadmin/organizations/7c23aeef-a3b6-4b50-8489-4601c0175581/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: (no template)",
+      "duration_ms": 5.8,
+      "templates": [],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-152",
+      "dashboard": "Organization Dashboard (per org)",
+      "test_type": "Negative (RBAC)",
+      "role": "AUDITOR",
+      "user": "auditor@hpe.com",
+      "url": "/superadmin/organizations/7c23aeef-a3b6-4b50-8489-4601c0175581/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: (no template)",
+      "duration_ms": 7.9,
+      "templates": [],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-153",
+      "dashboard": "Organization Dashboard (per org)",
+      "test_type": "Negative (RBAC)",
+      "role": "VENDOR_USER",
+      "user": "vendoruser@cisco.com",
+      "url": "/superadmin/organizations/7c23aeef-a3b6-4b50-8489-4601c0175581/",
+      "expected": "HTTP 403/redirect \u2014 dashboard NOT served",
+      "actual_status": 403,
+      "result": "PASS",
+      "detail": "HTTP 403; landed on: 403.html, base.html, partials/global_navbar.html",
+      "duration_ms": 8.7,
+      "templates": [
+        "403.html",
+        "base.html",
+        "partials/global_navbar.html",
+        "partials/sidebar_toggle_button.html"
+      ],
+      "context": {}
+    },
+    {
+      "tc_id": "UAT-154",
+      "dashboard": "Organization Dashboard (per org)",
+      "test_type": "Negative (Auth)",
+      "role": "ANONYMOUS",
+      "user": "anonymous",
+      "url": "/superadmin/organizations/7c23aeef-a3b6-4b50-8489-4601c0175581/",
+      "expected": "Redirect to login \u2014 dashboard NOT served",
+      "actual_status": 200,
+      "result": "PASS",
+      "detail": "HTTP 200; landed on: pages/login.html",
+      "duration_ms": 2.4,
+      "templates": [
+        "pages/login.html"
+      ],
+      "context": {}
+    }
+  ],
+  "widgets": [
+    {
+      "widget": "Vendor Qualification tab",
+      "url_name": "vendors:vendors_qualification_tab",
+      "url": "/vendors/htmx/qualification/",
+      "proc_exec_result": "PASS (HTTP 200, 93.7 ms)",
+      "proc_exec_status": 200,
+      "proc_exec_ms": 93.7,
+      "negative_result": "PASS (HTTP 403 \u2014 blocked)",
+      "negative_status": 403
+    },
+    {
+      "widget": "Ready-PRs tab",
+      "url_name": "sourcing:sourcing_ready_prs_tab",
+      "url": "/sourcing-events/htmx/ready-prs/",
+      "proc_exec_result": "PASS (HTTP 200, 23.2 ms)",
+      "proc_exec_status": 200,
+      "proc_exec_ms": 23.2,
+      "negative_result": "PASS (HTTP 403 \u2014 blocked)",
+      "negative_status": 403
+    },
+    {
+      "widget": "Sourcing Events tab",
+      "url_name": "sourcing:sourcing_events_tab",
+      "url": "/sourcing-events/htmx/events-tab/",
+      "proc_exec_result": "PASS (HTTP 200, 27.0 ms)",
+      "proc_exec_status": 200,
+      "proc_exec_ms": 27.0,
+      "negative_result": "PASS (HTTP 403 \u2014 blocked)",
+      "negative_status": 403
+    },
+    {
+      "widget": "Awards Pending PO tab",
+      "url_name": "orders:orders_awards_pending_tab",
+      "url": "/purchase-orders/htmx/awards-pending/",
+      "proc_exec_result": "PASS (HTTP 200, 49.5 ms)",
+      "proc_exec_status": 200,
+      "proc_exec_ms": 49.5,
+      "negative_result": "PASS (HTTP 403 \u2014 blocked)",
+      "negative_status": 403
+    },
+    {
+      "widget": "Pending Actions widget",
+      "url_name": "notifications:proc_exec_pending_actions",
+      "url": "/notifications/htmx/pending-actions/",
+      "proc_exec_result": "PASS (HTTP 200, 27.5 ms)",
+      "proc_exec_status": 200,
+      "proc_exec_ms": 27.5,
+      "negative_result": "FAIL (HTTP 200 \u2014 leaked)",
+      "negative_status": 200
+    },
+    {
+      "widget": "Notifications Feed widget",
+      "url_name": "notifications:proc_exec_notifications_feed",
+      "url": "/notifications/htmx/feed/",
+      "proc_exec_result": "PASS (HTTP 200, 26.5 ms)",
+      "proc_exec_status": 200,
+      "proc_exec_ms": 26.5,
+      "negative_result": "FAIL (HTTP 200 \u2014 leaked)",
+      "negative_status": 200
+    },
+    {
+      "widget": "Bid Comparison fragment",
+      "url_name": "sourcing:evaluation_compare_htmx",
+      "url": "/sourcing-events/05f17329-e8c8-496a-a0dd-00931b49eb1f/htmx/evaluation/",
+      "proc_exec_result": "PASS (HTTP 200, 77.0 ms)",
+      "proc_exec_status": 200,
+      "proc_exec_ms": 77.0,
+      "negative_result": "PASS (HTTP 403 \u2014 blocked)",
+      "negative_status": 403
+    }
+  ],
+  "data_counts": {
+    "Users": null,
+    "Organizations": 1,
+    "Departments": 2,
+    "Cost Centers": 1,
+    "Vendors": 8,
+    "Vendor Risk Records": 0,
+    "Purchase Requisitions": 3,
+    "Sourcing Events": 17,
+    "Vendor Bids": 13,
+    "Purchase Orders": 5,
+    "Goods Receipts (GRN)": 5,
+    "Supplier Invoices": 6,
+    "Match Exceptions": 4,
+    "Contracts": 1,
+    "Budgets": 1,
+    "Budget Reservations": 3,
+    "Vendor Scorecards": 0,
+    "Notifications": 206,
+    "Audit Log Entries": 1614,
+    "Export Jobs": 0,
+    "Approval Actions": 5
+  }
+}

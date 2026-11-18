@@ -67,7 +67,9 @@
                                pattern="^[A-Za-z0-9][A-Za-z0-9\-_/]{4,48}[A-Za-z0-9]$"
                                minlength="6" maxlength="50"
                                title="Alphanumeric reference or UTR (6-50 chars). Hyphens (-) and slashes (/) permitted. Disallowed special characters like !@#$%^&*() are prohibited."
+                               autocomplete="off"
                                required>
+                        <div class="invalid-feedback fw-semibold" id="pref_feedback_{{ invoice.id }}">Please enter a valid Transaction Reference / UTR #.</div>
                         <div class="form-text small text-muted">Format: 6–50 alphanumeric characters (e.g. UTR-2026-981023, CMS123456789). No special characters (!@#$%).</div>
                     </div>
 
@@ -139,28 +141,68 @@
 </div>
 
 <script>
-    // BUG-005: UTR client-side validation preventing invalid submission and infinite hang
-    document.querySelectorAll('form[id^="paymentForm-"]').forEach(function(form) {
-        form.addEventListener('submit', function(e) {
-            const prefInput = form.querySelector('input[name="payment_reference"]');
-            const val = prefInput ? prefInput.value.trim() : '';
-            // Standard banking UTR format: 6-50 alphanumeric characters (hyphens and slashes allowed, no special chars)
-            const utrPattern = /^[A-Za-z0-9][A-Za-z0-9\-_/]{4,48}[A-Za-z0-9]$/;
+    // BUG-005: Real-time UTR client-side validation preventing invalid submission and infinite hang
+    function validateUtr(inputEl, feedbackEl) {
+        if (!inputEl) return true;
+        const val = inputEl.value.trim();
+        // Standard banking UTR format: 6-50 alphanumeric characters (hyphens and slashes allowed, no special chars)
+        const utrPattern = /^[A-Za-z0-9][A-Za-z0-9\-_/]{4,48}[A-Za-z0-9]$/;
+        const hasSpecialChars = /[^A-Za-z0-9\-_/]/.test(val);
 
-            if (!form.checkValidity() || !utrPattern.test(val)) {
+        if (!val) {
+            inputEl.classList.remove('is-valid');
+            inputEl.classList.add('is-invalid');
+            if (feedbackEl) feedbackEl.textContent = 'Transaction Reference / UTR # is required.';
+            return false;
+        } else if (hasSpecialChars) {
+            inputEl.classList.remove('is-valid');
+            inputEl.classList.add('is-invalid');
+            if (feedbackEl) feedbackEl.textContent = 'Invalid UTR format. Special characters like !@#$%^&*() are prohibited. Only alphanumeric characters, hyphens (-), and slashes (/) are permitted.';
+            return false;
+        } else if (val.length < 6 || val.length > 50) {
+            inputEl.classList.remove('is-valid');
+            inputEl.classList.add('is-invalid');
+            if (feedbackEl) feedbackEl.textContent = 'Payment Reference / UTR must be between 6 and 50 characters in length.';
+            return false;
+        } else if (!utrPattern.test(val)) {
+            inputEl.classList.remove('is-valid');
+            inputEl.classList.add('is-invalid');
+            if (feedbackEl) feedbackEl.textContent = 'Invalid UTR format. Must start and end with an alphanumeric character (e.g. UTR-2026-981023, CMS1234567890).';
+            return false;
+        } else {
+            inputEl.classList.remove('is-invalid');
+            inputEl.classList.add('is-valid');
+            if (feedbackEl) feedbackEl.textContent = '';
+            return true;
+        }
+    }
+
+    document.querySelectorAll('form[id^="paymentForm-"]').forEach(function(form) {
+        const prefInput = form.querySelector('input[name="payment_reference"]');
+        const feedbackEl = form.querySelector('.invalid-feedback');
+
+        // Real-time validation on typing/pasting/blurring
+        if (prefInput) {
+            ['input', 'keyup', 'change', 'blur'].forEach(function(evt) {
+                prefInput.addEventListener(evt, function() {
+                    validateUtr(prefInput, feedbackEl);
+                });
+            });
+        }
+
+        form.addEventListener('submit', function(e) {
+            const isValid = validateUtr(prefInput, feedbackEl);
+
+            if (!isValid || !form.checkValidity()) {
                 e.preventDefault();
                 e.stopPropagation();
                 if (prefInput) {
-                    prefInput.classList.add('is-invalid');
                     prefInput.focus();
                 }
                 form.classList.add('was-validated');
                 return false;
             }
 
-            if (prefInput) {
-                prefInput.classList.remove('is-invalid');
-            }
             var btn = form.querySelector('button[type="submit"]');
             if (btn) {
                 btn.disabled = true;

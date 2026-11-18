@@ -9,6 +9,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
 from apps.accounts.models import Role
+from apps.core.validators import validate_invoice_number, validate_payment_reference
 from apps.invoices.models import MatchException, MatchTolerancePolicy, SupplierInvoice
 from apps.invoices.services import (
     approve_supplier_invoice_service,
@@ -50,16 +51,23 @@ def _enforce_internal_invoice_access(request, allowed_roles=None):
     )
     if not user.is_authenticated:
         from django.core.exceptions import PermissionDenied
+
         raise PermissionDenied("Authentication required.")
     if user.is_superuser:
         return
     if getattr(user, "is_vendor", False) or role_code in [Role.VENDOR_USER, "VENDOR_USER"]:
         from django.core.exceptions import PermissionDenied
-        raise PermissionDenied("External vendors are not authorized to access internal invoice workflows.")
+
+        raise PermissionDenied(
+            "External vendors are not authorized to access internal invoice workflows."
+        )
     target_roles = allowed_roles if allowed_roles is not None else INTERNAL_INVOICE_ROLES
     if role_code not in target_roles:
         from django.core.exceptions import PermissionDenied
-        raise PermissionDenied("Permission denied: insufficient role privileges for this invoice operation.")
+
+        raise PermissionDenied(
+            "Permission denied: insufficient role privileges for this invoice operation."
+        )
 
 
 def _get_user_role(user):
@@ -206,20 +214,29 @@ def invoice_detail_view(request, invoice_id):
             "user_role": user_role,
             "is_finance": is_finance,
             "is_proc": is_proc,
-            "can_validate": is_finance and invoice.status in [
+            "can_validate": is_finance
+            and invoice.status
+            in [
                 SupplierInvoice.STATUS_RECEIVED,
                 SupplierInvoice.STATUS_VALIDATION,
                 SupplierInvoice.STATUS_EXCEPTION,
             ],
-            "can_approve": is_finance and invoice.status in [
+            "can_approve": is_finance
+            and invoice.status
+            in [
                 SupplierInvoice.STATUS_APPROVAL,
                 SupplierInvoice.STATUS_RECEIVED,
-            ] and not has_open_exceptions,
-            "can_reject": is_finance and invoice.status not in [
+            ]
+            and not has_open_exceptions,
+            "can_reject": is_finance
+            and invoice.status
+            not in [
                 SupplierInvoice.STATUS_PAID,
                 SupplierInvoice.STATUS_REJECTED,
             ],
-            "can_request_correction": is_finance and invoice.status not in [
+            "can_request_correction": is_finance
+            and invoice.status
+            not in [
                 SupplierInvoice.STATUS_PAID,
                 SupplierInvoice.STATUS_REJECTED,
             ],
@@ -263,7 +280,9 @@ def exceptions_list_view(request):
 def exception_detail_view(request, exception_id):
     _enforce_internal_invoice_access(request)
     scoped_invoices = scope_invoices_queryset(SupplierInvoice.objects.all(), request.user)
-    exception = get_object_or_404(MatchException.objects.filter(invoice__in=scoped_invoices), id=exception_id)
+    exception = get_object_or_404(
+        MatchException.objects.filter(invoice__in=scoped_invoices), id=exception_id
+    )
     return render(request, "pages/invoices/exception_detail.html", {"exception": exception})
 
 
@@ -320,6 +339,7 @@ def pay_invoice_view(request, invoice_id):
         payment_date = request.POST.get("payment_date", "").strip() or None
 
         try:
+            payment_reference = validate_payment_reference(payment_reference)
             mark_invoice_paid_service(
                 invoice=invoice,
                 user=request.user,
@@ -332,11 +352,11 @@ def pay_invoice_view(request, invoice_id):
             )
         except ValidationError as ve:
             if hasattr(ve, "messages") and ve.messages:
-                err_msg = ve.messages[0]
+                err_msg = " ".join(str(m) for m in ve.messages)
             elif hasattr(ve, "message"):
                 err_msg = ve.message
             else:
-                err_msg = str(ve).strip("[]'")
+                err_msg = str(ve).strip("[]'\"")
             messages.error(request, f"Payment Validation Error: {err_msg}")
         except Exception as e:
             messages.error(request, f"Error paying invoice: {str(e)}")
@@ -362,9 +382,13 @@ def approve_invoice_view(request, invoice_id):
                 user=request.user,
                 notes=notes,
             )
-            messages.success(request, f"Invoice {invoice.invoice_number} approved and ready for payment.")
+            messages.success(
+                request, f"Invoice {invoice.invoice_number} approved and ready for payment."
+            )
         except ValidationError as ve:
-            messages.error(request, f"Approval Failed: {ve.message if hasattr(ve, 'message') else str(ve)}")
+            messages.error(
+                request, f"Approval Failed: {ve.message if hasattr(ve, 'message') else str(ve)}"
+            )
         except Exception as e:
             messages.error(request, f"Approval Error: {str(e)}")
     return redirect("invoice_detail", invoice_id=invoice.id)
@@ -393,7 +417,9 @@ def reject_invoice_view(request, invoice_id):
             )
             messages.warning(request, f"Invoice {invoice.invoice_number} has been rejected.")
         except ValidationError as ve:
-            messages.error(request, f"Rejection Failed: {ve.message if hasattr(ve, 'message') else str(ve)}")
+            messages.error(
+                request, f"Rejection Failed: {ve.message if hasattr(ve, 'message') else str(ve)}"
+            )
         except Exception as e:
             messages.error(request, f"Rejection Error: {str(e)}")
     return redirect("invoice_detail", invoice_id=invoice.id)
@@ -420,9 +446,15 @@ def request_correction_view(request, invoice_id):
                 user=request.user,
                 correction_notes=correction_notes,
             )
-            messages.info(request, f"Correction requested for invoice {invoice.invoice_number}. Vendor has been notified.")
+            messages.info(
+                request,
+                f"Correction requested for invoice {invoice.invoice_number}. Vendor has been notified.",
+            )
         except ValidationError as ve:
-            messages.error(request, f"Correction Request Failed: {ve.message if hasattr(ve, 'message') else str(ve)}")
+            messages.error(
+                request,
+                f"Correction Request Failed: {ve.message if hasattr(ve, 'message') else str(ve)}",
+            )
         except Exception as e:
             messages.error(request, f"Error: {str(e)}")
     return redirect("invoice_detail", invoice_id=invoice.id)
@@ -434,7 +466,14 @@ def create_invoice_view(request):
         request,
         allowed_roles=[Role.FINANCE_AP, Role.SUPER_ADMIN, "FINANCE_AP", "SUPER_ADMIN"],
     )
-    scoped_org = getattr(request.user, "effective_organization", None) if not (getattr(request.user, "is_superuser", False) and not getattr(request.user, "organization_id", None)) else None
+    scoped_org = (
+        getattr(request.user, "effective_organization", None)
+        if not (
+            getattr(request.user, "is_superuser", False)
+            and not getattr(request.user, "organization_id", None)
+        )
+        else None
+    )
     vendors = Vendor.objects.filter(status="ACTIVE")
     if scoped_org:
         vendors = vendors.filter(organization=scoped_org)
@@ -481,69 +520,142 @@ def create_invoice_view(request):
         # 1. Required field validations
         if not vendor_id:
             messages.error(request, "Please select a Supplier / Vendor.")
-            return render(request, "pages/invoices/create.html", {"vendors": vendors, "pos": pos, "form_data": form_data})
+            return render(
+                request,
+                "pages/invoices/create.html",
+                {"vendors": vendors, "pos": pos, "form_data": form_data},
+            )
 
         if not po_id:
             messages.error(request, "Please select a Linked Purchase Order.")
-            return render(request, "pages/invoices/create.html", {"vendors": vendors, "pos": pos, "form_data": form_data})
+            return render(
+                request,
+                "pages/invoices/create.html",
+                {"vendors": vendors, "pos": pos, "form_data": form_data},
+            )
 
         if not invoice_number:
             messages.error(request, "Invoice Number is required.")
-            return render(request, "pages/invoices/create.html", {"vendors": vendors, "pos": pos, "form_data": form_data})
+            return render(
+                request,
+                "pages/invoices/create.html",
+                {"vendors": vendors, "pos": pos, "form_data": form_data},
+            )
+
+        # BUG-007: Strict input format validation for Invoice Number
+        try:
+            invoice_number = validate_invoice_number(invoice_number)
+        except ValidationError as ve:
+            err_msg = ve.message if hasattr(ve, "message") else str(ve).strip("[]'\"")
+            messages.error(request, f"Invoice Number Validation Error: {err_msg}")
+            return render(
+                request,
+                "pages/invoices/create.html",
+                {"vendors": vendors, "pos": pos, "form_data": form_data},
+            )
 
         if not invoice_date:
             messages.error(request, "Invoice Date is required.")
-            return render(request, "pages/invoices/create.html", {"vendors": vendors, "pos": pos, "form_data": form_data})
+            return render(
+                request,
+                "pages/invoices/create.html",
+                {"vendors": vendors, "pos": pos, "form_data": form_data},
+            )
 
         today_iso = timezone.now().date().isoformat()
         if invoice_date > today_iso:
-            messages.error(request, "Invoice Date cannot be in the future. Please select today or an earlier date.")
-            return render(request, "pages/invoices/create.html", {"vendors": vendors, "pos": pos, "form_data": form_data})
+            messages.error(
+                request,
+                "Invoice Date cannot be in the future. Please select today or an earlier date.",
+            )
+            return render(
+                request,
+                "pages/invoices/create.html",
+                {"vendors": vendors, "pos": pos, "form_data": form_data},
+            )
 
         if not due_date:
             messages.error(request, "Payment Due Date is required.")
-            return render(request, "pages/invoices/create.html", {"vendors": vendors, "pos": pos, "form_data": form_data})
+            return render(
+                request,
+                "pages/invoices/create.html",
+                {"vendors": vendors, "pos": pos, "form_data": form_data},
+            )
 
         if due_date < invoice_date:
             messages.error(request, "Payment Due Date cannot be earlier than Invoice Date.")
-            return render(request, "pages/invoices/create.html", {"vendors": vendors, "pos": pos, "form_data": form_data})
+            return render(
+                request,
+                "pages/invoices/create.html",
+                {"vendors": vendors, "pos": pos, "form_data": form_data},
+            )
 
         # 2. Count / Quantity validations: cannot be zero or negative
         try:
             quantity = Decimal(qty_raw)
         except Exception:
             messages.error(request, "Total Quantity Billed must be a valid numeric count.")
-            return render(request, "pages/invoices/create.html", {"vendors": vendors, "pos": pos, "form_data": form_data})
+            return render(
+                request,
+                "pages/invoices/create.html",
+                {"vendors": vendors, "pos": pos, "form_data": form_data},
+            )
 
         if quantity <= Decimal("0.00"):
             messages.error(
                 request,
-                "Total Quantity Billed must be greater than zero. The count cannot be less than zero or negative."
+                "Total Quantity Billed must be greater than zero. The count cannot be less than zero or negative.",
             )
-            return render(request, "pages/invoices/create.html", {"vendors": vendors, "pos": pos, "form_data": form_data})
+            return render(
+                request,
+                "pages/invoices/create.html",
+                {"vendors": vendors, "pos": pos, "form_data": form_data},
+            )
 
         # 3. Unit Price validation: cannot be negative
         try:
             unit_price = Decimal(price_raw)
         except Exception:
             messages.error(request, "Unit Price must be a valid numeric amount.")
-            return render(request, "pages/invoices/create.html", {"vendors": vendors, "pos": pos, "form_data": form_data})
+            return render(
+                request,
+                "pages/invoices/create.html",
+                {"vendors": vendors, "pos": pos, "form_data": form_data},
+            )
 
         if unit_price < Decimal("0.00"):
             messages.error(request, "Unit Price cannot be less than zero or negative.")
-            return render(request, "pages/invoices/create.html", {"vendors": vendors, "pos": pos, "form_data": form_data})
+            return render(
+                request,
+                "pages/invoices/create.html",
+                {"vendors": vendors, "pos": pos, "form_data": form_data},
+            )
 
         try:
             vendor = get_object_or_404(Vendor, id=vendor_id)
             po = get_object_or_404(PurchaseOrder, id=po_id)
 
             if po.vendor_id != vendor.id:
-                messages.error(request, f"Purchase Order {po.po_number} does not belong to vendor '{vendor.legal_name}'.")
-                return render(request, "pages/invoices/create.html", {"vendors": vendors, "pos": pos, "form_data": form_data})
+                messages.error(
+                    request,
+                    f"Purchase Order {po.po_number} does not belong to vendor '{vendor.legal_name}'.",
+                )
+                return render(
+                    request,
+                    "pages/invoices/create.html",
+                    {"vendors": vendors, "pos": pos, "form_data": form_data},
+                )
 
             if not po.lines.exists():
-                messages.error(request, f"Purchase Order {po.po_number} has no line items and cannot be invoiced.")
-                return render(request, "pages/invoices/create.html", {"vendors": vendors, "pos": pos, "form_data": form_data})
+                messages.error(
+                    request,
+                    f"Purchase Order {po.po_number} has no line items and cannot be invoiced.",
+                )
+                return render(
+                    request,
+                    "pages/invoices/create.html",
+                    {"vendors": vendors, "pos": pos, "form_data": form_data},
+                )
 
             po_line = po.lines.first()
 
@@ -552,7 +664,9 @@ def create_invoice_view(request):
                     "po_line": po_line,
                     "quantity": quantity,
                     "unit_price": unit_price,
-                    "item_description": po_line.item_description if po_line else "Manual Entry Item",
+                    "item_description": (
+                        po_line.item_description if po_line else "Manual Entry Item"
+                    ),
                 }
             ]
 
@@ -575,7 +689,11 @@ def create_invoice_view(request):
             if hasattr(ve, "message_dict") and ve.message_dict:
                 messages_list = []
                 for field, field_errs in ve.message_dict.items():
-                    field_label = field.replace("_", " ").title() if field != "__all__" else "Validation Error"
+                    field_label = (
+                        field.replace("_", " ").title()
+                        if field != "__all__"
+                        else "Validation Error"
+                    )
                     for err in field_errs:
                         messages_list.append(f"{field_label}: {err}")
                 err_msg = " ".join(messages_list)
@@ -586,26 +704,43 @@ def create_invoice_view(request):
             else:
                 err_msg = str(ve).strip("[]'\"")
             messages.error(request, err_msg)
-            return render(request, "pages/invoices/create.html", {"vendors": vendors, "pos": pos, "form_data": form_data})
+            return render(
+                request,
+                "pages/invoices/create.html",
+                {"vendors": vendors, "pos": pos, "form_data": form_data},
+            )
         except Exception as e:
             logger.exception("Unexpected error while creating supplier invoice")
             err_msg = str(e).strip("[]'\"")
             if not err_msg:
                 err_msg = "Please check your inputs and try again."
             messages.error(request, f"Failed to create invoice: {err_msg}")
-            return render(request, "pages/invoices/create.html", {"vendors": vendors, "pos": pos, "form_data": form_data})
+            return render(
+                request,
+                "pages/invoices/create.html",
+                {"vendors": vendors, "pos": pos, "form_data": form_data},
+            )
 
-    return render(request, "pages/invoices/create.html", {"vendors": vendors, "pos": pos, "form_data": form_data})
+    return render(
+        request,
+        "pages/invoices/create.html",
+        {"vendors": vendors, "pos": pos, "form_data": form_data},
+    )
 
 
 @login_required(login_url="/login/")
 def finance_receipt_detail_view(request, grn_id):
     """GRN detail view for Finance users - shows Goods Receipt Note details
     appropriate for finance/AP context when accessed from invoice detail page."""
-    _enforce_internal_invoice_access(request, allowed_roles=[Role.FINANCE_AP, Role.SUPER_ADMIN, "FINANCE_AP", "SUPER_ADMIN"])
+    _enforce_internal_invoice_access(
+        request, allowed_roles=[Role.FINANCE_AP, Role.SUPER_ADMIN, "FINANCE_AP", "SUPER_ADMIN"]
+    )
     grn = get_object_or_404(
-        GoodsReceipt.objects.select_related("po__vendor", "po__cost_center", "received_by")
-        .prefetch_related("lines__po_line", "lines__inspection__inspected_by", "lines__rejections"),
+        GoodsReceipt.objects.select_related(
+            "po__vendor", "po__cost_center", "received_by"
+        ).prefetch_related(
+            "lines__po_line", "lines__inspection__inspected_by", "lines__rejections"
+        ),
         id=grn_id,
     )
     from apps.audit.models import AuditLog
@@ -632,9 +767,9 @@ def finance_receipt_detail_view(request, grn_id):
     if invoice:
         has_open_exception = invoice.exceptions.filter(status=MatchException.STATUS_OPEN).exists()
         match_status = (
-            "EXCEPTION_OPEN" if has_open_exception
-            else "MATCHING" if invoice.status == "MATCHING"
-            else "MATCHED"
+            "EXCEPTION_OPEN"
+            if has_open_exception
+            else "MATCHING" if invoice.status == "MATCHING" else "MATCHED"
         )
 
     return render(

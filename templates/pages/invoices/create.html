@@ -287,6 +287,56 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // BUG-007: Real-time Invoice Number validation
+    function validateInvoiceNumber(showValid = false) {
+        const invoiceNum = document.getElementById('invoiceNumberInput');
+        if (!invoiceNum) return true;
+        const invVal = invoiceNum.value.trim();
+        const invPattern = /^[A-Za-z0-9][A-Za-z0-9\-_/]{1,48}[A-Za-z0-9]$/;
+        const hasSpecialChars = /[^A-Za-z0-9\-_/]/.test(invVal);
+        const invFeedback = invoiceNum.parentElement.querySelector('.invalid-feedback');
+
+        if (!invVal) {
+            invoiceNum.classList.remove('is-valid');
+            invoiceNum.classList.add('is-invalid');
+            if (invFeedback) invFeedback.textContent = 'Invoice Reference Number is required.';
+            return false;
+        } else if (hasSpecialChars) {
+            invoiceNum.classList.remove('is-valid');
+            invoiceNum.classList.add('is-invalid');
+            const formatMsg = 'Invalid Invoice Number format. Disallowed special characters like !@#$%^&*() are prohibited. Only alphanumeric characters, hyphens (-), underscores (_), and slashes (/) are permitted.';
+            if (invFeedback) invFeedback.textContent = formatMsg;
+            return false;
+        } else if (invVal.length < 3 || invVal.length > 50) {
+            invoiceNum.classList.remove('is-valid');
+            invoiceNum.classList.add('is-invalid');
+            if (invFeedback) invFeedback.textContent = 'Invoice Number must be between 3 and 50 characters in length.';
+            return false;
+        } else if (!invPattern.test(invVal)) {
+            invoiceNum.classList.remove('is-valid');
+            invoiceNum.classList.add('is-invalid');
+            const formatMsg = 'Invalid Invoice Number format. Must start and end with an alphanumeric character (e.g. INV-2026-991, CISCO/INV/0012).';
+            if (invFeedback) invFeedback.textContent = formatMsg;
+            return false;
+        } else {
+            invoiceNum.classList.remove('is-invalid');
+            if (showValid) {
+                invoiceNum.classList.add('is-valid');
+            }
+            if (invFeedback) invFeedback.textContent = '';
+            return true;
+        }
+    }
+
+    const invoiceNumInput = document.getElementById('invoiceNumberInput');
+    if (invoiceNumInput) {
+        ['input', 'keyup', 'change', 'blur'].forEach(function(evt) {
+            invoiceNumInput.addEventListener(evt, function() {
+                validateInvoiceNumber(true);
+            });
+        });
+    }
+
     form.addEventListener('submit', function(e) {
         let hasError = false;
         let errorMessage = '';
@@ -317,27 +367,11 @@ document.addEventListener('DOMContentLoaded', function() {
             poSelect.classList.remove('is-invalid');
         }
 
-        const invVal = invoiceNum.value.trim();
-        const invPattern = /^[A-Za-z0-9][A-Za-z0-9\-_/]{1,48}[A-Za-z0-9]$/;
-        const invFeedback = invoiceNum.parentElement.querySelector('.invalid-feedback');
-        if (!invVal) {
-            invoiceNum.classList.add('is-invalid');
+        // Validate Invoice Number
+        if (!validateInvoiceNumber(false)) {
             hasError = true;
-            if (invFeedback) invFeedback.textContent = 'Invoice Reference Number is required.';
-            if (!errorMessage) errorMessage = 'Invoice Reference Number is required.';
-        } else if (invVal.length < 3 || invVal.length > 50) {
-            invoiceNum.classList.add('is-invalid');
-            hasError = true;
-            if (invFeedback) invFeedback.textContent = 'Invoice Number must be between 3 and 50 characters.';
-            if (!errorMessage) errorMessage = 'Invoice Number must be between 3 and 50 characters.';
-        } else if (!invPattern.test(invVal)) {
-            invoiceNum.classList.add('is-invalid');
-            hasError = true;
-            const formatMsg = 'Invalid Invoice Number format. Must be alphanumeric (e.g. INV-2026-991, CISCO/INV/0012). Special characters like !@#$%^&*() are prohibited.';
-            if (invFeedback) invFeedback.textContent = formatMsg;
-            if (!errorMessage) errorMessage = formatMsg;
-        } else {
-            invoiceNum.classList.remove('is-invalid');
+            const invFeedback = invoiceNum.parentElement.querySelector('.invalid-feedback');
+            if (!errorMessage && invFeedback) errorMessage = invFeedback.textContent;
         }
 
         // Validate Quantity / Count strictly > 0
