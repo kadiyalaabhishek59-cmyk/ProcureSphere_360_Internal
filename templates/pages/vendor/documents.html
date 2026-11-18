@@ -264,7 +264,7 @@
                 </div>
                 <div class="modal-body p-4">
                     <div class="mb-3">
-                        <label class="form-label small fw-semibold">Document Classification</label>
+                        <label class="form-label small fw-semibold">Document Classification <span class="text-danger">*</span></label>
                         <select name="document_type" class="form-select form-select-sm" required>
                             {% for code, label in doc_types %}
                             <option value="{{ code }}">{{ label }}</option>
@@ -272,18 +272,18 @@
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label small fw-semibold">Document Title / Label</label>
+                        <label class="form-label small fw-semibold">Document Title / Label <span class="text-danger">*</span></label>
                         <input type="text" name="title" class="form-control form-control-sm" placeholder="e.g. 2026 Tax Clearance Certificate" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label small fw-semibold">Expiry Date (if applicable)</label>
-                        <input type="date" name="expiry_date" class="form-control form-control-sm">
+                        <label class="form-label small fw-semibold" for="docExpiryDateInput">Expiry Date (if applicable)</label>
+                        <input type="date" name="expiry_date" id="docExpiryDateInput" class="form-control form-control-sm">
                     </div>
                     <div class="mb-3">
-                        <label class="form-label small fw-semibold" for="kycFileInput">Select File (PDF, DOC, DOCX, XLSX, CSV &le; 10MB)</label>
-                        <input type="file" name="kyc_file" id="kycFileInput" class="form-control form-control-sm" accept=".pdf,.doc,.docx,.xlsx,.csv,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" required>
+                        <label class="form-label small fw-semibold" for="kycFileInput">Select File (PDF, PNG, JPG, JPEG, DOC, DOCX &le; 10MB) <span class="text-danger">*</span></label>
+                        <input type="file" name="kyc_file" id="kycFileInput" class="form-control form-control-sm" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,application/pdf,image/png,image/jpeg,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" required>
                         <div id="kycFileFeedback" class="invalid-feedback small mt-1" style="display: none;"></div>
-                        <div class="form-text small text-muted">Supported formats: PDF, DOC, DOCX, XLSX, CSV (&le; 10MB). Image files (PNG, JPG, JPEG, GIF, WebP) are not permitted.</div>
+                        <div class="form-text small text-muted">Supported formats: PDF, PNG, JPG, JPEG, DOC, DOCX (&le; 10MB). Editable spreadsheet files (XLSX, XLS, CSV) are strictly prohibited for KYC verification.</div>
                     </div>
                 </div>
                 <div class="modal-footer border-top bg-light py-2 px-4 d-flex justify-content-end gap-2">
@@ -303,14 +303,38 @@ document.addEventListener("DOMContentLoaded", function () {
     const feedback = document.getElementById("kycFileFeedback");
     const form = fileInput ? fileInput.closest("form") : null;
     const modalEl = document.getElementById("uploadKycModal");
+    const expiryInput = document.getElementById("docExpiryDateInput");
 
     if (!fileInput || !form) return;
 
-    const ALLOWED_DOC_EXTENSIONS = ["pdf", "doc", "docx", "xlsx", "csv"];
-    const DISALLOWED_IMAGE_EXTENSIONS = [
-        "png", "jpg", "jpeg", "gif", "webp", "bmp", "svg", "tiff", "ico", "avif", "heic", "heif"
+    // KYC Policy (BUG-029): Permit secure uneditable formats (PDF, PNG, JPG, JPEG, DOC, DOCX); Reject spreadsheets (XLSX, XLS, CSV)
+    const ALLOWED_DOC_EXTENSIONS = ["pdf", "png", "jpg", "jpeg", "doc", "docx"];
+    const DISALLOWED_SPREADSHEET_EXTENSIONS = ["xlsx", "xls", "csv"];
+    const DISALLOWED_SPREADSHEET_MIMES = [
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "application/vnd.ms-excel",
+        "text/csv",
+        "application/csv"
     ];
     const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
+
+    // Initialize min date on expiry input to today (BUG-028)
+    const todayStr = new Date().toISOString().split("T")[0];
+    if (expiryInput) {
+        expiryInput.setAttribute("min", todayStr);
+    }
+
+    // Modal Scroll Lock: Prevent background page scrolling while modal is open (BUG-025)
+    document.querySelectorAll('.modal').forEach(function(modal) {
+        modal.addEventListener('show.bs.modal', function() {
+            document.body.style.overflow = 'hidden';
+        });
+        modal.addEventListener('hidden.bs.modal', function() {
+            if (!document.querySelector('.modal.show')) {
+                document.body.style.overflow = '';
+            }
+        });
+    });
 
     function showError(message) {
         fileInput.classList.add("is-invalid");
@@ -352,15 +376,15 @@ document.addEventListener("DOMContentLoaded", function () {
         const ext = fileName.includes(".") ? fileName.split(".").pop().toLowerCase() : "";
         const mimeType = (file.type || "").toLowerCase();
 
-        // Reject image files explicitly by extension or MIME type
+        // Reject spreadsheets explicitly by extension or MIME type (BUG-029)
         if (
-            DISALLOWED_IMAGE_EXTENSIONS.includes(ext) ||
-            mimeType.startsWith("image/")
+            DISALLOWED_SPREADSHEET_EXTENSIONS.includes(ext) ||
+            DISALLOWED_SPREADSHEET_MIMES.includes(mimeType)
         ) {
-            const extLabel = ext ? ext.toUpperCase() : "Image";
+            const extLabel = ext ? ext.toUpperCase() : "Spreadsheet";
             return {
                 valid: false,
-                message: `Unsupported file type (${extLabel}). Image files (PNG, JPG, JPEG, GIF, WebP) are not allowed. Please upload a supported document file (PDF, DOC, DOCX, XLSX, CSV).`
+                message: `Editable spreadsheet files (${extLabel}) are strictly prohibited for KYC verification. Please upload a PDF, PNG, JPG, JPEG, DOC, or DOCX file.`
             };
         }
 
@@ -368,7 +392,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (!ALLOWED_DOC_EXTENSIONS.includes(ext)) {
             return {
                 valid: false,
-                message: `File extension '.${ext}' is not permitted. Only document files (PDF, DOC, DOCX, XLSX, CSV) are allowed.`
+                message: `File format '.${ext}' is not permitted. Allowed formats: PDF, PNG, JPG, JPEG, DOC, DOCX.`
             };
         }
 
@@ -400,11 +424,25 @@ document.addEventListener("DOMContentLoaded", function () {
             showError(result.message);
             return false;
         }
+
+        // Validate Expiry Date: must not be in the past (BUG-028)
+        if (expiryInput && expiryInput.value) {
+            if (expiryInput.value < todayStr) {
+                e.preventDefault();
+                showError("Expiry date cannot be in the past (" + expiryInput.value + "). Please select a valid future date.");
+                expiryInput.classList.add("is-invalid");
+                expiryInput.focus();
+                return false;
+            } else {
+                expiryInput.classList.remove("is-invalid");
+            }
+        }
     });
 
     if (modalEl) {
         modalEl.addEventListener("hidden.bs.modal", function () {
             clearError();
+            if (expiryInput) expiryInput.classList.remove("is-invalid");
         });
     }
 });

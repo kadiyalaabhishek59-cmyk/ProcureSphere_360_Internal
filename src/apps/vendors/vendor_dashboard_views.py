@@ -307,31 +307,53 @@ def vendor_profile_view(request):
                     other_expiry = request.POST.get("other_expiry", "").strip() or None
                     files_to_process.append(("Other Document", other_file, other_type, other_title, other_expiry))
 
-                DISALLOWED_IMAGE_EXTENSIONS = {
-                    "gif", "webp", "bmp", "svg", "tiff", "ico", "avif", "heic", "heif"
+                from datetime import datetime
+                today_date = timezone.now().date()
+
+                # KYC Policy: Permit secure formats (PDF, PNG, JPG, JPEG, DOC, DOCX); Reject spreadsheets (XLSX, XLS, CSV)
+                ALLOWED_KYC_EXTENSIONS = {"pdf", "png", "jpg", "jpeg", "doc", "docx"}
+                DISALLOWED_SPREADSHEET_EXTENSIONS = {"xlsx", "xls", "csv"}
+                DISALLOWED_SPREADSHEET_MIMES = {
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    "application/vnd.ms-excel",
+                    "text/csv",
+                    "application/csv",
                 }
-                SUPPORTED_DOCUMENT_EXTENSIONS = {"pdf", "png", "jpg", "jpeg", "doc", "docx", "xlsx", "csv"}
                 MAX_FILE_SIZE = 10 * 1024 * 1024
 
                 validation_errors = []
-                for label, f, _, _, _ in files_to_process:
+                for label, f, _, _, expiry in files_to_process:
                     file_name = getattr(f, "name", "")
                     file_size = getattr(f, "size", 0) or 0
                     ext = os.path.splitext(file_name)[1][1:].lower() if "." in file_name else ""
+                    raw_content_type = (getattr(f, "content_type", "") or "").split(";")[0].strip().lower()
 
                     if file_size == 0:
                         validation_errors.append(f"{label}: Uploaded file '{file_name}' is empty (0 bytes).")
                     elif file_size > MAX_FILE_SIZE:
                         validation_errors.append(f"{label}: File '{file_name}' exceeds the maximum allowed limit of 10 MB.")
 
-                    if ext in DISALLOWED_IMAGE_EXTENSIONS:
+                    if (ext in DISALLOWED_SPREADSHEET_EXTENSIONS) or (raw_content_type in DISALLOWED_SPREADSHEET_MIMES):
                         validation_errors.append(
-                            f"{label}: Image files (.{ext or 'image'}) are strictly prohibited. Please upload a supported document format (PDF, PNG, JPG, DOC, DOCX, XLSX, CSV)."
+                            f"{label}: Editable spreadsheet files (.{ext or 'spreadsheet'}) are strictly prohibited for KYC verification. "
+                            "Please upload a secure document format (PDF, JPG, JPEG, PNG, DOC, DOCX)."
                         )
-                    elif ext not in SUPPORTED_DOCUMENT_EXTENSIONS:
+                    elif ext not in ALLOWED_KYC_EXTENSIONS:
                         validation_errors.append(
-                            f"{label}: File extension '.{ext}' is not permitted. Only PDF, PNG, JPG, DOC, DOCX, XLSX, CSV are allowed."
+                            f"{label}: File format '.{ext}' is not permitted for KYC compliance. "
+                            "Allowed formats: PDF, JPG, JPEG, PNG, DOC, DOCX."
                         )
+
+                    # Validate expiry date: must not be in the past (BUG-028)
+                    if expiry:
+                        try:
+                            parsed_exp = datetime.strptime(expiry, "%Y-%m-%d").date()
+                            if parsed_exp < today_date:
+                                validation_errors.append(
+                                    f"{label}: Expiry date cannot be in the past ({expiry}). Please select a valid future date."
+                                )
+                        except (ValueError, TypeError):
+                            validation_errors.append(f"{label}: Invalid expiry date format ({expiry}). Expected YYYY-MM-DD.")
 
                 if validation_errors:
                     for err in validation_errors:
@@ -381,23 +403,40 @@ def vendor_profile_view(request):
                     try:
                         file_name = getattr(doc_file, "name", "")
                         ext = os.path.splitext(file_name)[1][1:].lower() if "." in file_name else ""
+                        raw_content_type = (getattr(doc_file, "content_type", "") or "").split(";")[0].strip().lower()
 
-                        DISALLOWED_IMAGE_EXTENSIONS = {
-                            "gif", "webp", "bmp", "svg", "tiff", "ico", "avif", "heic", "heif"
+                        ALLOWED_KYC_EXTENSIONS = {"pdf", "png", "jpg", "jpeg", "doc", "docx"}
+                        DISALLOWED_SPREADSHEET_EXTENSIONS = {"xlsx", "xls", "csv"}
+                        DISALLOWED_SPREADSHEET_MIMES = {
+                            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                            "application/vnd.ms-excel",
+                            "text/csv",
+                            "application/csv",
                         }
-                        SUPPORTED_DOCUMENT_EXTENSIONS = {"pdf", "png", "jpg", "jpeg", "doc", "docx", "xlsx", "csv"}
 
-                        if ext in DISALLOWED_IMAGE_EXTENSIONS:
+                        if (ext in DISALLOWED_SPREADSHEET_EXTENSIONS) or (raw_content_type in DISALLOWED_SPREADSHEET_MIMES):
                             raise ValidationError(
-                                f"Image file format (.{ext or 'image'}) is strictly prohibited. "
-                                "Please upload a supported document format (PDF, PNG, JPG, DOC, DOCX, XLSX, CSV)."
+                                f"Editable spreadsheet files (.{ext or 'spreadsheet'}) are strictly prohibited for KYC verification. "
+                                "Please upload a secure document format (PDF, JPG, JPEG, PNG, DOC, DOCX)."
                             )
 
-                        if ext not in SUPPORTED_DOCUMENT_EXTENSIONS:
+                        if ext not in ALLOWED_KYC_EXTENSIONS:
                             raise ValidationError(
-                                f"File extension '.{ext}' is not permitted. "
-                                "Please upload a supported document file (PDF, PNG, JPG, DOC, DOCX, XLSX, CSV)."
+                                f"File format '.{ext}' is not permitted for KYC compliance. "
+                                "Allowed formats: PDF, JPG, JPEG, PNG, DOC, DOCX."
                             )
+
+                        # Validate expiry date: must not be in the past (BUG-028)
+                        if expiry_date_val:
+                            try:
+                                from datetime import datetime
+                                parsed_exp = datetime.strptime(expiry_date_val, "%Y-%m-%d").date()
+                                if parsed_exp < timezone.now().date():
+                                    raise ValidationError(
+                                        f"Expiry date cannot be in the past ({expiry_date_val}). Please select a valid future date."
+                                    )
+                            except (ValueError, TypeError):
+                                raise ValidationError(f"Invalid expiry date format ({expiry_date_val}). Expected YYYY-MM-DD.")
 
                         upload_vendor_document_service(
                             vendor=vendor,

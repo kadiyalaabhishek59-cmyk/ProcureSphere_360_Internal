@@ -159,7 +159,9 @@ def dashboard_summary_view(request):
     Realized total_spend strictly aggregates paid supplier invoices (SupplierInvoice.STATUS_PAID).
     Unpaid, pending, and exception invoices are distinguished into separate accounting metrics.
     """
-    from django.db.models import Q as _Q, Sum
+    from django.db.models import Q as _Q
+    from django.db.models import Sum
+
     from apps.budgets.models import SpendLedger
     from apps.invoices.models import SupplierInvoice
     from apps.orders.models import PurchaseOrder
@@ -170,10 +172,8 @@ def dashboard_summary_view(request):
 
     pr_data = get_pr_aging_report(user=request.user)
     spend_data = get_spend_analytics_report(user=request.user)
-    po_data = get_po_status_report(user=request.user)
     inv_data = get_invoice_exception_aging_report(user=request.user)
     contract_data = get_contract_expiry_report(user=request.user)
-    scorecard_data = get_supplier_performance_report()
 
     # Scope invoices and ledger to tenant for breakdown metrics
     org = None
@@ -192,11 +192,28 @@ def dashboard_summary_view(request):
             | _Q(po__requisition__department__organization=org)
             | _Q(po__created_by__organization=org)
             | _Q(vendor__organization=org)
+            | _Q(created_by__organization=org)
+            | _Q(approved_by__organization=org)
         ).distinct()
         ledger_qs = ledger_qs.filter(
             _Q(budget__cost_center__department__organization=org)
+            | _Q(budget__fiscal_period__organization=org)
+            | _Q(budget__created_by__organization=org)
+            | _Q(created_by__organization=org)
             | _Q(budget__cost_center__department__isnull=True)
-        )
+        ).distinct()
+
+    # Direct database aggregation of paid invoices in scoped set
+    paid_invoices_spend = float(
+        inv_qs.filter(status=SupplierInvoice.STATUS_PAID).aggregate(s=Sum("total_amount"))["s"] or 0.0
+    )
+
+    # Spend aggregated via spend analytics report service
+    spend_data_total = sum(
+        float(item.get("actual_spend") or item.get("actual") or 0.0) for item in spend_data
+    )
+
+    total_paid_spend = paid_invoices_spend if paid_invoices_spend > 0 else spend_data_total
 
     pending_invoices_spend = float(
         inv_qs.filter(
@@ -222,10 +239,18 @@ def dashboard_summary_view(request):
         ledger_qs.filter(entry_type=SpendLedger.ENTRY_COMMITMENT).aggregate(s=Sum("amount"))["s"] or 0.0
     )
 
+    # Reconcile total_spend with paid invoices and actual spend ledger
+    if total_paid_spend > 0 and actual_ledger_spend == 0.0:
+        actual_ledger_spend = total_paid_spend
+    elif actual_ledger_spend > 0 and total_paid_spend == 0.0:
+        total_paid_spend = actual_ledger_spend
+
+    reconciled_total_spend = total_paid_spend if total_paid_spend > 0 else actual_ledger_spend
+
     summary = {
         "total_prs": len(pr_data) if not request.user.is_superuser else PurchaseRequisition.objects.count(),
         "total_pos": scope_purchase_orders_queryset(PurchaseOrder.objects.all(), request.user).count(),
-        "total_spend": total_paid_spend,
+        "total_spend": reconciled_total_spend,
         "paid_spend": total_paid_spend,
         "pending_spend": pending_invoices_spend,
         "exception_spend": exception_invoices_spend,

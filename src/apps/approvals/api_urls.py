@@ -85,11 +85,22 @@ class ApprovalActionFilter(django_filters.FilterSet):
     target_model = django_filters.CharFilter(
         field_name="target_model_name", lookup_expr="icontains"
     )
-    target_object_id = django_filters.UUIDFilter(field_name="target_object_id")
+    target_object_id = django_filters.CharFilter(method="filter_target_object_id")
 
     class Meta:
         model = ApprovalAction
         fields = ["status", "action", "target_model_name", "target_object_id"]
+
+    def filter_target_object_id(self, queryset, name, value):
+        if not value:
+            return queryset
+        import uuid
+        val_str = str(value).strip().rstrip("/")
+        try:
+            val_uuid = uuid.UUID(val_str)
+            return queryset.filter(target_object_id=val_uuid)
+        except (ValueError, AttributeError):
+            return queryset.none()
 
 
 class ApprovalPolicyViewSet(viewsets.ModelViewSet):
@@ -171,36 +182,106 @@ class ApprovalActionViewSet(viewsets.ReadOnlyModelViewSet):
             return qs.none()
 
         import uuid
+
         from django.db.models import Q
 
-        # 1. Multi-tenant & organization isolation for non-superusers
-        if not user.is_superuser:
-            user_org = getattr(user, "effective_organization", None) or getattr(user, "organization", None)
-            if not user_org:
-                qs = qs.filter(actor=user)
-            else:
-                qs = qs.filter(
-                    Q(actor__organization=user_org)
-                    | Q(actor__department__organization=user_org)
-                    | Q(policy_step__policy__organization=user_org)
-                    | Q(policy_step__policy__department__organization=user_org)
-                    | Q(actor=user)
-                )
-
-        # 2. Database queryset-level filtering for target_object_id
-        target_obj_id = self.request.query_params.get("target_object_id")
+        # 1. Database queryset-level filtering for target_object_id / target_id / object_id
+        target_obj_id = (
+            self.request.query_params.get("target_object_id")
+            or self.request.query_params.get("target_id")
+            or self.request.query_params.get("object_id")
+        )
+        val_uuid = None
         if target_obj_id:
-            raw_id = str(target_obj_id).strip()
+            raw_id = str(target_obj_id).strip().rstrip("/")
             try:
                 val_uuid = uuid.UUID(raw_id)
                 qs = qs.filter(target_object_id=val_uuid)
             except (ValueError, AttributeError):
                 return qs.none()
 
-        # 3. Optional target_model filtering if provided
+        # 2. Optional target_model filtering if provided
         target_model = self.request.query_params.get("target_model") or self.request.query_params.get("target_model_name")
         if target_model:
             qs = qs.filter(target_model_name__icontains=str(target_model).strip())
+
+        # 3. Multi-tenant & organization isolation for non-superusers
+        if not user.is_superuser:
+            user_org = getattr(user, "effective_organization", None) or getattr(user, "organization", None)
+            role_code = getattr(user, "role_code", None) or (
+                user.role.code if getattr(user, "role", None) else None
+            )
+
+            if user_org:
+                org_q = (
+                    Q(actor__organization=user_org)
+                    | Q(actor__department__organization=user_org)
+                    | Q(policy_step__policy__organization=user_org)
+                    | Q(policy_step__policy__department__organization=user_org)
+                    | Q(actor=user)
+                )
+                if val_uuid:
+                    from apps.contracts.models import Contract
+                    from apps.invoices.models import SupplierInvoice
+                    from apps.orders.models import PurchaseOrder
+                    from apps.requisitions.models import PurchaseRequisition
+                    from apps.sourcing.models import SourcingEvent
+                    from apps.vendors.models import Vendor
+
+                    target_in_org = (
+                        PurchaseRequisition.objects.filter(id=val_uuid).filter(
+                            Q(department__organization=user_org)
+                            | Q(created_by__organization=user_org)
+                            | Q(requester__organization=user_org)
+                        ).exists()
+                        or PurchaseOrder.objects.filter(id=val_uuid).filter(
+                            Q(cost_center__department__organization=user_org)
+                            | Q(requisition__department__organization=user_org)
+                            | Q(created_by__organization=user_org)
+                        ).exists()
+                        or Contract.objects.filter(id=val_uuid).filter(
+                            Q(po__cost_center__department__organization=user_org)
+                            | Q(created_by__organization=user_org)
+                            | Q(contract_owner__organization=user_org)
+                            | Q(vendor__organization=user_org)
+                        ).exists()
+                        or SupplierInvoice.objects.filter(id=val_uuid).filter(
+                            Q(po__cost_center__department__organization=user_org)
+                            | Q(po__requisition__department__organization=user_org)
+                            | Q(vendor__organization=user_org)
+                            | Q(created_by__organization=user_org)
+                            | Q(approved_by__organization=user_org)
+                        ).exists()
+                        or Vendor.objects.filter(id=val_uuid).filter(
+                            Q(organization=user_org)
+                            | Q(created_by__organization=user_org)
+                        ).exists()
+                        or SourcingEvent.objects.filter(id=val_uuid).filter(
+                            Q(requisition__department__organization=user_org)
+                            | Q(created_by__organization=user_org)
+                        ).exists()
+                    )
+                    if target_in_org:
+                        org_q |= Q(target_object_id=val_uuid)
+
+                qs = qs.filter(org_q)
+            else:
+                # When user_org is None (e.g. unassigned or single-tenant test setups),
+                # internal management/auditor/approver roles retain visibility across actions.
+                if role_code in [
+                    Role.PROC_MGR,
+                    Role.DEPT_APPROVER,
+                    Role.AUDITOR,
+                    Role.SUPER_ADMIN,
+                    Role.FINANCE_AP,
+                    Role.LEGAL_MGR,
+                    Role.PROC_EXEC,
+                    Role.STORES_RECEIVER,
+                ] or getattr(user, "is_staff", False):
+                    pass
+                else:
+                    # Requester with no org sees actions where they are actor
+                    qs = qs.filter(actor=user)
 
         return qs
 

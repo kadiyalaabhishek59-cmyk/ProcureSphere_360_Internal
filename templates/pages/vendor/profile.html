@@ -352,7 +352,7 @@
             <h6 class="mb-0 fw-bold text-dark">
                 <i class="fa-solid fa-landmark text-primary me-2"></i> Bank Settlement Information
             </h6>
-            <button class="btn btn-sm btn-outline-primary rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#editProfileModal">
+            <button class="btn btn-sm btn-outline-primary rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#editProfileModal" id="btnUpdateBankDetails">
                 <i class="fa-solid fa-pen-to-square me-1"></i> Update Bank Details
             </button>
         </div>
@@ -391,9 +391,11 @@
                 </h6>
                 <small class="text-muted">Manage designated enterprise contacts, commercial representatives, and authorized signatories.</small>
             </div>
+            {% if contacts %}
             <button class="btn btn-sm btn-outline-primary rounded-pill px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#addContactModal">
                 <i class="fa-solid fa-user-plus me-1"></i> Add Contact
             </button>
+            {% endif %}
         </div>
         <div class="card-body p-0">
             {% if contacts %}
@@ -477,7 +479,7 @@
                     <div class="card border rounded-3 p-3 h-100 bg-white shadow-sm">
                         <div class="d-flex align-items-center justify-content-between mb-2">
                             <span class="fw-bold text-dark small"><i class="fa-solid fa-id-card text-primary me-1"></i> PAN Document</span>
-                            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 rounded-pill" style="font-size: 0.65rem;">Mandatory *</span>
+                            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 rounded-pill" style="font-size: 0.65rem;">Mandatory</span>
                         </div>
                         <div class="mb-2">
                             {% if doc_pan %}
@@ -511,7 +513,7 @@
                     <div class="card border rounded-3 p-3 h-100 bg-white shadow-sm">
                         <div class="d-flex align-items-center justify-content-between mb-2">
                             <span class="fw-bold text-dark small"><i class="fa-solid fa-file-invoice text-success me-1"></i> TAX Document</span>
-                            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 rounded-pill" style="font-size: 0.65rem;">Mandatory *</span>
+                            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 rounded-pill" style="font-size: 0.65rem;">Mandatory</span>
                         </div>
                         <div class="mb-2">
                             {% if doc_tax %}
@@ -545,7 +547,7 @@
                     <div class="card border rounded-3 p-3 h-100 bg-white shadow-sm">
                         <div class="d-flex align-items-center justify-content-between mb-2">
                             <span class="fw-bold text-dark small"><i class="fa-solid fa-landmark text-info me-1"></i> BANK Document</span>
-                            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 rounded-pill" style="font-size: 0.65rem;">Mandatory *</span>
+                            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 rounded-pill" style="font-size: 0.65rem;">Mandatory</span>
                         </div>
                         <div class="mb-2">
                             {% if doc_bank %}
@@ -817,87 +819,146 @@
                 <div class="alert alert-info py-2 small mb-3">
                     <i class="fa-solid fa-info-circle me-1"></i> Legal Name and Tax ID cannot be changed directly as they affect active procurement contracts.
                 </div>
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label class="form-label small fw-semibold">Trade / Doing Business As Name</label>
-                        <input type="text" name="trade_name" class="form-control form-control-sm" value="{{ vendor.trade_name }}">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label small fw-semibold" for="vendorPhoneDigits">Contact Telephone (10 digits) <span class="text-danger">*</span></label>
-                        <div class="input-group input-group-sm">
-                            <span class="input-group-text bg-light text-muted border-end-0 fw-semibold" id="phoneAddon">
-                                <i class="fa-solid fa-phone text-primary me-1"></i>+91
-                            </span>
-                            <input type="tel" 
-                                   id="vendorPhoneDigits" 
-                                   class="form-control form-control-sm font-monospace border-start-0" 
-                                   value="{{ phone_digits }}" 
-                                   placeholder="9876543210" 
-                                   maxlength="10" 
-                                   minlength="10" 
-                                   pattern="[6-9][0-9]{9}" 
-                                   inputmode="numeric" 
-                                   required 
-                                   autocomplete="tel-national">
-                        </div>
-                        <!-- Hidden input carrying full +91XXXXXXXXXX to backend -->
-                        <input type="hidden" name="phone" id="vendorPhoneFull" value="{{ vendor.phone }}">
-                        <div class="d-flex justify-content-between align-items-center mt-1">
-                            <div class="form-text text-muted" style="font-size: 0.72rem;">
-                                Enter <strong>10 numbers starting with 6, 7, 8, or 9</strong> (e.g. 9876543210).
+
+                <!-- Nav Tabs for Decoupled Information Architecture (BUG-023) -->
+                <ul class="nav nav-pills nav-fill bg-light p-1 rounded-pill mb-3" id="profileModalTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active rounded-pill fw-semibold small py-2" id="companyProfileTab" data-bs-toggle="pill" data-bs-target="#companyProfileTabPane" type="button" role="tab" aria-controls="companyProfileTabPane" aria-selected="true">
+                            <i class="fa-solid fa-building me-1"></i> 1. Company Profile &amp; Tax Details
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link rounded-pill fw-semibold small py-2" id="bankingDetailsTab" data-bs-toggle="pill" data-bs-target="#bankingDetailsTabPane" type="button" role="tab" aria-controls="bankingDetailsTabPane" aria-selected="false">
+                            <i class="fa-solid fa-landmark me-1"></i> 2. Banking &amp; Settlement Credentials
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content" id="profileModalTabsContent">
+                    <!-- Tab 1: Company Profile & Tax Details -->
+                    <div class="tab-pane fade show active" id="companyProfileTabPane" role="tabpanel" aria-labelledby="companyProfileTab">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold" for="vendorTradeNameInput">Trade Name / Business Name <span class="text-danger">*</span></label>
+                                <input type="text" 
+                                       id="vendorTradeNameInput" 
+                                       name="trade_name" 
+                                       class="form-control form-control-sm" 
+                                       placeholder="e.g. Cisco Systems or Acme Technologies" 
+                                       value="{{ vendor.trade_name }}" 
+                                       required>
+                                <div id="tradeNameErrorFeedback" class="text-danger small mt-1 fw-semibold" style="display: none; font-size: 0.75rem;"></div>
                             </div>
-                            <div id="phoneDigitCounter" class="badge bg-light text-muted border" style="font-size: 0.7rem;">
-                                <span id="digitCount">0</span>/10 digits
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold" for="vendorPhoneDigits">Contact Telephone (10 digits) <span class="text-danger">*</span></label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text bg-light text-muted border-end-0 fw-semibold" id="phoneAddon">
+                                        <i class="fa-solid fa-phone text-primary me-1"></i>+91
+                                    </span>
+                                    <input type="tel" 
+                                           id="vendorPhoneDigits" 
+                                           class="form-control form-control-sm font-monospace border-start-0" 
+                                           value="{{ phone_digits }}" 
+                                           placeholder="9876543210" 
+                                           maxlength="10" 
+                                           minlength="10" 
+                                           pattern="[6-9][0-9]{9}" 
+                                           inputmode="numeric" 
+                                           required 
+                                           autocomplete="tel-national">
+                                </div>
+                                <!-- Hidden input carrying full +91XXXXXXXXXX to backend -->
+                                <input type="hidden" name="phone" id="vendorPhoneFull" value="{{ vendor.phone }}">
+                                <div class="d-flex justify-content-between align-items-center mt-1">
+                                    <div class="form-text text-muted" style="font-size: 0.72rem;">
+                                        Enter <strong>10 numbers starting with 6, 7, 8, or 9</strong> (e.g. 9876543210).
+                                    </div>
+                                    <div id="phoneDigitCounter" class="badge bg-light text-muted border" style="font-size: 0.7rem;">
+                                        <span id="digitCount">0</span>/10 digits
+                                    </div>
+                                </div>
+                                <div id="phoneErrorFeedback" class="text-danger small mt-1 fw-semibold" style="display: none; font-size: 0.75rem;"></div>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label small fw-semibold" for="vendorAddressInput">Registered Office Address <span class="text-danger">*</span></label>
+                                <textarea id="vendorAddressInput" name="address" rows="2" class="form-control form-control-sm" required placeholder="Enter registered office address...">{{ vendor.address }}</textarea>
+                                <div id="addressErrorFeedback" class="text-danger small mt-1 fw-semibold" style="display: none; font-size: 0.75rem;"></div>
+                            </div>
+                            <div class="col-12"><hr class="my-2"></div>
+                            <h6 class="fw-bold text-dark small mb-0">Tax &amp; Identification Credentials</h6>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold" for="vendorPanInput">Permanent Account Number (PAN)</label>
+                                <input type="text" 
+                                       id="vendorPanInput" 
+                                       name="pan_number" 
+                                       class="form-control form-control-sm font-monospace text-uppercase" 
+                                       maxlength="10" 
+                                       pattern="[A-Za-z]{5}[0-9]{4}[A-Za-z]{1}"
+                                       placeholder="e.g. ABCDE1234F" 
+                                       value="{{ vendor.pan_number }}">
+                                <div class="form-text text-muted" style="font-size: 0.72rem;">10 characters: 5 letters, 4 digits, 1 letter (e.g. ABCDE1234F)</div>
+                                <div id="panErrorFeedback" class="text-danger small mt-1 fw-semibold" style="display: none; font-size: 0.75rem;"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold" for="vendorGstinInput">GSTIN</label>
+                                <input type="text" 
+                                       id="vendorGstinInput" 
+                                       name="gstin" 
+                                       class="form-control form-control-sm font-monospace text-uppercase" 
+                                       maxlength="15" 
+                                       pattern="[0-9]{2}[A-Za-z]{5}[0-9]{4}[A-Za-z]{1}[1-9A-Za-z]{1}[Zz][0-9A-Za-z]{1}"
+                                       placeholder="e.g. 29ABCDE1234F1Z5" 
+                                       value="{{ vendor.gstin }}">
+                                <div class="form-text text-muted" style="font-size: 0.72rem;">15 characters (e.g. 29ABCDE1234F1Z5)</div>
+                                <div id="gstinErrorFeedback" class="text-danger small mt-1 fw-semibold" style="display: none; font-size: 0.75rem;"></div>
                             </div>
                         </div>
-                        <div id="phoneErrorFeedback" class="text-danger small mt-1 fw-semibold" style="display: none; font-size: 0.75rem;"></div>
                     </div>
-                    <div class="col-12">
-                        <label class="form-label small fw-semibold" for="vendorAddressInput">Registered Office Address <span class="text-danger">*</span></label>
-                        <textarea id="vendorAddressInput" name="address" rows="2" class="form-control form-control-sm" required placeholder="Enter registered office address...">{{ vendor.address }}</textarea>
-                        <div id="addressErrorFeedback" class="text-danger small mt-1 fw-semibold" style="display: none; font-size: 0.75rem;"></div>
-                    </div>
-                    <div class="col-12"><hr class="my-2"></div>
-                    <h6 class="fw-bold text-dark small mb-0">Tax &amp; Identification Credentials</h6>
-                    <div class="col-md-6">
-                        <label class="form-label small fw-semibold" for="vendorPanInput">Permanent Account Number (PAN)</label>
-                        <input type="text" 
-                               id="vendorPanInput" 
-                               name="pan_number" 
-                               class="form-control form-control-sm font-monospace text-uppercase" 
-                               maxlength="10" 
-                               pattern="[A-Za-z]{5}[0-9]{4}[A-Za-z]{1}"
-                               placeholder="e.g. ABCDE1234F" 
-                               value="{{ vendor.pan_number }}">
-                        <div class="form-text text-muted" style="font-size: 0.72rem;">10 characters: 5 letters, 4 digits, 1 letter (e.g. ABCDE1234F)</div>
-                        <div id="panErrorFeedback" class="text-danger small mt-1 fw-semibold" style="display: none; font-size: 0.75rem;"></div>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label small fw-semibold" for="vendorGstinInput">GSTIN</label>
-                        <input type="text" 
-                               id="vendorGstinInput" 
-                               name="gstin" 
-                               class="form-control form-control-sm font-monospace text-uppercase" 
-                               maxlength="15" 
-                               pattern="[0-9]{2}[A-Za-z]{5}[0-9]{4}[A-Za-z]{1}[1-9A-Za-z]{1}[Zz][0-9A-Za-z]{1}"
-                               placeholder="e.g. 29ABCDE1234F1Z5" 
-                               value="{{ vendor.gstin }}">
-                        <div class="form-text text-muted" style="font-size: 0.72rem;">15 characters (e.g. 29ABCDE1234F1Z5)</div>
-                        <div id="gstinErrorFeedback" class="text-danger small mt-1 fw-semibold" style="display: none; font-size: 0.75rem;"></div>
-                    </div>
-                    <div class="col-12"><hr class="my-2"></div>
-                    <h6 class="fw-bold text-dark small mb-0">Bank Remittance Credentials</h6>
-                    <div class="col-md-4">
-                        <label class="form-label small fw-semibold">Bank Name</label>
-                        <input type="text" name="bank_name" class="form-control form-control-sm" value="{{ vendor.bank_name }}">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label small fw-semibold">Bank Account Number</label>
-                        <input type="text" name="bank_account_number" class="form-control form-control-sm font-monospace" value="{{ vendor.bank_account_number }}">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label small fw-semibold">Routing / SWIFT / IFSC Code</label>
-                        <input type="text" name="bank_routing_code" class="form-control form-control-sm font-monospace" value="{{ vendor.bank_routing_code }}">
+
+                    <!-- Tab 2: Dedicated Banking & Settlement Credentials (BUG-023) -->
+                    <div class="tab-pane fade" id="bankingDetailsTabPane" role="tabpanel" aria-labelledby="bankingDetailsTab">
+                        <div class="alert alert-secondary py-2 small mb-3 border-0 bg-light">
+                            <i class="fa-solid fa-shield-halved text-primary me-1"></i>
+                            <strong>Remittance Security Notice:</strong> Bank remittance details are subject to verification by Corporate Finance during invoice reconciliation. Automated bank account ownership verification is not performed.
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-12">
+                                <label class="form-label small fw-semibold" for="vendorBankNameInput">Bank Name</label>
+                                <input type="text" 
+                                       id="vendorBankNameInput" 
+                                       name="bank_name" 
+                                       class="form-control form-control-sm" 
+                                       placeholder="e.g. JPMorgan Chase or State Bank of India" 
+                                       value="{{ vendor.bank_name }}">
+                                <div class="form-text text-muted" style="font-size: 0.72rem;">Enter the official recognized commercial bank name.</div>
+                                <div id="bankNameErrorFeedback" class="text-danger small mt-1 fw-semibold" style="display: none; font-size: 0.75rem;"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold" for="vendorBankAccountInput">Bank Account Number</label>
+                                <input type="text" 
+                                       id="vendorBankAccountInput" 
+                                       name="bank_account_number" 
+                                       class="form-control form-control-sm font-monospace" 
+                                       placeholder="e.g. 123456789012 (9 to 18 digits)" 
+                                       maxlength="18"
+                                       inputmode="numeric"
+                                       value="{{ vendor.bank_account_number }}">
+                                <div class="form-text text-muted" style="font-size: 0.72rem;">Must contain 9 to 18 numeric digits only.</div>
+                                <div id="bankAccountErrorFeedback" class="text-danger small mt-1 fw-semibold" style="display: none; font-size: 0.75rem;"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold" for="vendorBankRoutingInput">Routing / SWIFT / IFSC Code</label>
+                                <input type="text" 
+                                       id="vendorBankRoutingInput" 
+                                       name="bank_routing_code" 
+                                       class="form-control form-control-sm font-monospace text-uppercase" 
+                                       placeholder="e.g. SBIN0001234 (IFSC) or CHASUS33 (SWIFT)" 
+                                       maxlength="11"
+                                       value="{{ vendor.bank_routing_code }}">
+                                <div class="form-text text-muted" style="font-size: 0.72rem;">11-char Indian IFSC (e.g. SBIN0001234) or 8/11-char SWIFT code.</div>
+                                <div id="bankRoutingErrorFeedback" class="text-danger small mt-1 fw-semibold" style="display: none; font-size: 0.75rem;"></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -932,12 +993,12 @@
             </div>
             
             <div class="modal-body p-4" style="overflow-y: auto; -webkit-overflow-scrolling: touch; flex: 1 1 auto; min-height: 0;">
-                <!-- Instruction Banner -->
+                <!-- Instruction Banner (BUG-029) -->
                 <div class="alert alert-info py-2 px-3 small mb-3 d-flex align-items-center gap-2 rounded-3">
                     <i class="fa-solid fa-info-circle text-info fs-5 flex-shrink-0"></i>
                     <div>
-                        <strong>Supported Formats:</strong> PDF, DOC, DOCX, XLSX, CSV (&le; 10MB per document). 
-                        <span class="text-danger fw-semibold">Image files (PNG, JPG, JPEG, GIF, WebP) are strictly prohibited.</span>
+                        <strong>Supported Formats:</strong> PDF, PNG, JPG, JPEG, DOC, DOCX (&le; 10MB per document). 
+                        <span class="text-danger fw-semibold">Editable spreadsheet files (XLSX, XLS, CSV) are strictly prohibited for compliance documents.</span>
                     </div>
                 </div>
 
@@ -966,7 +1027,7 @@
                                         </div>
                                         <div>
                                             <span class="fw-bold text-dark">1. PAN Document</span>
-                                            <span class="badge bg-danger text-white rounded-pill ms-1" style="font-size: 0.65rem;">Mandatory *</span>
+                                            <span class="badge bg-danger text-white rounded-pill ms-1" style="font-size: 0.65rem;">Mandatory</span>
                                             <div class="small text-muted" style="font-size: 0.72rem;">Permanent Account Number Card</div>
                                         </div>
                                     </div>
@@ -987,16 +1048,19 @@
                                 <div class="row g-2">
                                     <div class="col-md-5">
                                         <label class="form-label small fw-semibold text-dark mb-1" for="panFileInput">Choose PAN File <span class="text-danger">*</span></label>
-                                        <input type="file" name="pan_file" id="panFileInput" class="form-control form-control-sm" accept=".pdf,.doc,.docx,.xlsx,.csv,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" required>
+                                        <input type="file" name="pan_file" id="panFileInput" class="form-control form-control-sm" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,application/pdf,image/png,image/jpeg,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" required>
                                         <div id="panFileFeedback" class="text-danger small mt-1 fw-semibold" style="display: none; font-size: 0.73rem;"></div>
                                     </div>
                                     <div class="col-md-4">
                                         <label class="form-label small fw-semibold text-dark mb-1" for="panTitleInput">Document Title / Label</label>
-                                        <input type="text" name="pan_title" id="panTitleInput" class="form-control form-control-sm" placeholder="e.g. Corporate PAN Card" value="{% if doc_pan %}{{ doc_pan.title }}{% else %}PAN Card{% endif %}">
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text bg-light text-muted border-end-0"><i class="fa-solid fa-lock"></i></span>
+                                            <input type="text" name="pan_title" id="panTitleInput" class="form-control form-control-sm bg-light font-monospace" value="{% if doc_pan %}{{ doc_pan.title }}{% else %}PAN Card{% endif %}" readonly>
+                                        </div>
                                     </div>
                                     <div class="col-md-3">
                                         <label class="form-label small fw-semibold text-dark mb-1" for="panExpiryInput">Expiry Date (optional)</label>
-                                        <input type="date" name="pan_expiry" id="panExpiryInput" class="form-control form-control-sm" value="{% if doc_pan and doc_pan.expiry_date %}{{ doc_pan.expiry_date|date:'Y-m-d' }}{% endif %}">
+                                        <input type="date" name="pan_expiry" id="panExpiryInput" class="form-control form-control-sm kyc-expiry-input" value="{% if doc_pan and doc_pan.expiry_date %}{{ doc_pan.expiry_date|date:'Y-m-d' }}{% endif %}">
                                     </div>
                                 </div>
                             </div>
@@ -1012,7 +1076,7 @@
                                         </div>
                                         <div>
                                             <span class="fw-bold text-dark">2. TAX Document</span>
-                                            <span class="badge bg-danger text-white rounded-pill ms-1" style="font-size: 0.65rem;">Mandatory *</span>
+                                            <span class="badge bg-danger text-white rounded-pill ms-1" style="font-size: 0.65rem;">Mandatory</span>
                                             <div class="small text-muted" style="font-size: 0.72rem;">GST Registration Certificate or Tax Clearance Certificate</div>
                                         </div>
                                     </div>
@@ -1033,16 +1097,19 @@
                                 <div class="row g-2">
                                     <div class="col-md-5">
                                         <label class="form-label small fw-semibold text-dark mb-1" for="taxFileInput">Choose TAX / GST File <span class="text-danger">*</span></label>
-                                        <input type="file" name="tax_file" id="taxFileInput" class="form-control form-control-sm" accept=".pdf,.doc,.docx,.xlsx,.csv,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" required>
+                                        <input type="file" name="tax_file" id="taxFileInput" class="form-control form-control-sm" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,application/pdf,image/png,image/jpeg,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" required>
                                         <div id="taxFileFeedback" class="text-danger small mt-1 fw-semibold" style="display: none; font-size: 0.73rem;"></div>
                                     </div>
                                     <div class="col-md-4">
                                         <label class="form-label small fw-semibold text-dark mb-1" for="taxTitleInput">Document Title / Label</label>
-                                        <input type="text" name="tax_title" id="taxTitleInput" class="form-control form-control-sm" placeholder="e.g. GST Registration Certificate" value="{% if doc_tax %}{{ doc_tax.title }}{% else %}GST Registration Certificate{% endif %}">
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text bg-light text-muted border-end-0"><i class="fa-solid fa-lock"></i></span>
+                                            <input type="text" name="tax_title" id="taxTitleInput" class="form-control form-control-sm bg-light font-monospace" value="{% if doc_tax %}{{ doc_tax.title }}{% else %}GST Registration Certificate{% endif %}" readonly>
+                                        </div>
                                     </div>
                                     <div class="col-md-3">
                                         <label class="form-label small fw-semibold text-dark mb-1" for="taxExpiryInput">Expiry Date (optional)</label>
-                                        <input type="date" name="tax_expiry" id="taxExpiryInput" class="form-control form-control-sm" value="{% if doc_tax and doc_tax.expiry_date %}{{ doc_tax.expiry_date|date:'Y-m-d' }}{% endif %}">
+                                        <input type="date" name="tax_expiry" id="taxExpiryInput" class="form-control form-control-sm kyc-expiry-input" value="{% if doc_tax and doc_tax.expiry_date %}{{ doc_tax.expiry_date|date:'Y-m-d' }}{% endif %}">
                                     </div>
                                 </div>
                             </div>
@@ -1058,7 +1125,7 @@
                                         </div>
                                         <div>
                                             <span class="fw-bold text-dark">3. BANK Document</span>
-                                            <span class="badge bg-danger text-white rounded-pill ms-1" style="font-size: 0.65rem;">Mandatory *</span>
+                                            <span class="badge bg-danger text-white rounded-pill ms-1" style="font-size: 0.65rem;">Mandatory</span>
                                             <div class="small text-muted" style="font-size: 0.72rem;">Cancelled Cheque or Bank Account Proof</div>
                                         </div>
                                     </div>
@@ -1079,16 +1146,19 @@
                                 <div class="row g-2">
                                     <div class="col-md-5">
                                         <label class="form-label small fw-semibold text-dark mb-1" for="bankFileInput">Choose Bank Proof File <span class="text-danger">*</span></label>
-                                        <input type="file" name="bank_file" id="bankFileInput" class="form-control form-control-sm" accept=".pdf,.doc,.docx,.xlsx,.csv,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" required>
+                                        <input type="file" name="bank_file" id="bankFileInput" class="form-control form-control-sm" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,application/pdf,image/png,image/jpeg,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" required>
                                         <div id="bankFileFeedback" class="text-danger small mt-1 fw-semibold" style="display: none; font-size: 0.73rem;"></div>
                                     </div>
                                     <div class="col-md-4">
                                         <label class="form-label small fw-semibold text-dark mb-1" for="bankTitleInput">Document Title / Label</label>
-                                        <input type="text" name="bank_title" id="bankTitleInput" class="form-control form-control-sm" placeholder="e.g. Bank Account Proof" value="{% if doc_bank %}{{ doc_bank.title }}{% else %}Bank Account Proof{% endif %}">
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text bg-light text-muted border-end-0"><i class="fa-solid fa-lock"></i></span>
+                                            <input type="text" name="bank_title" id="bankTitleInput" class="form-control form-control-sm bg-light font-monospace" value="{% if doc_bank %}{{ doc_bank.title }}{% else %}Bank Account Proof / Cancelled Cheque{% endif %}" readonly>
+                                        </div>
                                     </div>
                                     <div class="col-md-3">
                                         <label class="form-label small fw-semibold text-dark mb-1" for="bankExpiryInput">Expiry Date (optional)</label>
-                                        <input type="date" name="bank_expiry" id="bankExpiryInput" class="form-control form-control-sm" value="{% if doc_bank and doc_bank.expiry_date %}{{ doc_bank.expiry_date|date:'Y-m-d' }}{% endif %}">
+                                        <input type="date" name="bank_expiry" id="bankExpiryInput" class="form-control form-control-sm kyc-expiry-input" value="{% if doc_bank and doc_bank.expiry_date %}{{ doc_bank.expiry_date|date:'Y-m-d' }}{% endif %}">
                                     </div>
                                 </div>
                             </div>
@@ -1123,7 +1193,7 @@
                                     </div>
                                     <div class="col-md-4">
                                         <label class="form-label small fw-semibold text-dark mb-1" for="otherFileInput">Choose Other File</label>
-                                        <input type="file" name="other_file" id="otherFileInput" class="form-control form-control-sm" accept=".pdf,.doc,.docx,.xlsx,.csv,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv">
+                                        <input type="file" name="other_file" id="otherFileInput" class="form-control form-control-sm" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,application/pdf,image/png,image/jpeg,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
                                         <div id="otherFileFeedback" class="text-danger small mt-1 fw-semibold" style="display: none; font-size: 0.73rem;"></div>
                                     </div>
                                     <div class="col-md-3">
@@ -1132,7 +1202,7 @@
                                     </div>
                                     <div class="col-md-2">
                                         <label class="form-label small fw-semibold text-dark mb-1" for="otherExpiryInput">Expiry Date</label>
-                                        <input type="date" name="other_expiry" id="otherExpiryInput" class="form-control form-control-sm">
+                                        <input type="date" name="other_expiry" id="otherExpiryInput" class="form-control form-control-sm kyc-expiry-input">
                                     </div>
                                 </div>
                             </div>
@@ -1345,6 +1415,8 @@
         });
         // Vendor Dashboard Company Profile Validation
         const profileForm = document.getElementById("vendorProfileForm");
+        const tradeNameInput = document.getElementById("vendorTradeNameInput");
+        const tradeNameError = document.getElementById("tradeNameErrorFeedback");
         const phoneDigitsInput = document.getElementById("vendorPhoneDigits");
         const phoneFullInput = document.getElementById("vendorPhoneFull");
         const phoneCounter = document.getElementById("digitCount");
@@ -1356,9 +1428,18 @@
         const panError = document.getElementById("panErrorFeedback");
         const gstinInput = document.getElementById("vendorGstinInput");
         const gstinError = document.getElementById("gstinErrorFeedback");
+        const bankNameInput = document.getElementById("vendorBankNameInput");
+        const bankNameError = document.getElementById("bankNameErrorFeedback");
+        const bankAccountInput = document.getElementById("vendorBankAccountInput");
+        const bankAccountError = document.getElementById("bankAccountErrorFeedback");
+        const bankRoutingInput = document.getElementById("vendorBankRoutingInput");
+        const bankRoutingError = document.getElementById("bankRoutingErrorFeedback");
+        const saveProfileBtn = document.getElementById("saveVendorProfileBtn");
 
         const PAN_REGEX = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
         const GSTIN_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
+        const IFSC_REGEX = /^[A-Z]{4}0[A-Z0-9]{6}$/;
+        const SWIFT_REGEX = /^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$/;
 
         function updatePhoneState() {
             if (!phoneDigitsInput) return;
@@ -1420,6 +1501,9 @@
                 if (phoneError) phoneError.style.display = "none";
                 phoneDigitsInput.classList.remove("is-valid", "is-invalid");
             }
+            if (typeof checkProfileFormValidity === "function") {
+                checkProfileFormValidity();
+            }
         }
 
         if (phoneDigitsInput) {
@@ -1428,6 +1512,33 @@
                 setTimeout(updatePhoneState, 20);
             });
             updatePhoneState();
+        }
+
+        // Live validation for Trade Name (BUG-015)
+        function validateTradeName() {
+            if (!tradeNameInput) return true;
+            const val = tradeNameInput.value.trim();
+            if (!val) {
+                if (tradeNameError) {
+                    tradeNameError.textContent = "Trade name / Business name is required.";
+                    tradeNameError.style.display = "block";
+                }
+                tradeNameInput.classList.add("is-invalid");
+                tradeNameInput.classList.remove("is-valid");
+                return false;
+            } else {
+                if (tradeNameError) tradeNameError.style.display = "none";
+                tradeNameInput.classList.remove("is-invalid");
+                tradeNameInput.classList.add("is-valid");
+                return true;
+            }
+        }
+        if (tradeNameInput) {
+            tradeNameInput.addEventListener("input", function() {
+                validateTradeName();
+                checkProfileFormValidity();
+            });
+            tradeNameInput.addEventListener("blur", validateTradeName);
         }
 
         // Live validation for address
@@ -1450,7 +1561,10 @@
             }
         }
         if (addressInput) {
-            addressInput.addEventListener("input", validateAddress);
+            addressInput.addEventListener("input", function() {
+                validateAddress();
+                checkProfileFormValidity();
+            });
             addressInput.addEventListener("blur", validateAddress);
         }
 
@@ -1537,6 +1651,177 @@
             return true;
         }
 
+        // Live validation for Bank Name (BUG-022)
+        function validateBankName() {
+            if (!bankNameInput) return true;
+            const val = bankNameInput.value.trim();
+            if (!val) {
+                if (bankNameError) bankNameError.style.display = "none";
+                bankNameInput.classList.remove("is-invalid", "is-valid");
+                return true;
+            }
+            if (/^\d+$/.test(val) || !/[A-Za-z]{2,}/.test(val)) {
+                if (bankNameError) {
+                    bankNameError.textContent = "Bank name must contain at least 2 alphabetic characters and cannot be numeric only.";
+                    bankNameError.style.display = "block";
+                }
+                bankNameInput.classList.add("is-invalid");
+                bankNameInput.classList.remove("is-valid");
+                return false;
+            } else {
+                if (bankNameError) bankNameError.style.display = "none";
+                bankNameInput.classList.remove("is-invalid");
+                bankNameInput.classList.add("is-valid");
+                return true;
+            }
+        }
+        if (bankNameInput) {
+            bankNameInput.addEventListener("input", function() {
+                validateBankName();
+                checkProfileFormValidity();
+            });
+            bankNameInput.addEventListener("blur", validateBankName);
+        }
+
+        // Live validation for Bank Account Number (BUG-022)
+        function validateBankAccount() {
+            if (!bankAccountInput) return true;
+            const rawVal = bankAccountInput.value.trim();
+            if (!rawVal) {
+                if (bankAccountError) bankAccountError.style.display = "none";
+                bankAccountInput.classList.remove("is-invalid", "is-valid");
+                return true;
+            }
+            const cleanAcc = rawVal.replace(/[\s\-]/g, "");
+            if (!/^\d+$/.test(cleanAcc)) {
+                if (bankAccountError) {
+                    bankAccountError.textContent = "Bank account number must contain digits only.";
+                    bankAccountError.style.display = "block";
+                }
+                bankAccountInput.classList.add("is-invalid");
+                bankAccountInput.classList.remove("is-valid");
+                return false;
+            } else if (cleanAcc.length < 9 || cleanAcc.length > 18) {
+                if (bankAccountError) {
+                    bankAccountError.textContent = "Bank account number must be between 9 and 18 digits.";
+                    bankAccountError.style.display = "block";
+                }
+                bankAccountInput.classList.add("is-invalid");
+                bankAccountInput.classList.remove("is-valid");
+                return false;
+            } else {
+                if (bankAccountError) bankAccountError.style.display = "none";
+                bankAccountInput.classList.remove("is-invalid");
+                bankAccountInput.classList.add("is-valid");
+                return true;
+            }
+        }
+        if (bankAccountInput) {
+            bankAccountInput.addEventListener("input", function() {
+                validateBankAccount();
+                checkProfileFormValidity();
+            });
+            bankAccountInput.addEventListener("blur", validateBankAccount);
+        }
+
+        // Live validation for Routing / SWIFT / IFSC Code (BUG-022)
+        function validateBankRouting() {
+            if (!bankRoutingInput) return true;
+            bankRoutingInput.value = bankRoutingInput.value.toUpperCase();
+            const val = bankRoutingInput.value.trim();
+            if (!val) {
+                if (bankRoutingError) bankRoutingError.style.display = "none";
+                bankRoutingInput.classList.remove("is-invalid", "is-valid");
+                return true;
+            }
+            if (!IFSC_REGEX.test(val) && !SWIFT_REGEX.test(val)) {
+                if (bankRoutingError) {
+                    bankRoutingError.textContent = "Invalid code. Enter 11-char Indian IFSC (e.g. SBIN0001234) or 8/11-char SWIFT code.";
+                    bankRoutingError.style.display = "block";
+                }
+                bankRoutingInput.classList.add("is-invalid");
+                bankRoutingInput.classList.remove("is-valid");
+                return false;
+            } else {
+                if (bankRoutingError) bankRoutingError.style.display = "none";
+                bankRoutingInput.classList.remove("is-invalid");
+                bankRoutingInput.classList.add("is-valid");
+                return true;
+            }
+        }
+        if (bankRoutingInput) {
+            bankRoutingInput.addEventListener("input", function() {
+                validateBankRouting();
+                checkProfileFormValidity();
+            });
+            bankRoutingInput.addEventListener("blur", validateBankRouting);
+        }
+
+        // Master profile form validity checker (BUG-024)
+        function checkProfileFormValidity() {
+            if (!saveProfileBtn) return;
+            const isTradeValid = tradeNameInput ? tradeNameInput.value.trim().length > 0 : true;
+            const isAddrValid = addressInput ? addressInput.value.trim().length > 0 : true;
+            const phoneVal = phoneDigitsInput ? phoneDigitsInput.value.replace(/\D/g, "") : "";
+            const isPhoneValid = phoneVal.length === 10 && ["6","7","8","9"].includes(phoneVal[0]);
+
+            const panVal = panInput ? panInput.value.trim().toUpperCase() : "";
+            const isPanValid = !panVal || PAN_REGEX.test(panVal);
+
+            const gstinVal = gstinInput ? gstinInput.value.trim().toUpperCase() : "";
+            const isGstinValid = !gstinVal || GSTIN_REGEX.test(gstinVal);
+
+            const bName = bankNameInput ? bankNameInput.value.trim() : "";
+            const bAcc = bankAccountInput ? bankAccountInput.value.trim().replace(/[\s\-]/g, "") : "";
+            const bCode = bankRoutingInput ? bankRoutingInput.value.trim().toUpperCase() : "";
+            const anyBank = Boolean(bName || bAcc || bCode);
+            let isBankValid = true;
+            if (anyBank) {
+                const bNameOk = Boolean(bName && !/^\d+$/.test(bName) && /[A-Za-z]{2,}/.test(bName));
+                const bAccOk = Boolean(bAcc && /^\d+$/.test(bAcc) && bAcc.length >= 9 && bAcc.length <= 18);
+                const bCodeOk = Boolean(bCode && (IFSC_REGEX.test(bCode) || SWIFT_REGEX.test(bCode)));
+                isBankValid = bNameOk && bAccOk && bCodeOk;
+            }
+
+            const overallValid = isTradeValid && isAddrValid && isPhoneValid && isPanValid && isGstinValid && isBankValid;
+            saveProfileBtn.disabled = !overallValid;
+        }
+
+        // Initial form validation state check (BUG-024)
+        checkProfileFormValidity();
+
+        // Initialize min date on all KYC expiry date inputs to today (BUG-028)
+        const todayDateStr = new Date().toISOString().split("T")[0];
+        document.querySelectorAll('input[type="date"].kyc-expiry-input, input[type="date"][name$="_expiry"], input[type="date"][name="expiry_date"]').forEach(function(dateEl) {
+            dateEl.setAttribute("min", todayDateStr);
+        });
+
+        // Modal Scroll Lock: Prevent background page scrolling while modal is open (BUG-025)
+        document.querySelectorAll('.modal').forEach(function(modal) {
+            modal.addEventListener('show.bs.modal', function() {
+                document.body.style.overflow = 'hidden';
+            });
+            modal.addEventListener('hidden.bs.modal', function() {
+                if (!document.querySelector('.modal.show')) {
+                    document.body.style.overflow = '';
+                }
+            });
+        });
+
+        // Wire "Update Bank Details" button to open modal & activate banking tab (BUG-023)
+        const btnUpdateBank = document.getElementById("btnUpdateBankDetails");
+        if (btnUpdateBank) {
+            btnUpdateBank.addEventListener("click", function() {
+                setTimeout(function() {
+                    const bankTabBtn = document.getElementById("bankingDetailsTab");
+                    if (bankTabBtn && window.bootstrap && bootstrap.Tab) {
+                        const tab = new bootstrap.Tab(bankTabBtn);
+                        tab.show();
+                    }
+                }, 150);
+            });
+        }
+
         // Auto-sanitize all contact phone inputs to strictly digits
         document.querySelectorAll('input[type="tel"][name="phone"]').forEach(function(phoneInput) {
             phoneInput.addEventListener('input', function() {
@@ -1576,9 +1861,14 @@
         const bankBadge = document.getElementById("bankStatusBadge");
         const otherBadge = document.getElementById("otherStatusBadge");
 
-        const ALLOWED_DOC_EXTENSIONS = ["pdf", "doc", "docx", "xlsx", "csv"];
-        const DISALLOWED_IMAGE_EXTENSIONS = [
-            "png", "jpg", "jpeg", "gif", "webp", "bmp", "svg", "tiff", "ico", "avif", "heic", "heif"
+        // KYC Policy (BUG-029): Permit secure uneditable formats (PDF, PNG, JPG, JPEG, DOC, DOCX); Reject spreadsheets (XLSX, XLS, CSV)
+        const ALLOWED_DOC_EXTENSIONS = ["pdf", "png", "jpg", "jpeg", "doc", "docx"];
+        const DISALLOWED_SPREADSHEET_EXTENSIONS = ["xlsx", "xls", "csv"];
+        const DISALLOWED_SPREADSHEET_MIMES = [
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "application/vnd.ms-excel",
+            "text/csv",
+            "application/csv"
         ];
         const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
 
@@ -1602,18 +1892,18 @@
             const ext = fileName.includes(".") ? fileName.split(".").pop().toLowerCase() : "";
             const mimeType = (file.type || "").toLowerCase();
 
-            if (DISALLOWED_IMAGE_EXTENSIONS.includes(ext) || mimeType.startsWith("image/")) {
-                const extLabel = ext ? ext.toUpperCase() : "Image";
+            if (DISALLOWED_SPREADSHEET_EXTENSIONS.includes(ext) || DISALLOWED_SPREADSHEET_MIMES.includes(mimeType)) {
+                const extLabel = ext ? ext.toUpperCase() : "Spreadsheet";
                 return {
                     valid: false,
-                    message: "Image files (" + extLabel + ") are strictly prohibited. Please upload a PDF, DOC, DOCX, XLSX, or CSV file."
+                    message: "Editable spreadsheet files (" + extLabel + ") are strictly prohibited for compliance documents. Please upload PDF, PNG, JPG, or JPEG."
                 };
             }
 
             if (!ALLOWED_DOC_EXTENSIONS.includes(ext)) {
                 return {
                     valid: false,
-                    message: "File extension '." + ext + "' is not permitted. Only PDF, DOC, DOCX, XLSX, and CSV are allowed."
+                    message: "File extension '." + ext + "' is not permitted. Allowed formats: PDF, PNG, JPG, JPEG, DOC, DOCX."
                 };
             }
 
@@ -1727,6 +2017,26 @@
                     }
                 }
 
+                // 5. Validate Expiry Dates: must not be in the past (BUG-028)
+                const todayStr = new Date().toISOString().split("T")[0];
+                const expiryInputs = [
+                    { input: document.getElementById("panExpiryInput"), label: "PAN Document" },
+                    { input: document.getElementById("taxExpiryInput"), label: "TAX Document" },
+                    { input: document.getElementById("bankExpiryInput"), label: "BANK Document" },
+                    { input: document.getElementById("otherExpiryInput"), label: "Other Document" }
+                ];
+                expiryInputs.forEach(function(item) {
+                    if (item.input && item.input.value) {
+                        if (item.input.value < todayStr) {
+                            hasErrors = true;
+                            item.input.classList.add("is-invalid");
+                            errorMessages.push(item.label + ": Expiry date cannot be in the past (" + item.input.value + "). Please select a valid future date.");
+                        } else {
+                            item.input.classList.remove("is-invalid");
+                        }
+                    }
+                });
+
                 if (hasErrors) {
                     e.preventDefault();
                     e.stopPropagation();
@@ -1764,6 +2074,12 @@
             profileForm.addEventListener("submit", function(e) {
                 let isValid = true;
                 let firstInvalidEl = null;
+
+                // 0. Mandatory Trade Name check (BUG-015)
+                if (!validateTradeName()) {
+                    isValid = false;
+                    if (!firstInvalidEl) firstInvalidEl = tradeNameInput;
+                }
 
                 // 1. Mandatory Address check
                 if (!validateAddress()) {
@@ -1830,6 +2146,25 @@
                     if (!firstInvalidEl) firstInvalidEl = gstinInput;
                 }
 
+                // 6. Remittance Banking Details Validation (BUG-022)
+                const bNameVal = bankNameInput ? bankNameInput.value.trim() : "";
+                const bAccVal = bankAccountInput ? bankAccountInput.value.trim().replace(/[\s\-]/g, "") : "";
+                const bCodeVal = bankRoutingInput ? bankRoutingInput.value.trim().toUpperCase() : "";
+                if (bNameVal || bAccVal || bCodeVal) {
+                    if (!validateBankName()) {
+                        isValid = false;
+                        if (!firstInvalidEl) firstInvalidEl = bankNameInput;
+                    }
+                    if (!validateBankAccount()) {
+                        isValid = false;
+                        if (!firstInvalidEl) firstInvalidEl = bankAccountInput;
+                    }
+                    if (!validateBankRouting()) {
+                        isValid = false;
+                        if (!firstInvalidEl) firstInvalidEl = bankRoutingInput;
+                    }
+                }
+
                 if (!isValid) {
                     e.preventDefault();
                     e.stopPropagation();
@@ -1839,6 +2174,21 @@
                         window.resetButtonLoading(saveBtn);
                     }
                     if (firstInvalidEl) {
+                        // If invalid element belongs to banking tab, activate it; else activate company tab (BUG-023)
+                        const isBankField = (firstInvalidEl === bankNameInput || firstInvalidEl === bankAccountInput || firstInvalidEl === bankRoutingInput);
+                        if (isBankField) {
+                            const bankingTabBtn = document.getElementById("bankingDetailsTab");
+                            if (bankingTabBtn && window.bootstrap && bootstrap.Tab) {
+                                const tab = new bootstrap.Tab(bankingTabBtn);
+                                tab.show();
+                            }
+                        } else {
+                            const companyTabBtn = document.getElementById("companyProfileTab");
+                            if (companyTabBtn && window.bootstrap && bootstrap.Tab) {
+                                const tab = new bootstrap.Tab(companyTabBtn);
+                                tab.show();
+                            }
+                        }
                         firstInvalidEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         firstInvalidEl.focus();
                     }

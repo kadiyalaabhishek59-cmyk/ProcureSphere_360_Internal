@@ -22,10 +22,30 @@ from apps.scorecards.models import VendorScorecard
 from apps.sourcing.models import Clarification, SourcingEvent
 from apps.vendors.models import Vendor
 
+_REDIS_CLIENT = None
+
+
+def _get_pooled_redis():
+    global _REDIS_CLIENT
+    if _REDIS_CLIENT is None:
+        redis_url = getattr(settings, "REDIS_URL", "redis://127.0.0.1:6379/0")
+        if redis_url.startswith("rediss://") and "ssl_cert_reqs" not in redis_url:
+            delimiter = "&" if "?" in redis_url else "?"
+            redis_url = f"{redis_url}{delimiter}ssl_cert_reqs=none"
+        _REDIS_CLIENT = Redis.from_url(
+            redis_url,
+            socket_connect_timeout=1.0,
+            socket_timeout=1.0,
+            retry_on_timeout=False,
+            health_check_interval=30,
+        )
+    return _REDIS_CLIENT
+
 
 def health_check_view(request):
     """
     Health check endpoint returning DB and Redis status.
+    Uses pooled Redis client with strict 1s timeout to ensure sub-second response (DEF-001 / SMK-PLT-005).
     """
     health_status = {
         "status": "healthy",
@@ -43,9 +63,9 @@ def health_check_view(request):
         health_status["database"] = "disconnected"
         health_status["status"] = "unhealthy"
 
-    # Check Redis connection safely without leaking hostnames/credentials (DEF-005)
+    # Check Redis connection safely with pooled client & strict 1s timeout (DEF-001)
     try:
-        redis_client = Redis.from_url(settings.REDIS_URL, socket_timeout=2)
+        redis_client = _get_pooled_redis()
         if redis_client.ping():
             health_status["redis"] = "ok"
         else:
@@ -55,7 +75,7 @@ def health_check_view(request):
         # Check cache fallback
         try:
             from django.core.cache import cache
-            cache.set("health_check_ping", "1", 10)
+            cache.set("health_check_ping", "1", 5)
             if cache.get("health_check_ping") == "1":
                 health_status["redis"] = "ok"
             else:

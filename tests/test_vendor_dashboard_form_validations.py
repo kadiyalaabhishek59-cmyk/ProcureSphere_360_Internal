@@ -61,6 +61,7 @@ def test_bug_018_and_033_vendor_profile_accepts_valid_indian_prefixes(valid_pref
     """BUG-018 & BUG-033: Phone numbers with valid Indian prefixes (6, 7, 8, 9) are accepted."""
     phone_num = f"+91{valid_prefix}123456789"
     data = {
+        "trade_name": "Apex Technologies",
         "address": "123 Valid Street, Bangalore",
         "phone": phone_num,
     }
@@ -72,6 +73,7 @@ def test_bug_018_and_033_vendor_profile_accepts_valid_indian_prefixes(valid_pref
 def test_bug_018_and_033_vendor_profile_normalizes_12_digits():
     """BUG-018: 12-digit Indian mobile number starting with 91 auto-normalizes to +91XXXXXXXXXX."""
     data = {
+        "trade_name": "Apex Technologies",
         "address": "123 Valid Street, Bangalore",
         "phone": "919876543210",
     }
@@ -124,6 +126,7 @@ def test_bug_018_vendor_profile_rejects_invalid_format_and_lengths(invalid_phone
 def test_bug_021_pan_validation_valid_and_normalized():
     """BUG-021: Valid PAN is normalized to uppercase."""
     data = {
+        "trade_name": "Apex Technologies",
         "address": "123 Valid Street, Bangalore",
         "phone": "+919876543210",
         "pan_number": "abcde1234f",
@@ -159,6 +162,7 @@ def test_bug_021_pan_validation_invalid_formats(invalid_pan):
 def test_bug_021_gstin_validation_valid():
     """BUG-021: Valid GSTIN format is accepted."""
     data = {
+        "trade_name": "Apex Technologies",
         "address": "123 Valid Street, Bangalore",
         "phone": "+919876543210",
         "gstin": "29ABCDE1234F1Z5",
@@ -491,3 +495,256 @@ def test_edit_profile_save_changes_updates_full_profile_and_shows_feedback(clien
     assert vendor.bank_account_number == "12345678901234"
     assert vendor.bank_routing_code == "SBIN0001234"
 
+
+
+
+# ==============================================================================
+# REOPENED DEFECTS VERIFICATION: BUG-011 to BUG-030
+# ==============================================================================
+
+
+def test_bug_011_trade_name_label_simplified(client, vendor_test_env):
+    """BUG-011: Trade Name field label is simplified to 'Trade Name / Business Name'."""
+    client.force_login(vendor_test_env["vendor_user"])
+    resp = client.get(reverse("vendor_profile"))
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    assert "Trade Name / Business Name" in content
+    assert "Trade / Doing Business As Name" not in content
+
+
+def test_bug_012_trade_name_placeholder_guidance(client, vendor_test_env):
+    """BUG-012: Trade Name field has clear placeholder guidance."""
+    client.force_login(vendor_test_env["vendor_user"])
+    resp = client.get(reverse("vendor_profile"))
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    assert 'placeholder="e.g. Cisco Systems or Acme Technologies"' in content
+
+
+@pytest.mark.parametrize("blank_trade_name", ["", "   ", "\t\n"])
+def test_bug_015_trade_name_is_mandatory(blank_trade_name):
+    """BUG-015: Trade Name is strictly mandatory and cannot be empty or whitespace."""
+    data = {
+        "trade_name": blank_trade_name,
+        "address": "123 Tech Park, Bangalore",
+        "phone": "+919876543210",
+    }
+    form = VendorProfileUpdateForm(data=data)
+    assert not form.is_valid()
+    assert "trade_name" in form.errors
+    assert "Trade name / Business name is required." in form.errors["trade_name"][0]
+
+
+def test_bug_016_bank_fields_have_clear_placeholders(client, vendor_test_env):
+    """BUG-016: Remittance bank fields contain clear, realistic placeholder examples."""
+    client.force_login(vendor_test_env["vendor_user"])
+    resp = client.get(reverse("vendor_profile"))
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    assert 'placeholder="e.g. JPMorgan Chase or State Bank of India"' in content
+    assert 'placeholder="e.g. 123456789012 (9 to 18 digits)"' in content
+    assert 'placeholder="e.g. SBIN0001234 (IFSC) or CHASUS33 (SWIFT)"' in content
+
+
+@pytest.mark.parametrize(
+    "invalid_bank_name,error_fragment",
+    [
+        ("12345", "Bank name cannot be numeric only"),
+        ("A", "Bank name must contain at least 2 alphabetic characters"),
+        ("1234A", "Bank name must contain at least 2 alphabetic characters"),
+    ],
+)
+def test_bug_022_bank_name_validation(invalid_bank_name, error_fragment):
+    """BUG-022: Bank name validation rejects numeric-only and single-char gibberish."""
+    data = {
+        "trade_name": "Apex Corp",
+        "address": "123 Tech Park, Bangalore",
+        "phone": "+919876543210",
+        "bank_name": invalid_bank_name,
+        "bank_account_number": "123456789012",
+        "bank_routing_code": "SBIN0001234",
+    }
+    form = VendorProfileUpdateForm(data=data)
+    assert not form.is_valid()
+    assert "bank_name" in form.errors
+    assert error_fragment in form.errors["bank_name"][0]
+
+
+@pytest.mark.parametrize(
+    "invalid_account,error_fragment",
+    [
+        ("12345678", "between 9 and 18 digits"),       # 8 digits (too short)
+        ("1234567890123456789", "between 9 and 18 digits"),  # 19 digits (too long)
+        ("12345ABCD90", "digits only"),                # contains letters
+    ],
+)
+def test_bug_022_bank_account_number_validation(invalid_account, error_fragment):
+    """BUG-022: Bank account number must be between 9 and 18 digits only."""
+    data = {
+        "trade_name": "Apex Corp",
+        "address": "123 Tech Park, Bangalore",
+        "phone": "+919876543210",
+        "bank_name": "State Bank of India",
+        "bank_account_number": invalid_account,
+        "bank_routing_code": "SBIN0001234",
+    }
+    form = VendorProfileUpdateForm(data=data)
+    assert not form.is_valid()
+    assert "bank_account_number" in form.errors
+    assert error_fragment in form.errors["bank_account_number"][0]
+
+
+@pytest.mark.parametrize(
+    "invalid_code",
+    [
+        "SBIN1234",       # Too short
+        "SBIN000123456",   # Too long
+        "12345678901",    # Numeric only
+        "INVALID_CODE",   # Bad format
+    ],
+)
+def test_bug_022_bank_routing_code_validation(invalid_code):
+    """BUG-022: Bank routing / IFSC / SWIFT code must match standard IFSC or SWIFT format."""
+    data = {
+        "trade_name": "Apex Corp",
+        "address": "123 Tech Park, Bangalore",
+        "phone": "+919876543210",
+        "bank_name": "State Bank of India",
+        "bank_account_number": "123456789012",
+        "bank_routing_code": invalid_code,
+    }
+    form = VendorProfileUpdateForm(data=data)
+    assert not form.is_valid()
+    assert "bank_routing_code" in form.errors
+    assert "Invalid Routing / IFSC / SWIFT code format" in form.errors["bank_routing_code"][0]
+
+
+def test_bug_022_bank_completeness_check():
+    """BUG-022: If any banking field is provided, all 3 are required."""
+    data = {
+        "trade_name": "Apex Corp",
+        "address": "123 Tech Park, Bangalore",
+        "phone": "+919876543210",
+        "bank_name": "HDFC Bank",
+        # Missing account number and routing code
+    }
+    form = VendorProfileUpdateForm(data=data)
+    assert not form.is_valid()
+    assert "bank_account_number" in form.errors
+    assert "bank_routing_code" in form.errors
+
+
+def test_bug_023_tabbed_modal_architecture(client, vendor_test_env):
+    """BUG-023: Profile modal has clean tabbed architecture decoupling sensitive banking details."""
+    client.force_login(vendor_test_env["vendor_user"])
+    resp = client.get(reverse("vendor_profile"))
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    assert 'id="profileModalTabs"' in content
+    assert 'id="companyProfileTabPane"' in content
+    assert 'id="bankingDetailsTabPane"' in content
+    assert 'id="btnUpdateBankDetails"' in content
+    assert "Remittance Security Notice" in content
+    assert "Corporate Finance" in content
+
+
+def test_bug_025_modal_scroll_lock_script(client, vendor_test_env):
+    """BUG-025: Modal scroll lock prevents background scrolling while modal is active."""
+    client.force_login(vendor_test_env["vendor_user"])
+    resp = client.get(reverse("vendor_profile"))
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    assert "document.body.style.overflow = 'hidden'" in content
+    assert "document.body.style.overflow = ''" in content
+
+
+def test_bug_026_contact_button_visibility_logic(client, vendor_test_env):
+    """BUG-026: Card header Add Contact button only renders when contacts exist; empty state used when 0 contacts."""
+    client.force_login(vendor_test_env["vendor_user"])
+    vendor = vendor_test_env["vendor"]
+
+    # When no contacts exist
+    vendor.contacts.all().delete()
+    resp = client.get(reverse("vendor_profile"))
+    content = resp.content.decode()
+    # The header button should NOT be rendered
+    assert '<i class="fa-solid fa-user-plus me-1"></i> Add Contact\n            </button>' not in content
+
+    # Add a contact
+    from apps.vendors.models import VendorContact
+    VendorContact.objects.create(
+        vendor=vendor,
+        first_name="Jane",
+        last_name="Doe",
+        email="jane.doe@apex.local",
+    )
+    resp_with_contact = client.get(reverse("vendor_profile"))
+    content_with_contact = resp_with_contact.content.decode()
+    assert "Add Contact" in content_with_contact
+
+
+def test_bug_027_mandatory_kyc_document_titles_locked(client, vendor_test_env):
+    """BUG-027: Mandatory KYC document titles (PAN, TAX, BANK) are locked with readonly and lock icon."""
+    client.force_login(vendor_test_env["vendor_user"])
+    resp = client.get(reverse("vendor_profile"))
+    assert resp.status_code == 200
+    content = resp.content.decode()
+
+    # Check readonly attributes on titles
+    assert 'id="panTitleInput"' in content
+    assert 'id="taxTitleInput"' in content
+    assert 'id="bankTitleInput"' in content
+    assert 'fa-lock' in content
+
+
+def test_bug_028_kyc_expiry_date_min_attribute_and_validation(client, vendor_test_env):
+    """BUG-028: KYC expiry date inputs enforce future dates via min attribute and script."""
+    client.force_login(vendor_test_env["vendor_user"])
+    resp = client.get(reverse("vendor_profile"))
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    assert 'kyc-expiry-input' in content
+    assert 'Expiry date cannot be in the past' in content
+
+
+def test_bug_029_kyc_bundle_upload_permits_images_and_rejects_spreadsheets(client, vendor_test_env):
+    """BUG-029: Bundle upload accepts PDF and image files, but strictly rejects editable spreadsheets."""
+    from datetime import timedelta
+    from django.core.files.uploadedfile import SimpleUploadedFile
+    from django.utils import timezone
+    client.force_login(vendor_test_env["vendor_user"])
+
+    future_date = (timezone.now().date() + timedelta(days=365)).strftime("%Y-%m-%d")
+    pdf_data = b"%PDF-1.4 dummy pdf content"
+    png_data = b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR dummy png"
+    xlsx_data = b"PK\x03\x04 dummy excel spreadsheet"
+
+    # Attempt upload with spreadsheet as BANK proof -> must fail
+    resp = client.post(
+        reverse("vendor_profile"),
+        {
+            "action": "upload_kyc",
+            "upload_mode": "mandatory_bundle",
+            "pan_file": SimpleUploadedFile("pan.pdf", pdf_data, content_type="application/pdf"),
+            "pan_expiry": future_date,
+            "tax_file": SimpleUploadedFile("tax.png", png_data, content_type="image/png"),
+            "tax_expiry": future_date,
+            "bank_file": SimpleUploadedFile("bank.xlsx", xlsx_data, content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
+            "bank_expiry": future_date,
+        },
+        follow=True,
+    )
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    assert "spreadsheet" in content.lower() or "strictly prohibited" in content.lower()
+
+
+def test_bug_030_single_mandatory_indicator_without_redundant_asterisk(client, vendor_test_env):
+    """BUG-030: Redundant asterisk removed from 'Mandatory *' badges; exactly one indicator shown."""
+    client.force_login(vendor_test_env["vendor_user"])
+    resp = client.get(reverse("vendor_profile"))
+    assert resp.status_code == 200
+    content = resp.content.decode()
+    assert "Mandatory *" not in content
+    assert "Mandatory" in content

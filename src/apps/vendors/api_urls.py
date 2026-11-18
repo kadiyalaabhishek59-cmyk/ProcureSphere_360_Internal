@@ -502,7 +502,10 @@ class VendorViewSet(viewsets.ModelViewSet):
                     "scorecards",
                     queryset=VendorScorecard.objects.only("id", "vendor_id", "composite_score", "evaluation_period", "created_at").order_by("-created_at"),
                 ),
-                "purchase_orders",
+                Prefetch(
+                    "purchase_orders",
+                    queryset=PurchaseOrder.objects.only("id", "vendor_id", "status", "total_amount"),
+                ),
             )
         )
         base_qs = scope_vendors_queryset(base_qs, user)

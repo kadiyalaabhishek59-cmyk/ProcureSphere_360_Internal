@@ -1,9 +1,11 @@
 import csv
 import io
+from typing import Any
 
 from django.core.files.base import ContentFile
 from django.utils import timezone
 
+from apps.accounts.models import Role
 from apps.audit.models import AuditLog
 from apps.contracts.models import Contract
 from apps.invoices.models import MatchException
@@ -70,6 +72,7 @@ def get_spend_analytics_report(
     Preserves multi-tenant organization boundaries and supports multidimensional filtering.
     """
     from django.db.models import Q as _Q
+
     from apps.invoices.models import SupplierInvoice
 
     invoices = (
@@ -96,6 +99,8 @@ def get_spend_analytics_report(
                 | _Q(po__requisition__department__organization=org)
                 | _Q(po__created_by__organization=org)
                 | _Q(vendor__organization=org)
+                | _Q(created_by__organization=org)
+                | _Q(approved_by__organization=org)
             ).distinct()
         elif role_code in [
             Role.PROC_MGR,
@@ -364,6 +369,7 @@ def get_receipt_rejection_report(
     vendor=None,
     po_number=None,
     inspection_status=None,
+    user=None,
 ):
     """5. Receipt / rejection and delivery performance report"""
     from django.utils.dateparse import parse_date
@@ -382,6 +388,17 @@ def get_receipt_rejection_report(
         .all()
         .order_by("-receipt__received_date", "receipt__grn_number")
     )
+
+    if user and not getattr(user, "is_superuser", False):
+        org = getattr(user, "effective_organization", None) or getattr(user, "organization", None)
+        if org:
+            from django.db.models import Q as _Q
+
+            receipt_lines = receipt_lines.filter(
+                _Q(receipt__po__cost_center__department__organization=org)
+                | _Q(receipt__po__created_by__organization=org)
+                | _Q(receipt__received_by__organization=org)
+            )
 
     if start_date:
         parsed_start = parse_date(str(start_date)) if isinstance(start_date, str) else start_date
@@ -674,9 +691,13 @@ def _score(value):
     return None if value is None else float(value)
 
 
-def get_supplier_performance_report():
+def get_supplier_performance_report(user=None):
     """8. Supplier performance scorecard and trend"""
     scorecards = VendorScorecard.objects.select_related("vendor", "evaluated_by").all()
+    if user and not getattr(user, "is_superuser", False):
+        org = getattr(user, "effective_organization", None) or getattr(user, "organization", None)
+        if org:
+            scorecards = scorecards.filter(vendor__organization=org)
     report_data = []
     for sc in scorecards:
         report_data.append(
@@ -696,9 +717,19 @@ def get_supplier_performance_report():
     return report_data
 
 
-def get_audit_log_report():
+def get_audit_log_report(user=None):
     """9. User / approval audit export with filters and immutable references"""
-    logs = AuditLog.objects.select_related("actor").all()[:200]
+    logs = AuditLog.objects.select_related("actor").all()
+    if user and not getattr(user, "is_superuser", False):
+        org = getattr(user, "effective_organization", None) or getattr(user, "organization", None)
+        if org:
+            from django.db.models import Q as _Q
+
+            logs = logs.filter(
+                _Q(actor__organization=org)
+                | _Q(actor__department__organization=org)
+            )
+    logs = logs[:200]
     report_data = []
     for log in logs:
         report_data.append(
@@ -740,7 +771,7 @@ def generate_export_job_service(export_job_id: int) -> ExportJob:
     job.save(update_fields=["status", "updated_at"])
 
     try:
-        report_fn = REPORT_DISPATCHER.get(job.report_type)
+        report_fn: Any = REPORT_DISPATCHER.get(job.report_type)
         if report_fn is None:
             raise ValueError(f"Unsupported report type: {job.report_type}")
         try:

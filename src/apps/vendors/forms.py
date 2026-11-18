@@ -1,3 +1,4 @@
+import re
 from django import forms
 
 from apps.core.validators import (
@@ -154,10 +155,17 @@ class GovernanceStatusForm(forms.Form):
 class VendorProfileUpdateForm(forms.Form):
     """
     Vendor Dashboard self-service company profile update form.
-    Validates phone number to strictly enforce country code (+91) followed by 10 digits.
+    Validates mandatory trade name, address, and phone number (+91 followed by 10 digits).
     Allows updating PAN and GSTIN with consistency validation.
+    Enforces format and completeness validation on bank remittance details (BUG-015, BUG-022).
     """
-    trade_name = forms.CharField(max_length=255, required=False)
+    trade_name = forms.CharField(
+        max_length=255,
+        required=True,
+        error_messages={
+            "required": "Trade name / Business name is required.",
+        },
+    )
     address = forms.CharField(
         widget=forms.Textarea(attrs={"rows": 2}),
         required=True,
@@ -197,10 +205,44 @@ class VendorProfileUpdateForm(forms.Form):
     bank_routing_code = forms.CharField(max_length=100, required=False)
 
     def clean_trade_name(self):
-        return validate_no_html_or_script(self.cleaned_data.get("trade_name", ""), "Trade name")
+        tn = self.cleaned_data.get("trade_name", "").strip()
+        if not tn:
+            raise forms.ValidationError("Trade name / Business name is required.")
+        return validate_no_html_or_script(tn, "Trade name / Business name")
 
     def clean_bank_name(self):
-        return validate_no_html_or_script(self.cleaned_data.get("bank_name", ""), "Bank name")
+        bn = self.cleaned_data.get("bank_name", "").strip()
+        if not bn:
+            return ""
+        validate_no_html_or_script(bn, "Bank name")
+        if re.match(r"^\d+$", bn):
+            raise forms.ValidationError("Bank name cannot be numeric only.")
+        if not re.search(r"[A-Za-z]{2,}", bn):
+            raise forms.ValidationError("Bank name must contain at least 2 alphabetic characters.")
+        return bn
+
+    def clean_bank_account_number(self):
+        acc = self.cleaned_data.get("bank_account_number", "").strip()
+        if not acc:
+            return ""
+        clean_acc = re.sub(r"[\s\-]", "", acc)
+        if not clean_acc.isdigit():
+            raise forms.ValidationError("Bank account number must contain digits only.")
+        if len(clean_acc) < 9 or len(clean_acc) > 18:
+            raise forms.ValidationError("Bank account number must be between 9 and 18 digits.")
+        return clean_acc
+
+    def clean_bank_routing_code(self):
+        code = self.cleaned_data.get("bank_routing_code", "").strip().upper()
+        if not code:
+            return ""
+        ifsc_regex = r"^[A-Z]{4}0[A-Z0-9]{6}$"
+        swift_regex = r"^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$"
+        if not (re.match(ifsc_regex, code) or re.match(swift_regex, code)):
+            raise forms.ValidationError(
+                "Invalid Routing / IFSC / SWIFT code format. Enter a valid 11-character Indian IFSC (e.g. SBIN0001234) or 8/11-character SWIFT/BIC (e.g. CHASUS33)."
+            )
+        return code
 
     def clean_address(self):
         address = self.cleaned_data.get("address", "").strip()
@@ -209,8 +251,6 @@ class VendorProfileUpdateForm(forms.Form):
         return validate_no_html_or_script(address, "Registered office address")
 
     def clean_phone(self):
-        import re
-
         raw_phone = self.cleaned_data.get("phone", "").strip()
         if not raw_phone:
             raise forms.ValidationError("Contact phone number is required.")
@@ -254,6 +294,20 @@ class VendorProfileUpdateForm(forms.Form):
                 validate_pan_gstin_consistency(pan, gst)
             except forms.ValidationError as exc:
                 self.add_error("gstin", exc)
+
+        # Enforce completeness of banking details if any field is provided (BUG-022)
+        bank_name = (cleaned_data.get("bank_name") or "").strip()
+        bank_acc = (cleaned_data.get("bank_account_number") or "").strip()
+        bank_code = (cleaned_data.get("bank_routing_code") or "").strip()
+        has_any_bank = bool(bank_name or bank_acc or bank_code)
+        if has_any_bank:
+            if not bank_name:
+                self.add_error("bank_name", "Bank name is required when submitting banking details.")
+            if not bank_acc:
+                self.add_error("bank_account_number", "Bank account number is required when submitting banking details.")
+            if not bank_code:
+                self.add_error("bank_routing_code", "Routing / IFSC / SWIFT code is required when submitting banking details.")
+
         return cleaned_data
 
 
