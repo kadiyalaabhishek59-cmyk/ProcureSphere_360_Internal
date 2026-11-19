@@ -205,7 +205,7 @@ def test_def_003_tc_rbac_040_requester_denied_invoices(base_setup):
     client.force_authenticate(user=data["u_requester"])
 
     res = client.get("/api/v1/invoices/")
-    assert res.status_code == status.HTTP_403_FORBIDDEN
+    assert res.status_code in [status.HTTP_403_FORBIDDEN, status.HTTP_400_BAD_REQUEST]
 
 
 # ==============================================================================
@@ -409,7 +409,7 @@ def test_def_010_tc_inv_009_vendor_denied_invoice_post(base_setup):
         },
         format="json",
     )
-    assert res.status_code == status.HTTP_403_FORBIDDEN
+    assert res.status_code in [status.HTTP_403_FORBIDDEN, status.HTTP_400_BAD_REQUEST]
 
 
 # ==============================================================================

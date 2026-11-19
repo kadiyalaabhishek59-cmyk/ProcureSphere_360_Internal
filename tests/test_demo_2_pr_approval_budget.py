@@ -226,5 +226,5 @@ def test_pr_creation_fails_when_budget_exceeded(db_roles):
     budget.allow_overspend = True
     budget.save(update_fields=["allow_overspend"])
 
-    pr = submit_purchase_requisition_service(requisition=pr, user=user)
+    pr = submit_purchase_requisition_service(requisition=pr, user=user, allow_budget_exception=True)
     assert pr.status == PurchaseRequisition.STATUS_BUDGET_REVIEW

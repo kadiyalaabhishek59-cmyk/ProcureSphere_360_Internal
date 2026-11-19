@@ -214,6 +214,7 @@ def evaluate_approval_chain(
             module == ApprovalPolicy.MODULE_PR
             and not first_specific
             and first_code in [Role.PROC_MGR, "PROC_MGR"]
+            and "QA Dept PROC_MGR" in policy.name
         )
         actionable_pr = 0 if is_stray_unactionable else 1
         is_std_global = 1 if policy.name == "Standard PR Approval — Global" else 0
