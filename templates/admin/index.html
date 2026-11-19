@@ -656,22 +656,22 @@
                 <li class="sa-nav-separator"></li>
                 <li class="sa-nav-label">Organization &amp; Masters</li>
                 <li class="nav-item">
-                    <a href="/superadmin/organizations/" class="nav-link sa-nav-link rounded-3 py-2 px-3">
+                    <a href="/superadmin/organizations/" class="nav-link sa-nav-link rounded-3 py-2 px-3 {% if '/superadmin/organizations/' in request.path or '/superadmin/departments/' in request.path or '/superadmin/cost-centers/' in request.path %}active{% endif %}">
                         <span>Departments &amp; Cost Centers</span>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="/superadmin/locations/" class="nav-link sa-nav-link rounded-3 py-2 px-3">
+                    <a href="/superadmin/locations/" class="nav-link sa-nav-link rounded-3 py-2 px-3 {% if '/superadmin/locations/' in request.path %}active{% endif %}">
                         <span>Locations</span>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="/superadmin/users/" class="nav-link sa-nav-link rounded-3 py-2 px-3">
+                    <a href="/superadmin/users/" class="nav-link sa-nav-link rounded-3 py-2 px-3 {% if '/superadmin/users/' in request.path %}active{% endif %}">
                         <span>Manage Users &amp; Roles</span>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="/superadmin/vendors/" class="nav-link sa-nav-link rounded-3 py-2 px-3">
+                    <a href="/superadmin/vendors/" class="nav-link sa-nav-link rounded-3 py-2 px-3 {% if '/vendors/' in request.path or '/superadmin/vendors/' in request.path %}active{% endif %}">
                         <span>Vendor Management</span>
                     </a>
                 </li>
@@ -679,35 +679,35 @@
                 <li class="sa-nav-separator"></li>
                 <li class="sa-nav-label">Policies &amp; Rules</li>
                 <li class="nav-item">
-                    <a href="/superadmin/policies/" class="nav-link sa-nav-link rounded-3 py-2 px-3">
+                    <a href="/superadmin/policies/" class="nav-link sa-nav-link rounded-3 py-2 px-3 {% if '/superadmin/policies/' in request.path %}active{% endif %}">
                         <span>Approval Policies</span>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="/superadmin/budgets/" class="nav-link sa-nav-link rounded-3 py-2 px-3">
+                    <a href="/superadmin/budgets/" class="nav-link sa-nav-link rounded-3 py-2 px-3 {% if '/superadmin/budgets/' in request.path or '/budgets/' in request.path %}active{% endif %}">
                         <span>Budget Configuration</span>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="/superadmin/rules/" class="nav-link sa-nav-link rounded-3 py-2 px-3">
-                        <span>Business Rules</span>
+                    <a href="/superadmin/rules/" class="nav-link sa-nav-link rounded-3 py-2 px-3 {% if '/invoices/settings/' in request.path or '/superadmin/rules/' in request.path or '/superadmin/business-rules/' in request.path %}active{% endif %}">
+                        <span>3-Way Match Tolerances</span>
                     </a>
                 </li>
 
                 <li class="sa-nav-separator"></li>
                 <li class="sa-nav-label">Oversight &amp; Audit</li>
                 <li class="nav-item">
-                    <a href="/superadmin/notifications/" class="nav-link sa-nav-link rounded-3 py-2 px-3">
+                    <a href="/superadmin/notifications/" class="nav-link sa-nav-link rounded-3 py-2 px-3 {% if 'notifications' in request.path %}active{% endif %}">
                         <span>Notifications &amp; Alerts</span>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="/superadmin/reports/" class="nav-link sa-nav-link rounded-3 py-2 px-3">
+                    <a href="/superadmin/reports/" class="nav-link sa-nav-link rounded-3 py-2 px-3 {% if 'reports' in request.path %}active{% endif %}">
                         <span>Reports &amp; Analytics</span>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="/superadmin/audit/" class="nav-link sa-nav-link rounded-3 py-2 px-3">
+                    <a href="/superadmin/audit/" class="nav-link sa-nav-link rounded-3 py-2 px-3 {% if '/superadmin/audit/' in request.path or '/audit/' in request.path %}active{% endif %}">
                         <span>Audit Logs</span>
                     </a>
                 </li>

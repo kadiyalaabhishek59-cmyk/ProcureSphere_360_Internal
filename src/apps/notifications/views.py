@@ -39,10 +39,15 @@ def notification_list_view(request):
         "PROC_MGR": "manager/base_manager.html",
         "AUDITOR": "audit/base_auditor.html",
         "SUPER_ADMIN": "layouts/superadmin_base.html",
+        "ADMIN": "layouts/superadmin_base.html",
     }
     base_layout = layout_map.get(
         role_code,
-        "layouts/superadmin_base.html" if getattr(request.user, "is_superuser", False) else "base.html",
+        (
+            "layouts/superadmin_base.html"
+            if getattr(request.user, "is_superuser", False)
+            else "base.html"
+        ),
     )
     return render(
         request,
@@ -77,12 +82,20 @@ def notification_open_view(request, notification_id):
         and not getattr(request.user, "effective_organization", None)
     )
     if target.startswith("/admin/core/contactenquiry"):
-        target = "/admin/contact-enquiries/" if is_global_superadmin else "/superadmin/contact-enquiries/"
+        target = (
+            "/admin/contact-enquiries/"
+            if is_global_superadmin
+            else "/superadmin/contact-enquiries/"
+        )
     elif target.startswith("/superadmin/contact-enquiries") and is_global_superadmin:
         target = "/admin/contact-enquiries/"
     elif target.startswith("/admin/organization/organization"):
         target = "/admin/organizations/" if is_global_superadmin else "/superadmin/organizations/"
-    elif target == "/admin/" or target.startswith("/admin/core/") or target.startswith("/admin/accounts/"):
+    elif (
+        target == "/admin/"
+        or target.startswith("/admin/core/")
+        or target.startswith("/admin/accounts/")
+    ):
         target = "/admin/notifications/" if is_global_superadmin else "/superadmin/notifications/"
     elif is_global_superadmin and target.startswith(
         (

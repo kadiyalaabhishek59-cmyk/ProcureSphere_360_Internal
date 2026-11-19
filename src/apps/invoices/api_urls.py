@@ -53,9 +53,11 @@ class CanManageSupplierInvoice(BasePermission):
             view_name = view.__class__.__name__
             if "exception" in basename or "exception" in action or "MatchException" in view_name:
                 return False
-            if action in ["create_invoice", "pay_invoice", "pay", "run_match", "run_3_way_match"]:
+            if action in ["pay_invoice", "pay", "run_match", "run_3_way_match"]:
                 return False
             if request.method in SAFE_METHODS:
+                return True
+            if request.method == "POST" and (action in ["create", None, ""] or "SupplierInvoice" in view_name):
                 return True
             return False
 

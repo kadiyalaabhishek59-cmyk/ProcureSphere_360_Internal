@@ -120,6 +120,16 @@ def tolerance_settings_view(request):
         request, allowed_roles=[Role.FINANCE_AP, Role.SUPER_ADMIN, "FINANCE_AP", "SUPER_ADMIN"]
     )
     policy = MatchTolerancePolicy.get_current()
+    role_code = getattr(request.user, "role_code", "") or (
+        request.user.role.code if hasattr(request.user, "role") and request.user.role else ""
+    )
+    role_str = str(role_code or "").upper()
+    is_admin = (
+        getattr(request.user, "is_superuser", False)
+        or role_str in ("SUPER_ADMIN", "ADMIN")
+        or request.path.startswith("/superadmin/")
+    )
+    base_layout = "layouts/superadmin_base.html" if is_admin else "layouts/finance_base.html"
     if request.method == "POST":
         price_raw = request.POST.get("price_tolerance_pct", "").strip()
         qty_raw = request.POST.get("qty_tolerance_pct", "").strip()
@@ -151,6 +161,7 @@ def tolerance_settings_view(request):
                     "qty_error": qty_error,
                     "submitted_price": price_raw,
                     "submitted_qty": qty_raw,
+                    "base_layout": base_layout,
                 },
             )
 
@@ -162,11 +173,15 @@ def tolerance_settings_view(request):
             policy.qty_tolerance_pct = Decimal(qty_int) / Decimal("100")
             policy.save()
             messages.success(request, "Tolerance settings updated successfully.")
+            if request.path.startswith("/superadmin/"):
+                return redirect("superadmin:rules")
             return redirect("tolerance_settings")
         except Exception:
             messages.error(request, "Invalid input for tolerances.")
 
-    return render(request, "pages/invoices/settings.html", {"policy": policy})
+    return render(
+        request, "pages/invoices/settings.html", {"policy": policy, "base_layout": base_layout}
+    )
 
 
 @login_required(login_url="/login/")

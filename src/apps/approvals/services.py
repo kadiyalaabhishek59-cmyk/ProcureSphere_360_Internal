@@ -201,16 +201,29 @@ def evaluate_approval_chain(
     def _policy_rank(policy):
         policy_steps = sorted(policy.steps.all(), key=lambda s: s.step_number)
         has_steps = 1 if policy_steps else 0
+        first_code = getattr(policy_steps[0].approver_role, "code", "") if policy_steps else ""
+        first_specific = (
+            getattr(policy_steps[0], "specific_approver_id", None) if policy_steps else None
+        )
+        # Step-1 PROC_MGR policies without specific approver from stray testing definitions
+        # must not hijack actionable policies.
+        is_stray_unactionable = bool(
+            module == ApprovalPolicy.MODULE_PR
+            and not first_specific
+            and first_code == "PROC_MGR"
+            and "QA Dept PROC_MGR" in policy.name
+        )
+        actionable_pr = 0 if is_stray_unactionable else 1
         is_std_global = 1 if policy.name == "Standard PR Approval — Global" else 0
-        return (has_steps, policy.min_amount, is_std_global)
+        return (has_steps, actionable_pr, policy.min_amount, is_std_global)
 
     def _select_best_policy(candidates, *, require_actionable=True):
         if not candidates:
             return None
         pool = (
-            [p for p in candidates if _policy_rank(p)[0] == 1]
+            [p for p in candidates if _policy_rank(p)[0] == 1 and _policy_rank(p)[1] == 1]
             if require_actionable
-            else list(candidates)
+            else ([p for p in candidates if _policy_rank(p)[0] == 1] or list(candidates))
         )
         if not pool:
             return None

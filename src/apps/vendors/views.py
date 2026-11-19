@@ -79,6 +79,7 @@ def _require_kyc_review(user):
 def _get_scoped_vendor_or_404(request, vendor_id, select_category=False):
 
     from apps.accounts.models import Role
+
     qs = Vendor.objects.all()
     if select_category:
         qs = qs.select_related("category")
@@ -86,8 +87,13 @@ def _get_scoped_vendor_or_404(request, vendor_id, select_category=False):
         request.user.role.code if getattr(request.user, "role", None) else None
     )
     scoped_org = getattr(request.user, "effective_organization", None)
-    if scoped_org and not request.user.is_superuser and role_code not in [Role.SUPER_ADMIN, Role.LEGAL_MGR]:
+    if (
+        scoped_org
+        and not request.user.is_superuser
+        and role_code not in [Role.SUPER_ADMIN, Role.LEGAL_MGR]
+    ):
         from django.db.models import Q
+
         qs = qs.filter(
             Q(organization=scoped_org)
             | Q(organization__isnull=True)
@@ -99,7 +105,15 @@ def _get_scoped_vendor_or_404(request, vendor_id, select_category=False):
         if not (
             request.user.is_superuser
             or getattr(request.user, "is_staff", False)
-            or role_code in [Role.PROC_MGR, Role.PROC_EXEC, Role.AUDITOR, Role.SUPER_ADMIN, Role.FINANCE_AP, Role.LEGAL_MGR]
+            or role_code
+            in [
+                Role.PROC_MGR,
+                Role.PROC_EXEC,
+                Role.AUDITOR,
+                Role.SUPER_ADMIN,
+                Role.FINANCE_AP,
+                Role.LEGAL_MGR,
+            ]
         ):
             raise Http404("Vendor not found.")
     return get_object_or_404(qs, pk=vendor_id)
@@ -171,9 +185,7 @@ def _vendor_register(request, *, mode):
         queryset = queryset.filter(status__in=APPROVAL_STAGE_STATUSES)
     vendor_filter = VendorFilter(request.GET or None, queryset=queryset)
     for name, field in vendor_filter.form.fields.items():
-        field.widget.attrs["class"] = (
-            "form-control" if name == "q" else "form-select"
-        )
+        field.widget.attrs["class"] = "form-control" if name == "q" else "form-select"
     filtered = vendor_filter.qs if vendor_filter.is_bound else queryset
     if vendor_filter.is_bound and not vendor_filter.is_valid():
         filtered = queryset.none()
@@ -184,6 +196,22 @@ def _vendor_register(request, *, mode):
 
     query_params = request.GET.copy()
     query_params.pop("page", None)
+    role_code = getattr(request.user, "role_code", "") or (
+        request.user.role.code if hasattr(request.user, "role") and request.user.role else ""
+    )
+    role_str = str(role_code or "").upper()
+    is_admin = (
+        getattr(request.user, "is_superuser", False)
+        or role_str in ("SUPER_ADMIN", "ADMIN")
+        or request.path.startswith("/superadmin/")
+    )
+    base_layout = (
+        "layouts/superadmin_base.html"
+        if is_admin
+        else (
+            "manager/base_manager.html" if role_str in (Role.PROC_MGR, "PROC_MGR") else "base.html"
+        )
+    )
     context = {
         "mode": mode,
         "page_obj": page,
@@ -192,6 +220,7 @@ def _vendor_register(request, *, mode):
         "querystring": query_params.urlencode(),
         "caps": governance_capabilities(request.user),
         "metrics": get_governance_metrics(user=request.user) if mode == "governance" else None,
+        "base_layout": base_layout,
     }
     return render(request, "pages/vendors/list.html", context)
 
@@ -320,7 +349,14 @@ def _vendor_page_base(request, vendor_id, page):
     role_code = getattr(request.user, "role_code", None) or (
         request.user.role.code if getattr(request.user, "role", None) else None
     )
-    if role_code in [Role.PROC_MGR, "PROC_MGR"]:
+    role_str = str(role_code or "").upper()
+    if (
+        getattr(request.user, "is_superuser", False)
+        or role_str in ("SUPER_ADMIN", "ADMIN")
+        or request.path.startswith("/superadmin/")
+    ):
+        context["base_layout"] = "layouts/superadmin_base.html"
+    elif role_str in [Role.PROC_MGR, "PROC_MGR"]:
         context["base_layout"] = "manager/base_manager.html"
     return vendor, context
 
@@ -368,9 +404,7 @@ def vendor_status_page_view(request, vendor_id):
     vendor, ctx = _vendor_page_base(request, vendor_id, page="status")
     caps = ctx["caps"]
     status_history = [
-        log
-        for log in get_vendor_change_history(vendor, limit=50)
-        if log.target_model == "Vendor"
+        log for log in get_vendor_change_history(vendor, limit=50) if log.target_model == "Vendor"
     ]
     ctx.update(
         {
@@ -431,7 +465,9 @@ def vendor_documents_page_view(request, vendor_id):
 def vendor_contacts_page_view(request, vendor_id):
     """Contacts: primary / finance / sales designations with email and phone."""
     vendor, ctx = _vendor_page_base(request, vendor_id, page="contacts")
-    ctx["contact_groups"] = _group_vendor_contacts(vendor.contacts.order_by("-is_primary", "last_name"))
+    ctx["contact_groups"] = _group_vendor_contacts(
+        vendor.contacts.order_by("-is_primary", "last_name")
+    )
     return render(request, "pages/vendors/pages/contacts.html", ctx)
 
 
@@ -558,7 +594,8 @@ def vendor_kyc_action_view(request, vendor_id, kyc_action):
     except ValidationError as exc:
         messages.error(request, " ".join(exc.messages))
     return _redirect_detail(
-        vendor, "documents" if kyc_action in ("verify-document", "reject-document") else "governance"
+        vendor,
+        "documents" if kyc_action in ("verify-document", "reject-document") else "governance",
     )
 
 
@@ -608,7 +645,12 @@ def vendor_document_download_view(request, vendor_id, doc_id):
         try:
             file_obj = doc.file.open("rb")
             content_type, _ = mimetypes.guess_type(filename)
-            response = FileResponse(file_obj, as_attachment=False, content_type=content_type or "application/pdf", filename=filename)
+            response = FileResponse(
+                file_obj,
+                as_attachment=False,
+                content_type=content_type or "application/pdf",
+                filename=filename,
+            )
             response["Content-Disposition"] = f'inline; filename="{filename}"'
             return response
         except (FileNotFoundError, ValueError, OSError, Exception):
@@ -663,7 +705,9 @@ def vendor_document_download_view(request, vendor_id, doc_id):
                 sub_style,
             ),
             Spacer(1, 8),
-            HRFlowable(width="100%", thickness=1.5, color=colors.HexColor("#0284c7"), spaceAfter=12),
+            HRFlowable(
+                width="100%", thickness=1.5, color=colors.HexColor("#0284c7"), spaceAfter=12
+            ),
             Paragraph(
                 f"<b>Document Type:</b> {doc.get_document_type_display()}<br/>"
                 f"<b>Document Title:</b> {doc.title or 'N/A'}<br/>"
@@ -708,7 +752,9 @@ def vendor_document_download_view(request, vendor_id, doc_id):
             pass
 
     pdf_buffer.seek(0)
-    return FileResponse(pdf_buffer, as_attachment=False, content_type="application/pdf", filename=filename)
+    return FileResponse(
+        pdf_buffer, as_attachment=False, content_type="application/pdf", filename=filename
+    )
 
 
 # ------------------------------------------------------------------------------------------
@@ -961,11 +1007,13 @@ def brevo_webhook_view(request):
             ok, msg, dispatch = process_brevo_webhook_event_service(item)
             if ok:
                 processed_count += 1
-            results.append({
-                "status": "ok" if ok else "ignored",
-                "message": msg,
-                "email": item.get("email"),
-            })
+            results.append(
+                {
+                    "status": "ok" if ok else "ignored",
+                    "message": msg,
+                    "email": item.get("email"),
+                }
+            )
 
     return JsonResponse({"processed": processed_count, "results": results})
 
@@ -1017,7 +1065,9 @@ def vendor_edit_view(request, vendor_id):
             return redirect("vendor_detail", vendor_id=vendor.id)
 
     is_htmx = getattr(request, "htmx", False) or request.headers.get("HX-Request") == "true"
-    status_code = 200 if is_htmx else (400 if (request.method == "POST" and not form.is_valid()) else 200)
+    status_code = (
+        200 if is_htmx else (400 if (request.method == "POST" and not form.is_valid()) else 200)
+    )
     return render(
         request,
         "vendors/partials/htmx_edit_modal.html",
@@ -1071,12 +1121,49 @@ def vendor_import_view(request):
         import csv
 
         from django.http import HttpResponse
+
         response = HttpResponse(content_type="text/csv")
         response["Content-Disposition"] = 'attachment; filename="vendor_import_template.csv"'
         writer = csv.writer(response)
-        writer.writerow(["Legal Name", "Tax ID", "Category Code", "Contact Email", "Address", "Phone", "Trade Name", "PAN", "GSTIN"])
-        writer.writerow(["TechCorp Solutions Ltd", "US-EIN-11-2233445", "IT_HARDWARE", "sales@techcorp.com", "123 Tech Blvd, Silicon Valley", "+1-800-555-0199", "TechCorp", "ABCDE1234F", "29ABCDE1234F1Z5"])
-        writer.writerow(["Global Logistics Express", "US-EIN-99-8877665", "LOGISTICS", "ops@globallogistics.com", "456 Freight Way, Chicago IL", "+1-800-555-0144", "Global Logistics", "FGHIJ5678K", "27FGHIJ5678K1Z3"])
+        writer.writerow(
+            [
+                "Legal Name",
+                "Tax ID",
+                "Category Code",
+                "Contact Email",
+                "Address",
+                "Phone",
+                "Trade Name",
+                "PAN",
+                "GSTIN",
+            ]
+        )
+        writer.writerow(
+            [
+                "TechCorp Solutions Ltd",
+                "US-EIN-11-2233445",
+                "IT_HARDWARE",
+                "sales@techcorp.com",
+                "123 Tech Blvd, Silicon Valley",
+                "+1-800-555-0199",
+                "TechCorp",
+                "ABCDE1234F",
+                "29ABCDE1234F1Z5",
+            ]
+        )
+        writer.writerow(
+            [
+                "Global Logistics Express",
+                "US-EIN-99-8877665",
+                "LOGISTICS",
+                "ops@globallogistics.com",
+                "456 Freight Way, Chicago IL",
+                "+1-800-555-0144",
+                "Global Logistics",
+                "FGHIJ5678K",
+                "27FGHIJ5678K1Z3",
+            ]
+        )
         return response
 
     if request.method == "POST":
@@ -1084,14 +1171,23 @@ def vendor_import_view(request):
 
         if action_type == "catalog":
             from .services import import_standard_vendors_for_org_service
+
             if not scoped_org:
                 messages.error(request, "No organization context found to import vendors into.")
                 return redirect("vendor_list")
-            count = import_standard_vendors_for_org_service(target_org=scoped_org, actor=request.user)
+            count = import_standard_vendors_for_org_service(
+                target_org=scoped_org, actor=request.user
+            )
             if count > 0:
-                messages.success(request, f"Successfully imported {count} approved vendor(s) into {scoped_org.name}.")
+                messages.success(
+                    request,
+                    f"Successfully imported {count} approved vendor(s) into {scoped_org.name}.",
+                )
             else:
-                messages.info(request, f"All available standard vendors are already imported for {scoped_org.name}.")
+                messages.info(
+                    request,
+                    f"All available standard vendors are already imported for {scoped_org.name}.",
+                )
             return redirect("vendor_list")
 
         elif action_type == "csv":
@@ -1107,6 +1203,7 @@ def vendor_import_view(request):
                 return redirect("vendor_list")
 
             from .services import bulk_import_vendors_from_csv_service
+
             count, errs = bulk_import_vendors_from_csv_service(
                 csv_file=csv_file,
                 target_org=scoped_org,

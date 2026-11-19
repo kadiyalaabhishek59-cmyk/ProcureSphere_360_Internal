@@ -467,7 +467,9 @@ def approve_purchase_requisition_service(
                     is_authorized = True
                 else:
                     is_authorized = True
-            elif approver_role_code == Role.PROC_MGR:
+            elif approver_role_code == Role.PROC_MGR and (
+                required_role.code == Role.PROC_MGR or len(chain) == 1
+            ):
                 is_authorized = True
 
         # Enforce multi-tenant organization boundary: Approver must belong to the requisition's organization

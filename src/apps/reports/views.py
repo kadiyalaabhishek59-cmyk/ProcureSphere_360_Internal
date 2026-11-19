@@ -50,11 +50,11 @@ def _paginate_report_rows(request, rows, filter_keys=("q", "status"), per_page=N
 
 
 def _get_role_code(user):
-
+    if getattr(user, "is_superuser", False):
+        return "SUPER_ADMIN"
     role_code = getattr(user, "role_code", None) or (
         user.role.code if getattr(user, "role", None) else ""
     )
-
     return str(role_code or "").upper()
 
 
