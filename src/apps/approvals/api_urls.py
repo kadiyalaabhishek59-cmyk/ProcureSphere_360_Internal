@@ -112,6 +112,14 @@ class ApprovalPolicyViewSet(viewsets.ModelViewSet):
     filterset_fields = ["module", "status", "organization", "department", "currency"]
     ordering_fields = ["name", "min_amount", "created_at"]
 
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        # Controlled transition: Soft-archive policy on DELETE instead of hard deleting (Rule 5 & 6)
+        instance.status = ApprovalPolicy.STATUS_ARCHIVED
+        instance.is_active = False
+        instance.save(update_fields=["status", "is_active", "updated_at"])
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 class ApprovalStepSerializer(serializers.ModelSerializer):
     approver_role_name = serializers.CharField(source="approver_role.name", read_only=True)
@@ -123,11 +131,21 @@ class ApprovalStepSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         policy = attrs.get("policy") or (self.instance.policy if self.instance else None)
+        if not policy and hasattr(self, "initial_data") and "policy" in self.initial_data:
+            from .models import ApprovalPolicy
+            policy = ApprovalPolicy.objects.filter(pk=self.initial_data["policy"]).first()
+
         step_number = (
             attrs.get("step_number")
             if "step_number" in attrs
             else (self.instance.step_number if self.instance else None)
         )
+        if step_number is None and hasattr(self, "initial_data") and "step_number" in self.initial_data:
+            try:
+                step_number = int(self.initial_data["step_number"])
+            except (ValueError, TypeError):
+                pass
+
         if policy and step_number is not None:
             qs = ApprovalStep.objects.filter(policy=policy, step_number=step_number)
             if self.instance:

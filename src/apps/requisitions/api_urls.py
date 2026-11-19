@@ -398,7 +398,7 @@ class CanCreateRequisitionPermission(permissions.BasePermission):
 
         if not request.user.is_superuser and (
             getattr(request.user, "is_vendor", False)
-            or role_code in [Role.VENDOR_USER, Role.STORES_RECEIVER, Role.LEGAL_MGR]
+            or role_code in [Role.VENDOR_USER]
         ):
             return False
 

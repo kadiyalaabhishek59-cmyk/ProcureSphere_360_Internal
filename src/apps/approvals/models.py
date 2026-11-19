@@ -217,17 +217,17 @@ class ApprovalPolicy(TimeStampedModel):
                     self.is_active = False
             elif orig["is_active"] != self.is_active:
                 if not self.is_active:
-                    if self.status != self.STATUS_DRAFT:
-                        self.status = self.STATUS_ARCHIVED
+                    self.status = self.STATUS_ARCHIVED
                 else:
                     self.status = self.STATUS_ACTIVE
         else:
-            if self.status == self.STATUS_ACTIVE:
+            if not self.is_active:
+                if self.status != self.STATUS_DRAFT:
+                    self.status = self.STATUS_ARCHIVED
+            elif self.status == self.STATUS_ACTIVE:
                 self.is_active = True
             elif self.status in [self.STATUS_ARCHIVED, self.STATUS_DRAFT]:
                 self.is_active = False
-            elif not self.is_active:
-                self.status = self.STATUS_ARCHIVED
 
         if not self.organization_id:
             if self.department_id and self.department:

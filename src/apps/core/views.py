@@ -239,6 +239,11 @@ def vendor_dashboard_view(request):
 @login_required(login_url="/login/")
 @dashboard_role_required([Role.FINANCE_AP, Role.SUPER_ADMIN])
 def finance_dashboard_view(request):
+    import time
+
+    if hasattr(request, "session") and request.session:
+        request.session["_last_activity_ts"] = time.time()
+
     user = request.user
     role_code = getattr(user, "role_code", None) or (
         user.role.code if hasattr(user, "role") and user.role else None
@@ -344,7 +349,8 @@ def finance_dashboard_view(request):
         .select_related("department", "cost_center", "requester")
         .order_by("-updated_at")
     )
-    from apps.approvals.models import ApprovalAction
+    from apps.approvals.models import ApprovalAction, ApprovalPolicy, ApprovalStep
+    from apps.approvals.services import evaluate_approval_chain
 
     user_approved_pr_ids = ApprovalAction.objects.filter(
         actor=request.user,
@@ -370,54 +376,13 @@ def finance_dashboard_view(request):
         .order_by("-updated_at")
     )
 
-    from django.db.models import Count
-
-    from apps.approvals.models import ApprovalPolicy
-    from apps.approvals.services import evaluate_approval_chain
-
-    candidate_pr_ids = list(pending_finance_prs.values_list("id", flat=True))
-    finance_pr_ids = []
-    if candidate_pr_ids:
-        step_counts = {
-            str(k): v
-            for k, v in ApprovalAction.objects.filter(
-                target_object_id__in=[str(pid) for pid in candidate_pr_ids],
-                target_model_name="PurchaseRequisition",
-                action=ApprovalAction.ACTION_APPROVE,
-            )
-            .values("target_object_id")
-            .annotate(cnt=Count("id"))
-            .values_list("target_object_id", "cnt")
-        }
-        for cand in pending_finance_prs:
-            cand_org = (
-                getattr(getattr(cand, "department", None), "organization", None)
-                or getattr(
-                    getattr(getattr(cand, "cost_center", None), "department", None),
-                    "organization",
-                    None,
-                )
-                or getattr(cand.requester, "effective_organization", None)
-            )
-            chain = evaluate_approval_chain(
-                module=ApprovalPolicy.MODULE_PR,
-                amount=cand.total_amount,
-                department=cand.department,
-                cost_center=cand.cost_center,
-                organization=cand_org,
-            )
-            idx = step_counts.get(str(cand.id), 0)
-            if chain and idx < len(chain):
-                if chain[idx]["approver_role"].code == Role.FINANCE_AP:
-                    finance_pr_ids.append(cand.id)
-    pending_finance_prs = pending_finance_prs.filter(id__in=finance_pr_ids)
-
     ready_for_payment_qs = SupplierInvoice.objects.filter(
         status=SupplierInvoice.STATUS_READY_FOR_PAYMENT
     )
     committed_spend_qs = SpendLedger.objects.filter(entry_type=SpendLedger.ENTRY_COMMITMENT)
     actual_spend_qs = SpendLedger.objects.filter(entry_type=SpendLedger.ENTRY_ACTUAL)
 
+    # Apply organizational scoping before any chain evaluation
     if scoped_org:
         open_match_exceptions = open_match_exceptions.filter(
             Q(invoice__po__cost_center__department__organization=scoped_org)
@@ -489,6 +454,56 @@ def finance_dashboard_view(request):
         committed_spend_qs = committed_spend_qs.filter(budget__cost_center_id=selected_cc_id)
         actual_spend_qs = actual_spend_qs.filter(budget__cost_center_id=selected_cc_id)
 
+    # Evaluate approval chain eligibility for pending_finance_prs efficiently
+    has_finance_step = ApprovalStep.objects.filter(
+        policy__module=ApprovalPolicy.MODULE_PR,
+        policy__is_active=True,
+        approver_role__code=Role.FINANCE_AP,
+    ).exists()
+
+    if not has_finance_step:
+        pending_finance_prs = pending_finance_prs.none()
+    else:
+        candidate_prs = list(pending_finance_prs[:50])
+        candidate_pr_ids = [cand.id for cand in candidate_prs]
+        finance_pr_ids = []
+        if candidate_pr_ids:
+            step_counts = {
+                str(k): v
+                for k, v in ApprovalAction.objects.filter(
+                    target_object_id__in=[str(pid) for pid in candidate_pr_ids],
+                    target_model_name="PurchaseRequisition",
+                    action=ApprovalAction.ACTION_APPROVE,
+                )
+                .values("target_object_id")
+                .annotate(cnt=Count("id"))
+                .values_list("target_object_id", "cnt")
+            }
+            for cand in candidate_prs:
+                cand_org = (
+                    getattr(getattr(cand, "department", None), "organization", None)
+                    or getattr(
+                        getattr(getattr(cand, "cost_center", None), "department", None),
+                        "organization",
+                        None,
+                    )
+                    or getattr(cand.requester, "effective_organization", None)
+                )
+                chain = evaluate_approval_chain(
+                    module=ApprovalPolicy.MODULE_PR,
+                    amount=cand.total_amount,
+                    department=cand.department,
+                    cost_center=cand.cost_center,
+                    organization=cand_org,
+                )
+                idx = step_counts.get(str(cand.id), 0)
+                if chain and idx < len(chain):
+                    if chain[idx]["approver_role"].code == Role.FINANCE_AP:
+                        finance_pr_ids.append(cand.id)
+            pending_finance_prs = pending_finance_prs.filter(id__in=finance_pr_ids)
+        else:
+            pending_finance_prs = pending_finance_prs.none()
+
     committed_spend = committed_spend_qs.aggregate(total=Sum("amount"))["total"] or 0
     actual_spend = actual_spend_qs.aggregate(total=Sum("amount"))["total"] or 0
 
@@ -498,12 +513,12 @@ def finance_dashboard_view(request):
         else ("Global Enterprise" if request.user.is_superuser else "")
     )
 
-    total_pending_exceptions = open_match_exceptions.count()
     from django.core.paginator import Paginator
 
     exceptions_paginator = Paginator(open_match_exceptions, 10)
     page_num = request.GET.get("page", 1)
     exceptions_page = exceptions_paginator.get_page(page_num)
+    total_pending_exceptions = exceptions_paginator.count
 
     context = {
         "metrics": {
@@ -1038,6 +1053,7 @@ def custom_404_view(request, exception=None):
     target_dashboard_url = "/dashboard/"
     if user and user.is_authenticated:
         from apps.accounts.models import Role
+
         role_code = getattr(user, "role_code", None) or (
             user.role.code if getattr(user, "role", None) else None
         )
@@ -1170,12 +1186,18 @@ def protected_media_view(request, file_path):
         if "vendor" in normalized_path.lower() or "kyc" in normalized_path.lower():
             try:
                 from apps.vendors.models import VendorDocument
+
                 doc = (
-                    VendorDocument.objects.filter(file__endswith=base_name).select_related("vendor").first()
-                    or VendorDocument.objects.filter(file__icontains=base_name).select_related("vendor").first()
+                    VendorDocument.objects.filter(file__endswith=base_name)
+                    .select_related("vendor")
+                    .first()
+                    or VendorDocument.objects.filter(file__icontains=base_name)
+                    .select_related("vendor")
+                    .first()
                 )
                 if doc:
                     from apps.vendors.views import vendor_document_download_view
+
                     return vendor_document_download_view(request, doc.vendor.id, doc.id)
             except Exception:
                 pass
