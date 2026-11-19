@@ -72,6 +72,14 @@ class NotificationSerializer(serializers.ModelSerializer):
             return None
         return obj.created_at.isoformat()
 
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)
+        if isinstance(ret.get("title"), str):
+            ret["title"] = ret["title"].replace("$", "₹")
+        if isinstance(ret.get("message"), str):
+            ret["message"] = ret["message"].replace("$", "₹")
+        return ret
+
     def to_internal_value(self, data):
         if not isinstance(data, dict):
             raise serializers.ValidationError(

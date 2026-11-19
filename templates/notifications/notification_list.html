@@ -27,13 +27,13 @@
                         {% if not n.is_read %}
                         <span class="badge rounded-pill bg-primary px-2 py-0.5 fw-bold" style="font-size: 0.65rem; background-color: #0D6EFD !important;">New</span>
                         {% endif %}
-                        <span class="fw-bold text-dark fs-6">{{ n.title }}</span>
+                        <span class="fw-bold text-dark fs-6">{{ n.display_title }}</span>
                     </div>
                     <div class="small text-secondary mb-1">
                         <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 rounded-pill px-2 py-0.5 me-1.5" style="font-size: 0.68rem;">{{ n.get_notification_type_display }}</span>
                         <span>{{ n.created_at|date:"M d, Y H:i" }}</span>
                     </div>
-                    <div class="small text-secondary">{{ n.message|truncatechars:300 }}</div>
+                    <div class="small text-secondary">{{ n.display_message|truncatechars:300 }}</div>
                 </div>
                 {% if is_proc_exec %}
                     {% if not n.is_read %}

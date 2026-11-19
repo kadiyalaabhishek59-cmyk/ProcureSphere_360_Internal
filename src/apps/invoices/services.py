@@ -178,7 +178,7 @@ def create_supplier_invoice_service(
     )
     if enforce_billable_limits and (prior_invoiced_total + total > po.total_amount):
         raise ValidationError(
-            f"Cumulative invoiced amount (${prior_invoiced_total + total:,.2f}) would exceed Purchase Order total (${po.total_amount:,.2f})."
+            f"Cumulative invoiced amount (₹{prior_invoiced_total + total:,.2f}) would exceed Purchase Order total (₹{po.total_amount:,.2f})."
         )
 
     invoice.subtotal = subtotal
@@ -214,7 +214,7 @@ def create_supplier_invoice_service(
             title=f"New Supplier Invoice Submitted: {invoice.invoice_number}",
             message=(
                 f"Vendor '{vendor.legal_name}' has submitted invoice {invoice.invoice_number} "
-                f"for PO {po.po_number} (Total: ${invoice.total_amount}). "
+                f"for PO {po.po_number} (Total: ₹{invoice.total_amount}). "
                 f"Ready for 3-way match validation and payment."
             ),
             target_url=f"/invoices/{invoice.id}/",
@@ -229,7 +229,7 @@ def create_supplier_invoice_service(
             title=f"Supplier Invoice Submitted: {invoice.invoice_number}",
             message=(
                 f"Vendor '{vendor.legal_name}' has submitted invoice {invoice.invoice_number} "
-                f"for PO {po.po_number} (Total: ${invoice.total_amount}). "
+                f"for PO {po.po_number} (Total: ₹{invoice.total_amount}). "
                 f"You may view the invoice details in read-only mode."
             ),
             target_url=f"/invoices/{invoice.id}/",
@@ -244,7 +244,7 @@ def create_supplier_invoice_service(
             title=f"Supplier Invoice Submitted: {invoice.invoice_number}",
             message=(
                 f"Vendor '{vendor.legal_name}' has submitted invoice {invoice.invoice_number} "
-                f"for PO {po.po_number} (Total: ${invoice.total_amount}). "
+                f"for PO {po.po_number} (Total: ₹{invoice.total_amount}). "
                 f"You may view the invoice details in read-only mode."
             ),
             target_url=f"/invoices/{invoice.id}/",
@@ -367,7 +367,7 @@ def run_3_way_match_service(
                 invoice=invoice,
                 exception_type=MatchException.TYPE_PRICE_VARIANCE,
                 description=(
-                    f"Billed unit price ${inv_line.unit_price} exceeds PO price ${po_line.unit_price} "
+                    f"Billed unit price ₹{inv_line.unit_price} exceeds PO price ₹{po_line.unit_price} "
                     f"for item '{po_line.item_description}' (Tolerance: {price_tolerance_pct * 100}%)."
                 ),
                 variance_amount=variance,
@@ -381,7 +381,7 @@ def run_3_way_match_service(
         exc = MatchException.objects.create(
             invoice=invoice,
             exception_type=MatchException.TYPE_TOTAL_VARIANCE,
-            description=f"Total amount mismatch: Stated total ${invoice.total_amount} != calculated total ${expected_total}.",
+            description=f"Total amount mismatch: Stated total ₹{invoice.total_amount} != calculated total ₹{expected_total}.",
             variance_amount=abs(invoice.total_amount - expected_total),
         )
         exceptions.append(exc)

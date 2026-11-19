@@ -117,6 +117,11 @@
                 <i class="fa-solid fa-circle-check text-success me-2"></i>
                 <span class="small fw-semibold text-success">You Approved Step 1 &bull; Awaiting {% if current_step_info %}{{ current_step_info.approver_role.name }}{% else %}Procurement Manager{% endif %}</span>
             </div>
+        {% elif user_has_rejected or pr.status == 'REJECTED' %}
+            <div class="d-inline-flex align-items-center bg-danger bg-opacity-10 border border-danger border-opacity-25 rounded-pill px-3 py-1">
+                <i class="fa-solid fa-circle-xmark text-danger me-2"></i>
+                <span class="small fw-semibold text-danger">Requisition Rejected</span>
+            </div>
         {% endif %}
     </div>
 </div>

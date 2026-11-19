@@ -188,7 +188,7 @@ def submit_purchase_requisition_service(
     if not chain:
         dept_name = requisition.department.name if requisition.department else "Global"
         raise ValidationError(
-            f"No active approval policy found matching requisition amount ${requisition.total_amount:,.2f} "
+            f"No active approval policy found matching requisition amount ₹{requisition.total_amount:,.2f} "
             f"and department '{dept_name}'. Submission rejected under fail-closed routing rule."
         )
 
@@ -204,7 +204,7 @@ def submit_purchase_requisition_service(
             cc_code = requisition.cost_center.code if requisition.cost_center else "N/A"
             raise ValidationError(
                 f"Insufficient budget for Cost Center '{cc_code}'. "
-                f"Requested: ${requisition.total_amount:,.2f}. Requisition submission rejected under fail-closed budget policy."
+                f"Requested: ₹{requisition.total_amount:,.2f}. Requisition submission rejected under fail-closed budget policy."
             )
 
     previous_status = PurchaseRequisition.STATUS_DRAFT
@@ -280,7 +280,7 @@ def submit_purchase_requisition_service(
                 recipient=fin_user,
                 notification_type=Notification.TYPE_APPROVAL_REQUIRED,
                 title=f"Budget Exception Alert: PR {requisition.pr_number} Exceeds Budget",
-                message=f"Requisition {requisition.pr_number} (${requisition.total_amount:,.2f}) exceeds available budget for Cost Center {requisition.cost_center.code} and requires Finance AP budget exception approval.",
+                message=f"Requisition {requisition.pr_number} (₹{requisition.total_amount:,.2f}) exceeds available budget for Cost Center {requisition.cost_center.code} and requires Finance AP budget exception approval.",
                 target_url=f"/requisitions/{requisition.id}/",
             )
         for approver in approver_list:
@@ -288,7 +288,7 @@ def submit_purchase_requisition_service(
                 recipient=approver,
                 notification_type=Notification.TYPE_APPROVAL_REQUIRED,
                 title=f"Budget Alert: PR {requisition.pr_number} Exceeds Budget",
-                message=f"Requisition {requisition.pr_number} (${requisition.total_amount:,.2f}) exceeds available budget for Cost Center {requisition.cost_center.code} and is queued for Finance AP budget exception review.",
+                message=f"Requisition {requisition.pr_number} (₹{requisition.total_amount:,.2f}) exceeds available budget for Cost Center {requisition.cost_center.code} and is queued for Finance AP budget exception review.",
                 target_url=f"/requisitions/{requisition.id}/",
             )
     else:
@@ -297,7 +297,7 @@ def submit_purchase_requisition_service(
                 recipient=approver,
                 notification_type=Notification.TYPE_APPROVAL_REQUIRED,
                 title=f"New PR Approval Request: {requisition.pr_number}",
-                message=f"Requisition {requisition.pr_number} ({requisition.title}) amounting to ${requisition.total_amount:,.2f} requires your department approval review.",
+                message=f"Requisition {requisition.pr_number} ({requisition.title}) amounting to ₹{requisition.total_amount:,.2f} requires your department approval review.",
                 target_url=f"/requisitions/{requisition.id}/",
             )
 
@@ -349,7 +349,7 @@ def approve_purchase_requisition_service(
         if budget and not budget.allow_overspend and requisition.total_amount > budget.available_amount:
             raise ValidationError(
                 f"Budget overspend is not permitted for Cost Center '{requisition.cost_center.code}'. "
-                f"allow_overspend is disabled and requested amount (${requisition.total_amount:,.2f}) exceeds available budget (${budget.available_amount:,.2f})."
+                f"allow_overspend is disabled and requested amount (₹{requisition.total_amount:,.2f}) exceeds available budget (₹{budget.available_amount:,.2f})."
             )
 
         # Finance AP (or Procurement Manager fallback) is approving an overrun explicitly, force the reservation

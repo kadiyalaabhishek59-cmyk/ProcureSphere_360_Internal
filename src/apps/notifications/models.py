@@ -72,5 +72,20 @@ class Notification(TimeStampedModel):
     def action_url(self, value: str) -> None:
         self.target_url = value or ""
 
+    @property
+    def display_title(self) -> str:
+        return (self.title or "").replace("$", "₹")
+
+    @property
+    def display_message(self) -> str:
+        return (self.message or "").replace("$", "₹")
+
+    def save(self, *args, **kwargs):
+        if self.message and "$" in self.message:
+            self.message = self.message.replace("$", "₹")
+        if self.title and "$" in self.title:
+            self.title = self.title.replace("$", "₹")
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f"Notification to {self.recipient.email}: {self.title} [{'READ' if self.is_read else 'UNREAD'}]"

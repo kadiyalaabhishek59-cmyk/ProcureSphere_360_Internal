@@ -310,7 +310,7 @@
         if (kpiTotal) kpiTotal.textContent = summary.total_pending_count ?? 0;
         if (kpiPr) kpiPr.textContent = summary.pr_pending_count ?? 0;
         if (kpiPo) kpiPo.textContent = (summary.po_approval_pending_count ?? 0) + (summary.po_amendment_pending_count ?? 0);
-        if (kpiVal) kpiVal.textContent = `$${(summary.total_pending_value || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        if (kpiVal) kpiVal.textContent = `₹${(summary.total_pending_value || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
         if (tabPendingBadge) tabPendingBadge.textContent = summary.total_pending_count ?? 0;
         if (tabHistoryBadge) tabHistoryBadge.textContent = summary.history_count ?? 0;
     }

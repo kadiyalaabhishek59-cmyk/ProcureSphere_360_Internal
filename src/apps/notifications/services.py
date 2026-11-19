@@ -142,7 +142,7 @@ def scan_overdue_approvals_and_escalate_service(
             recipients = proc_managers
             title = f"ESCALATION: PR {pr.pr_number} Approval Overdue (> {escalation_hours}h)"
             message = (
-                f"Requisition {pr.pr_number} ({pr.title}, ${pr.total_amount:,.2f}) for Department "
+                f"Requisition {pr.pr_number} ({pr.title}, ₹{pr.total_amount:,.2f}) for Department "
                 f"'{pr.department.name if pr.department else 'N/A'}' has been pending approval since "
                 f"{pr.updated_at.strftime('%Y-%m-%d %H:%M')}. Management escalation invoked."
             )
@@ -200,7 +200,7 @@ def scan_overdue_approvals_and_escalate_service(
 
             title = f"Reminder: PR {pr.pr_number} Awaiting Your Approval (> {reminder_hours}h)"
             message = (
-                f"Requisition {pr.pr_number} ({pr.title}, ${pr.total_amount:,.2f}) has been pending your "
+                f"Requisition {pr.pr_number} ({pr.title}, ₹{pr.total_amount:,.2f}) has been pending your "
                 f"approval review since {pr.updated_at.strftime('%Y-%m-%d %H:%M')}. Please review promptly."
             )
             for approver in approvers:

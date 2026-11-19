@@ -631,6 +631,23 @@ def test_non_actionable_pr_policy_does_not_hide_dept_approver_controls(client, s
     assert "/approve/" not in card_segment
     assert "/reject/" not in card_segment
 
+    # Now approver submits approval
+    approve_resp = client.post(
+        f"/requisitions/{pr.id}/approve/",
+        {"comments": "Looks good from dept"},
+    )
+    assert approve_resp.status_code in (302, 200)
+
+    # After approving, detail view must NOT show Approve or Reject buttons again to this approver
+    detail_after = client.get(f"/requisitions/{pr.id}/")
+    assert detail_after.context["can_approve"] is False
+    assert detail_after.context["can_reject"] is False
+    assert detail_after.context["user_has_approved"] is True
+    content_after = detail_after.content.decode("utf-8")
+    assert "Approve PR" not in content_after
+    assert "Reject PR" not in content_after
+    assert "You Approved Step 1" in content_after
+
 
 @pytest.mark.django_db
 def test_department_prs_uses_approver_prefixed_url(client, setup_approver_env):

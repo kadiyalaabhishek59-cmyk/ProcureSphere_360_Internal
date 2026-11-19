@@ -286,14 +286,14 @@
                                 </div>
                                 <div class="flex-grow-1">
                                     <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
-                                        <h6 class="fw-bold text-dark mb-0">${n.title || 'Notification'}</h6>
+                                        <h6 class="fw-bold text-dark mb-0">${(n.title || 'Notification').replaceAll('$', '₹')}</h6>
                                         <span class="badge ${typeBadgeClass} rounded-pill" style="font-size: 0.65rem;">
                                             ${n.notification_type_display || n.notification_type}
                                         </span>
                                         ${isHighPriority ? '<span class="badge bg-danger rounded-pill" style="font-size: 0.65rem;"><i class="fa-solid fa-triangle-exclamation me-1"></i>HIGH PRIORITY</span>' : ''}
                                         ${isUnread ? '<span class="badge bg-warning text-dark rounded-pill" style="font-size: 0.65rem;">UNREAD</span>' : ''}
                                     </div>
-                                    <p class="text-muted small mb-1">${n.message || ''}</p>
+                                    <p class="text-muted small mb-1">${(n.message || '').replaceAll('$', '₹')}</p>
                                     <span class="small text-muted" style="font-size: 0.75rem;"><i class="fa-regular fa-clock me-1"></i> ${createdDate}</span>
                                 </div>
                             </div>
