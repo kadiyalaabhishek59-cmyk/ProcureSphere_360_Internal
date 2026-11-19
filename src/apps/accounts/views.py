@@ -21,7 +21,15 @@ def portal_login_view(request):
     if request.user.is_authenticated:
         reason = request.GET.get("reason", "").strip().lower()
         if (
-            reason in ["signed_out", "logged_out", "back_navigation", "logout", "another_tab", "inactivity"]
+            reason
+            in [
+                "signed_out",
+                "logged_out",
+                "back_navigation",
+                "logout",
+                "another_tab",
+                "inactivity",
+            ]
             or request.COOKIES.get("ps360_just_logged_out") == "1"
             or request.COOKIES.get("ps360_user_signed_out") == "1"
         ):
@@ -36,9 +44,7 @@ def portal_login_view(request):
                     "Your session timed out after 5 minutes of inactivity. Please sign in again."
                 )
             else:
-                context["session_expired_notice"] = (
-                    "You have been signed out of your session."
-                )
+                context["session_expired_notice"] = "You have been signed out of your session."
             response = render(request, "pages/login.html", context)
             response.delete_cookie("ps360_just_logged_out", path="/", samesite="Lax")
             response.delete_cookie("ps360_user_signed_out", path="/", samesite="Lax")
@@ -63,46 +69,43 @@ def portal_login_view(request):
 
         password = request.POST.get("password", "")
 
-
-
         if not email or not password:
             if is_ajax:
-                return JsonResponse({"ok": False, "error": "Please provide both email and password."}, status=400)
+                return JsonResponse(
+                    {"ok": False, "error": "Please provide both email and password."}, status=400
+                )
             messages.error(request, "Please provide both email and password.")
 
             return render(request, "pages/login.html", {"email": email})
 
-
-
         # Explicit request=request keyword parameter is required for django-axes compatibility
         from apps.accounts.models import User
+
         matched_user = User.objects.filter(email__iexact=str(email).strip()).first()
         auth_username = matched_user.email if matched_user else email
 
         user = authenticate(request=request, username=auth_username, password=password)
 
-
-
         if user is not None:
 
             if not user.is_active:
                 if is_ajax:
-                    return JsonResponse({"ok": False, "error": "Your account has been deactivated. Please contact support."}, status=403)
+                    return JsonResponse(
+                        {
+                            "ok": False,
+                            "error": "Your account has been deactivated. Please contact support.",
+                        },
+                        status=403,
+                    )
                 messages.error(
-
                     request, "Your account has been deactivated. Please contact support."
-
                 )
 
                 return render(request, "pages/login.html", {"email": email})
 
-
-
             login(request, user)
             request.session["_last_activity_ts"] = time.time()
             request.session["_just_logged_in"] = True
-
-
 
             # Record AuditLog for authentication
 
@@ -111,37 +114,22 @@ def portal_login_view(request):
                 from apps.audit.models import AuditLog
                 from apps.audit.services import create_audit_log_service
 
-
-
                 create_audit_log_service(
-
                     actor=user,
-
                     action=AuditLog.ACTION_LOGIN,
-
                     target_model="User",
-
                     target_object_id=str(user.id),
-
                     new_state={
-
                         "email": user.email,
-
                         "role": user.role_code if hasattr(user, "role_code") else None,
-
                     },
-
                     ip_address=request.META.get("REMOTE_ADDR"),
-
                     user_agent=request.META.get("HTTP_USER_AGENT", ""),
-
                 )
 
             except (ImportError, Exception):
 
                 pass
-
-
 
             if getattr(user, "must_change_password", False):
                 try:
@@ -192,7 +180,11 @@ def portal_login_view(request):
                     new_state={
                         "event": "LOGIN_FAILED",
                         "email": str(email).strip().lower(),
-                        "reason": "Account deactivated" if (inactive_user and not inactive_user.is_active) else "Invalid credentials",
+                        "reason": (
+                            "Account deactivated"
+                            if (inactive_user and not inactive_user.is_active)
+                            else "Invalid credentials"
+                        ),
                     },
                     request=request,
                 )
@@ -211,10 +203,11 @@ def portal_login_view(request):
                 return render(request, "pages/login.html", {"email": email})
 
             if is_ajax:
-                return JsonResponse({"ok": False, "error": "Invalid email or password. Please try again."}, status=401)
+                return JsonResponse(
+                    {"ok": False, "error": "Invalid email or password. Please try again."},
+                    status=401,
+                )
             messages.error(request, "Invalid email or password. Please try again.")
-
-
 
     context = {}
     reason = request.GET.get("reason", "").strip().lower()
@@ -231,9 +224,7 @@ def portal_login_view(request):
             "Your session timed out after 5 minutes of inactivity. Please sign in again."
         )
     elif reason in ["signed_out", "logged_out", "back_navigation", "logout"] or has_signout_cookie:
-        context["session_expired_notice"] = (
-            "You have been signed out of your session."
-        )
+        context["session_expired_notice"] = "You have been signed out of your session."
     response = render(request, "pages/login.html", context)
     if has_signout_cookie:
         response.delete_cookie("ps360_just_logged_out")
@@ -241,13 +232,8 @@ def portal_login_view(request):
     return response
 
 
-
-
-
 @login_required
-
 def change_password_view(request):
-
     """
 
     Renders and processes the password change form.
@@ -270,44 +256,27 @@ def change_password_view(request):
 
             update_session_auth_hash(request, user)  # Keep user session active
 
-
-
             from apps.audit.models import AuditLog
             from apps.audit.services import create_audit_log_service
 
-
-
             create_audit_log_service(
-
                 actor=user,
-
                 action=AuditLog.ACTION_UPDATE,
-
                 target_model="User",
-
                 target_object_id=str(user.id),
-
                 previous_state={"must_change_password": True},
-
                 new_state={"must_change_password": False, "action": "first_login_password_change"},
-
                 ip_address=request.META.get("REMOTE_ADDR"),
-
                 user_agent=request.META.get("HTTP_USER_AGENT", ""),
-
             )
 
-
-
             messages.success(
-
                 request,
-
                 "Your password has been changed successfully. Welcome to ProcureSphere 360!",
-
             )
 
             from apps.core.views import get_dashboard_url_for_user
+
             return redirect(get_dashboard_url_for_user(request.user))
 
         else:
@@ -318,31 +287,18 @@ def change_password_view(request):
 
         form = PasswordChangeForm(request.user)
 
-
-
     return render(
-
         request,
-
         "accounts/change_password.html",
-
         {
-
             "form": form,
-
             "is_forced": getattr(request.user, "must_change_password", False),
-
         },
-
     )
-
-
-
 
 
 @never_cache
 def portal_logout_view(request):
-
     """
 
     Logs out the user from the ERP Portal and redirects to the public landing page (/).
@@ -357,26 +313,16 @@ def portal_logout_view(request):
         from apps.audit.models import AuditLog
         from apps.audit.services import create_audit_log_service
 
-
-
         try:
             create_audit_log_service(
-
                 actor=user,
-
                 action=AuditLog.ACTION_LOGOUT,
-
                 target_model="User",
-
                 target_object_id=str(user.id),
-
                 previous_state={"email": user.email},
-
             )
         except Exception:
             pass
-
-
 
     logout(request)
 
@@ -388,7 +334,10 @@ def portal_logout_view(request):
         return response
 
     if reason == "new_tab":
-        messages.info(request, "Your previous session expired due to multiple active tabs. Please sign in again.")
+        messages.info(
+            request,
+            "Your previous session expired due to multiple active tabs. Please sign in again.",
+        )
         return redirect("/login/?session_expired=1")
 
     if reason == "inactivity":
@@ -403,13 +352,8 @@ def portal_logout_view(request):
     return response
 
 
-
-
-
 @login_required(login_url="/login/")
-
 def password_change_view(request):
-
     """Lets a user replace their password; mandatory on first login with a temporary password."""
 
     forced = request.user.must_change_password
@@ -434,42 +378,27 @@ def password_change_view(request):
 
             update_session_auth_hash(request, user)
 
-
-
             from apps.audit.models import AuditLog
             from apps.audit.services import create_audit_log_service
 
-
-
             create_audit_log_service(
-
                 actor=user,
-
                 action=AuditLog.ACTION_UPDATE,
-
                 target_model="User",
-
                 target_object_id=str(user.id),
-
                 previous_state={"must_change_password": forced},
-
                 new_state={"must_change_password": False, "event": "password_changed"},
-
                 ip_address=request.META.get("REMOTE_ADDR"),
-
                 user_agent=request.META.get("HTTP_USER_AGENT", ""),
-
             )
 
             messages.success(request, "Password updated.")
 
             from apps.core.views import get_dashboard_url_for_user
+
             return redirect(get_dashboard_url_for_user(request.user))
 
     return render(request, "pages/password_change.html", {"form": form, "forced": forced})
-
-
-
 
 
 # Aliases for route compatibility
@@ -477,4 +406,3 @@ def password_change_view(request):
 login_page_view = portal_login_view
 
 logout_page_view = portal_logout_view
-

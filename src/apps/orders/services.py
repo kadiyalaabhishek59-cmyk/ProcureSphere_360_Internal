@@ -448,7 +448,10 @@ def request_po_amendment_service(
 
     tax = subtotal * tax_rate
     proposed_total = subtotal + tax
-    old_total = Decimal(str(snapshot["total_amount"]))
+    old_subtotal = sum((line.line_total for line in existing_lines), Decimal("0.00"))
+    old_total = old_subtotal + (old_subtotal * tax_rate)
+    if old_total <= Decimal("0.00"):
+        old_total = Decimal(str(snapshot.get("total_amount", "0.00")))
     delta = proposed_total - old_total
 
     # Verify Budget availability if delta > 0
@@ -458,7 +461,7 @@ def request_po_amendment_service(
             .order_by("-created_at")
             .first()
         )
-        if budget:
+        if budget and not budget.allow_overspend:
             available = budget.available_amount
             if available < delta:
                 raise ValidationError(

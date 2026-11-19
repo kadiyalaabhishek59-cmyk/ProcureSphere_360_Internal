@@ -95,7 +95,9 @@ class TestBrowserNavigationAndSignoutGuard:
         """Verify sidebar_toggle_button.html renders clean sidebar toggle button without separate arrow boxes."""
         from django.template.loader import render_to_string
 
-        rendered = render_to_string("partials/sidebar_toggle_button.html", {"sidebar_id": "testSidebar"})
+        rendered = render_to_string(
+            "partials/sidebar_toggle_button.html", {"sidebar_id": "testSidebar"}
+        )
         assert "sidebarToggleBtn" in rendered
         assert "ps-nav-arrows" not in rendered
         assert "psNavBackBtn" not in rendered
@@ -105,11 +107,19 @@ class TestBrowserNavigationAndSignoutGuard:
         """Vendor dashboard and subpages contain signout modal in layout without in-page arrow boxes."""
         from apps.vendors.models import Vendor, VendorCategory
 
-        role, _ = Role.objects.get_or_create(code=Role.VENDOR_USER, defaults={"name": "Vendor Portal User"})
-        cat, _ = VendorCategory.objects.get_or_create(code="IT_SERVICES", defaults={"name": "IT Services"})
+        role, _ = Role.objects.get_or_create(
+            code=Role.VENDOR_USER, defaults={"name": "Vendor Portal User"}
+        )
+        cat, _ = VendorCategory.objects.get_or_create(
+            code="IT_SERVICES", defaults={"name": "IT Services"}
+        )
         vendor, _ = Vendor.objects.get_or_create(
             vendor_number="VND-NAV-TEST-01",
-            defaults={"legal_name": "Nav Test Vendor Inc", "category": cat, "email": "navtest@vendor.com"},
+            defaults={
+                "legal_name": "Nav Test Vendor Inc",
+                "category": cat,
+                "email": "navtest@vendor.com",
+            },
         )
         user = User.objects.create_user(
             email="nav_vendor_guard_test@procuresphere.com",
@@ -193,7 +203,9 @@ class TestBrowserNavigationAndSignoutGuard:
 
     def test_authenticated_user_visiting_login_with_signed_out_reason_is_logged_out(self, client):
         """Authenticated user arriving on /login/?reason=signed_out is logged out and sees sign-out banner."""
-        role, _ = Role.objects.get_or_create(code=Role.SUPER_ADMIN, defaults={"name": "Super Admin"})
+        role, _ = Role.objects.get_or_create(
+            code=Role.SUPER_ADMIN, defaults={"name": "Super Admin"}
+        )
         user = User.objects.create_user(
             email="auth_logout_back_test@procuresphere.com",
             password="Password123!",
@@ -211,7 +223,9 @@ class TestBrowserNavigationAndSignoutGuard:
 
     def test_signout_modal_contains_csrf_post_form(self, client):
         """Dashboard sign-out modal contains a POST form to /logout/ with CSRF protection."""
-        role, _ = Role.objects.get_or_create(code=Role.SUPER_ADMIN, defaults={"name": "Super Admin"})
+        role, _ = Role.objects.get_or_create(
+            code=Role.SUPER_ADMIN, defaults={"name": "Super Admin"}
+        )
         user = User.objects.create_user(
             email="signout_form_test@procuresphere.com",
             password="Password123!",
@@ -238,9 +252,13 @@ class TestBrowserNavigationAndSignoutGuard:
         assert "/login/?reason=signed_out" in app_js
         assert "/api/v1/auth/session-exit/" in app_js
 
-    def test_security_headers_middleware_sets_anti_cache_headers_for_authenticated_users(self, client):
+    def test_security_headers_middleware_sets_anti_cache_headers_for_authenticated_users(
+        self, client
+    ):
         """Authenticated GET responses receive strict anti-cache headers to prevent bfcache retention on forward navigation."""
-        role, _ = Role.objects.get_or_create(code=Role.SUPER_ADMIN, defaults={"name": "Super Admin"})
+        role, _ = Role.objects.get_or_create(
+            code=Role.SUPER_ADMIN, defaults={"name": "Super Admin"}
+        )
         user = User.objects.create_user(
             email="anticache_test@procuresphere.com",
             password="Password123!",
@@ -287,7 +305,9 @@ class TestBrowserNavigationAndSignoutGuard:
 
     def test_session_exit_beacon_terminates_session_and_sets_cookies(self, client):
         """POST /api/v1/auth/session-exit/ terminates active user session and sets anti-cache guard cookies."""
-        role, _ = Role.objects.get_or_create(code=Role.SUPER_ADMIN, defaults={"name": "Super Admin"})
+        role, _ = Role.objects.get_or_create(
+            code=Role.SUPER_ADMIN, defaults={"name": "Super Admin"}
+        )
         user = User.objects.create_user(
             email="session_exit_test@procuresphere.com",
             password="Password123!",
@@ -302,9 +322,13 @@ class TestBrowserNavigationAndSignoutGuard:
         assert resp.cookies.get("ps360_user_signed_out").value == "1"
         assert resp.cookies.get("ps360_just_logged_out").value == "1"
 
-    def test_forward_navigation_to_dashboard_with_signed_out_cookie_redirects_to_login(self, client):
+    def test_forward_navigation_to_dashboard_with_signed_out_cookie_redirects_to_login(
+        self, client
+    ):
         """Forward navigation (Right arrow) from Chrome homepage to dashboard with signed_out cookie redirects to login."""
-        role, _ = Role.objects.get_or_create(code=Role.SUPER_ADMIN, defaults={"name": "Super Admin"})
+        role, _ = Role.objects.get_or_create(
+            code=Role.SUPER_ADMIN, defaults={"name": "Super Admin"}
+        )
         user = User.objects.create_user(
             email="forward_arrow_test@procuresphere.com",
             password="Password123!",
@@ -323,7 +347,9 @@ class TestBrowserNavigationAndSignoutGuard:
         # Session is strictly invalidated
         assert "_auth_user_id" not in client.session
 
-    def test_forward_navigation_unauthenticated_with_signed_out_cookie_redirects_to_login(self, client):
+    def test_forward_navigation_unauthenticated_with_signed_out_cookie_redirects_to_login(
+        self, client
+    ):
         """Even if beacon already terminated session, forward arrow with cookie redirects to login with reason."""
         client.cookies["ps360_user_signed_out"] = "1"
         resp = client.get("/superadmin/")
@@ -368,10 +394,16 @@ class TestBrowserNavigationAndSignoutGuard:
 
         from apps.vendors.models import Vendor, VendorCategory
 
-        cat, _ = VendorCategory.objects.get_or_create(code="SERVICES", defaults={"name": "Services"})
+        cat, _ = VendorCategory.objects.get_or_create(
+            code="SERVICES", defaults={"name": "Services"}
+        )
         vendor, _ = Vendor.objects.get_or_create(
             vendor_number="VND-ALL-DASH-01",
-            defaults={"legal_name": "All Dashboards Vendor", "category": cat, "email": "alldash@vendor.com"},
+            defaults={
+                "legal_name": "All Dashboards Vendor",
+                "category": cat,
+                "email": "alldash@vendor.com",
+            },
         )
 
         for role_code, endpoint in dashboard_endpoints:
@@ -392,15 +424,19 @@ class TestBrowserNavigationAndSignoutGuard:
                 html = resp.content.decode("utf-8")
                 assert 'id="signout-confirm-modal"' in html, f"Modal missing on {endpoint}"
                 assert "Sign Out Confirmation" in html, f"Modal title missing on {endpoint}"
-                assert 'app.js' in html, f"app.js missing on {endpoint}"
-                assert 'session_timeout.js' in html, f"session_timeout.js missing on {endpoint}"
+                assert "app.js" in html, f"app.js missing on {endpoint}"
+                assert "session_timeout.js" in html, f"session_timeout.js missing on {endpoint}"
 
     def test_login_exit_button_redirects_to_landing_page(self, client):
         """Clicking Exit on the login page navigates to /?logged_out=1, clears cookies, and renders landing page."""
         role, _ = Role.objects.get_or_create(code=Role.REQUESTER, defaults={"name": "Requester"})
         user, _ = User.objects.get_or_create(
             email="exit_test_user@procuresphere.com",
-            defaults={"username": "exit_test_user@procuresphere.com", "role": role, "is_active": True},
+            defaults={
+                "username": "exit_test_user@procuresphere.com",
+                "role": role,
+                "is_active": True,
+            },
         )
         client.force_login(user)
 
@@ -448,10 +484,16 @@ class TestBrowserNavigationAndSignoutGuard:
 
         assert "ps_is_internal_navigation" in base_html
 
-        role, _ = Role.objects.get_or_create(code=Role.DEPT_APPROVER, defaults={"name": "Department Approver"})
+        role, _ = Role.objects.get_or_create(
+            code=Role.DEPT_APPROVER, defaults={"name": "Department Approver"}
+        )
         user, _ = User.objects.get_or_create(
             email="approver_nav_guard_test@procuresphere.com",
-            defaults={"username": "approver_nav_guard_test@procuresphere.com", "role": role, "is_active": True},
+            defaults={
+                "username": "approver_nav_guard_test@procuresphere.com",
+                "role": role,
+                "is_active": True,
+            },
         )
         client.force_login(user)
 
@@ -479,10 +521,16 @@ class TestBrowserNavigationAndSignoutGuard:
         assert "restoreSidebarScrollState" in base_html
         assert "ps_sidebar_scroll_pos" in base_html
 
-        role, _ = Role.objects.get_or_create(code=Role.SUPER_ADMIN, defaults={"name": "Super Admin"})
+        role, _ = Role.objects.get_or_create(
+            code=Role.SUPER_ADMIN, defaults={"name": "Super Admin"}
+        )
         user, _ = User.objects.get_or_create(
             email="sa_sidebar_scroll_test@procuresphere.com",
-            defaults={"username": "sa_sidebar_scroll_test@procuresphere.com", "role": role, "is_active": True},
+            defaults={
+                "username": "sa_sidebar_scroll_test@procuresphere.com",
+                "role": role,
+                "is_active": True,
+            },
         )
         client.force_login(user)
 

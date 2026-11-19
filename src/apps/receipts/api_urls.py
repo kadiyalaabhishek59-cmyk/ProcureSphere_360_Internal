@@ -112,10 +112,13 @@ class GoodsReceiptSerializer(serializers.ModelSerializer):
             qs_dn = GoodsReceipt.objects.filter(po=po, delivery_note_number__iexact=clean_dn)
             if self.instance:
                 qs_dn = qs_dn.exclude(pk=self.instance.pk)
-            if qs_dn.exists():
-                raise serializers.ValidationError(
-                    {"delivery_note_number": [f"A goods receipt with delivery note '{clean_dn}' already exists for Purchase Order {po.po_number}."]}
-                )
+                if qs_dn.exists():
+                    raise serializers.ValidationError(
+                        {"delivery_note_number": [f"A goods receipt with delivery note '{clean_dn}' already exists for Purchase Order {po.po_number}."]}
+                    )
+            elif qs_dn.exists():
+                # Client-supplied duplicate delivery note or GRN is ignored and auto-disambiguated by server (TC-GRN-049)
+                attrs["delivery_note_number"] = f"{clean_dn}-{GoodsReceipt.objects.filter(po=po).count() + 1}"
 
         if self.instance is None:
             lines = self.initial_data.get("lines")

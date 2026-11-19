@@ -115,6 +115,14 @@ def check_and_reserve_budget_service(
     If available (or forced), locks a BudgetReservation in RESERVED status and writes a SpendLedger entry.
     Raises BudgetOverrunException if insufficient funds.
     """
+    # Idempotency check: if an active reservation for this requisition already exists, reuse it without double-reserving
+    existing_reservation = BudgetReservation.objects.filter(
+        requisition=requisition,
+        status=BudgetReservation.STATUS_RESERVED,
+    ).first()
+    if existing_reservation:
+        return existing_reservation
+
     cost_center = requisition.cost_center
     today = (
         requisition.created_at.date()

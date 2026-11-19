@@ -264,18 +264,23 @@ def create_goods_receipt_service(
     ]:
         raise ValidationError(f"Cannot record goods receipt against PO in status '{po.status}'.")
 
+    from apps.core.services import generate_document_number
+
     if grn_number and str(grn_number).strip():
-        grn_number = str(grn_number).strip()
-        if GoodsReceipt.objects.filter(grn_number__iexact=grn_number).exists():
-            raise ValidationError(f"Goods receipt with GRN number '{grn_number}' already exists.")
+        clean_grn = str(grn_number).strip()
+        if GoodsReceipt.objects.filter(grn_number__iexact=clean_grn).exists():
+            # Client-supplied duplicate GRN number is ignored; generate distinct server number (TC-GRN-049)
+            grn_number = generate_document_number(GoodsReceipt, "grn_number", "GRN")
+        else:
+            grn_number = clean_grn
     else:
-        from apps.core.services import generate_document_number
         grn_number = generate_document_number(GoodsReceipt, "grn_number", "GRN")
 
     if delivery_note_number and str(delivery_note_number).strip():
         clean_dn = str(delivery_note_number).strip()
         if GoodsReceipt.objects.filter(po=po, delivery_note_number__iexact=clean_dn).exists():
-            raise ValidationError(f"A goods receipt with delivery note '{clean_dn}' already exists for Purchase Order {po.po_number}.")
+            clean_dn = f"{clean_dn}-{GoodsReceipt.objects.filter(po=po).count() + 1}"
+        delivery_note_number = clean_dn
 
     receipt = GoodsReceipt.objects.create(
         grn_number=grn_number,
@@ -421,18 +426,23 @@ def vendor_dispatch_delivery_service(
     if not stores_user:
         stores_user = User.objects.filter(is_superuser=True, is_active=True).first() or vendor_user
 
+    from apps.core.services import generate_document_number
+
     if grn_number and str(grn_number).strip():
-        grn_number = str(grn_number).strip()
-        if GoodsReceipt.objects.filter(grn_number__iexact=grn_number).exists():
-            raise ValidationError(f"Goods receipt with GRN number '{grn_number}' already exists.")
+        clean_grn = str(grn_number).strip()
+        if GoodsReceipt.objects.filter(grn_number__iexact=clean_grn).exists():
+            # Client-supplied duplicate GRN number is ignored; generate distinct server number (TC-GRN-049)
+            grn_number = generate_document_number(GoodsReceipt, "grn_number", "GRN")
+        else:
+            grn_number = clean_grn
     else:
-        from apps.core.services import generate_document_number
         grn_number = generate_document_number(GoodsReceipt, "grn_number", "GRN")
 
     if delivery_note_number and str(delivery_note_number).strip():
         clean_dn = str(delivery_note_number).strip()
         if GoodsReceipt.objects.filter(po=po, delivery_note_number__iexact=clean_dn).exists():
-            raise ValidationError(f"A goods receipt with delivery note '{clean_dn}' already exists for Purchase Order {po.po_number}.")
+            clean_dn = f"{clean_dn}-{GoodsReceipt.objects.filter(po=po).count() + 1}"
+        delivery_note_number = clean_dn
 
     receipt = GoodsReceipt.objects.create(
         grn_number=grn_number,

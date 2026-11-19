@@ -347,15 +347,10 @@ class AuditLogViewSet(viewsets.ReadOnlyModelViewSet):
 
         identifier = query_serializer.validated_data.get("identifier")
         if not identifier:
-            from apps.requisitions.models import PurchaseRequisition
-            latest_pr = PurchaseRequisition.objects.order_by("-created_at").first()
-            if latest_pr:
-                identifier = latest_pr.pr_number
-            else:
-                return Response(
-                    {"error": {"code": "VALIDATION_ERROR", "message": "Query parameter 'identifier' is required."}},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
+            return Response(
+                {"error": {"code": "VALIDATION_ERROR", "message": "Query parameter 'identifier' is required."}},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         entity_type = query_serializer.validated_data.get("entity_type", "AUTO")
         org = _get_auditor_org(request)
 
@@ -415,16 +410,10 @@ class AuditLogViewSet(viewsets.ReadOnlyModelViewSet):
         model_name = query_serializer.validated_data.get("target_model")
         obj_id = query_serializer.validated_data.get("target_object_id")
         if not model_name or not obj_id:
-            from apps.audit.models import AuditLog
-            latest_log = AuditLog.objects.exclude(target_model="").order_by("-timestamp").first()
-            if latest_log:
-                model_name = model_name or latest_log.target_model
-                obj_id = obj_id or str(latest_log.target_object_id)
-            else:
-                return Response(
-                    {"error": {"code": "VALIDATION_ERROR", "message": "Query parameters 'target_model' and 'target_object_id' are required."}},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
+            return Response(
+                {"error": {"code": "VALIDATION_ERROR", "message": "Query parameters 'target_model' and 'target_object_id' are required."}},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         org = _get_auditor_org(request)
 
         trail_data = get_entity_audit_trail(
@@ -875,15 +864,10 @@ def auditor_lifecycle_api_view(request):
     data = serializer.validated_data
     identifier = data.get("identifier")
     if not identifier:
-        from apps.requisitions.models import PurchaseRequisition
-        latest_pr = PurchaseRequisition.objects.order_by("-created_at").first()
-        if latest_pr:
-            identifier = latest_pr.pr_number
-        else:
-            return Response(
-                {"error": {"code": "VALIDATION_ERROR", "message": "Query parameter 'identifier' is required."}},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        return Response(
+            {"error": {"code": "VALIDATION_ERROR", "message": "Query parameter 'identifier' is required."}},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
     org = _get_auditor_org(request)
     lifecycle_data = get_transaction_lifecycle_service(
         entity_type=data.get("entity_type", "AUTO"),

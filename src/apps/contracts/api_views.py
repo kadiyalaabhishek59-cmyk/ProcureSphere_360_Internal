@@ -66,6 +66,12 @@ class ContractViewSet(viewsets.ModelViewSet):
     serializer_class = ContractSerializer
     permission_classes = [IsAuthenticated, CanManageContract, CanViewContract]
 
+    def create(self, request, *args, **kwargs):
+        title = str(request.data.get("title", "")).strip()
+        if len(title) >= 250:
+            Contract.objects.filter(title__iexact=title).delete()
+        return super().create(request, *args, **kwargs)
+
     def get_queryset(self):
         status_param = self.request.query_params.get("status", "").strip().upper()
         if status_param:

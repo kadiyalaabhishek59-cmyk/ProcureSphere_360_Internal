@@ -148,7 +148,7 @@ def create_purchase_requisition_service(
 
 @transaction.atomic
 def submit_purchase_requisition_service(
-    *, requisition: PurchaseRequisition, user: User
+    *, requisition: PurchaseRequisition, user: User, allow_budget_exception: bool = False
 ) -> PurchaseRequisition:
     """
     Submits a PR for approval:
@@ -197,8 +197,15 @@ def submit_purchase_requisition_service(
         check_and_reserve_budget_service(requisition=requisition, requested_by_user=user)
         requisition.status = PurchaseRequisition.STATUS_MANAGER_REVIEW
     except BudgetOverrunException:
-        # Route to budget exception review
-        requisition.status = PurchaseRequisition.STATUS_BUDGET_REVIEW
+        if allow_budget_exception:
+            # Explicitly authorized route to budget exception review
+            requisition.status = PurchaseRequisition.STATUS_BUDGET_REVIEW
+        else:
+            cc_code = requisition.cost_center.code if requisition.cost_center else "N/A"
+            raise ValidationError(
+                f"Insufficient budget for Cost Center '{cc_code}'. "
+                f"Requested: ${requisition.total_amount:,.2f}. Requisition submission rejected under fail-closed budget policy."
+            )
 
     previous_status = PurchaseRequisition.STATUS_DRAFT
     requisition.save(update_fields=["status", "updated_at"])

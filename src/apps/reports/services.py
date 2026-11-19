@@ -784,7 +784,7 @@ def get_audit_log_report(user=None):
     return report_data
 
 
-REPORT_DISPATCHER = {
+REPORT_DISPATCHER: dict[str, Any] = {
     "pr_aging": get_pr_aging_report,
     "spend_analytics": get_spend_analytics_report,
     "sourcing_cycle": get_sourcing_cycle_time_report,
@@ -814,7 +814,8 @@ def generate_export_job_service(export_job_id: int) -> ExportJob:
         if report_fn is None:
             raise ValueError(f"Unsupported report type: {job.report_type}")
         try:
-            data = report_fn(user=job.requested_by)
+            kwargs = {"user": job.requested_by}
+            data = report_fn(**kwargs)
         except TypeError:
             data = report_fn()
 

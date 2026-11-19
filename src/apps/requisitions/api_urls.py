@@ -467,8 +467,6 @@ class PurchaseRequisitionViewSet(viewsets.ModelViewSet):
             Role.PROC_MGR,
             Role.AUDITOR,
             Role.FINANCE_AP,
-            Role.STORES_RECEIVER,
-            Role.LEGAL_MGR,
         ]:
             qs = self.queryset
         elif role_code == Role.DEPT_APPROVER:

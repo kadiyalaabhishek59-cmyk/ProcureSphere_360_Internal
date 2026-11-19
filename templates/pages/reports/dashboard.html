@@ -24,7 +24,7 @@
                     {% endfor %}
                 {% endif %}
                 
-                <form action="{% url 'generate_report' %}" method="POST">
+                <form action="{% url 'generate_report' %}" method="POST" id="reportGenerateForm" onsubmit="const btn=this.querySelector('button[type=submit]'); btn.disabled=true; btn.innerHTML='<i class=\'fa-solid fa-spinner fa-spin me-2\'></i> Generating Report...';">
                     {% csrf_token %}
                     <div class="mb-4">
                         <label class="form-label fw-bold text-muted small text-uppercase">Select Report Module <span class="text-danger ms-1">*</span></label>
@@ -100,4 +100,16 @@
         </div>
     </div>
 </div>
+
+<script>
+    (function () {
+        // Auto-refresh if any export job is currently in Processing or Pending state
+        const hasProcessing = document.querySelector('.badge.bg-warning .fa-spinner');
+        if (hasProcessing) {
+            setTimeout(function () {
+                window.location.reload();
+            }, 3000);
+        }
+    })();
+</script>
 {% endblock %}

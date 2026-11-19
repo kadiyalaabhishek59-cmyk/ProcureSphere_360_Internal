@@ -81,16 +81,12 @@ def _get_approval_querysets(user, role_code):
             from apps.organization.models import CostCenter, Department
 
             managed_cc = (
-                CostCenter.objects.filter(manager=user)
-                .select_related("department")
-                .first()
+                CostCenter.objects.filter(manager=user).select_related("department").first()
             )
             if managed_cc and managed_cc.department:
                 user_dept = managed_cc.department
             elif getattr(user, "organization", None):
-                user_dept = Department.objects.filter(
-                    organization=user.organization
-                ).first()
+                user_dept = Department.objects.filter(organization=user.organization).first()
 
         user_org = getattr(user, "organization", None) or (
             user_dept.organization if user_dept else None
@@ -107,33 +103,32 @@ def _get_approval_querysets(user, role_code):
             q = (
                 Q(department=user_dept)
                 | Q(cost_center__manager=user)
-                | (
-                    Q(department__organization=user_org)
-                    & ~Q(department__in=depts_with_approvers)
-                )
+                | (Q(department__organization=user_org) & ~Q(department__in=depts_with_approvers))
             )
-            pending_qs = PurchaseRequisition.objects.filter(
-                q, status__in=pending_statuses
-            ).exclude(id__in=user_approved_pr_ids).distinct()
+            pending_qs = (
+                PurchaseRequisition.objects.filter(q, status__in=pending_statuses)
+                .exclude(id__in=user_approved_pr_ids)
+                .distinct()
+            )
             history_qs = PurchaseRequisition.objects.filter(
                 q & (Q(status__in=history_statuses) | Q(id__in=user_approved_pr_ids))
             ).distinct()
             return pending_qs, history_qs
         elif user_org:
-            q = Q(department__organization=user_org) | Q(
-                cost_center__manager=user
+            q = Q(department__organization=user_org) | Q(cost_center__manager=user)
+            pending_qs = (
+                PurchaseRequisition.objects.filter(q, status__in=pending_statuses)
+                .exclude(id__in=user_approved_pr_ids)
+                .distinct()
             )
-            pending_qs = PurchaseRequisition.objects.filter(
-                q, status__in=pending_statuses
-            ).exclude(id__in=user_approved_pr_ids).distinct()
             history_qs = PurchaseRequisition.objects.filter(
                 q & (Q(status__in=history_statuses) | Q(id__in=user_approved_pr_ids))
             ).distinct()
             return pending_qs, history_qs
         else:
-            pending_qs = PurchaseRequisition.objects.filter(
-                status__in=pending_statuses
-            ).exclude(id__in=user_approved_pr_ids)
+            pending_qs = PurchaseRequisition.objects.filter(status__in=pending_statuses).exclude(
+                id__in=user_approved_pr_ids
+            )
             history_qs = PurchaseRequisition.objects.filter(
                 Q(status__in=history_statuses) | Q(id__in=user_approved_pr_ids)
             )
@@ -229,9 +224,14 @@ def approvals_inbox_view(request):
     )
     if not user.is_superuser and role_code in [Role.PROC_MGR, "PROC_MGR"]:
         return redirect("manager_approvals")
-    if not user.is_superuser and (getattr(user, "is_vendor", False) or role_code in [Role.VENDOR_USER, "VENDOR_USER"]):
+    if not user.is_superuser and (
+        getattr(user, "is_vendor", False) or role_code in [Role.VENDOR_USER, "VENDOR_USER"]
+    ):
         from django.core.exceptions import PermissionDenied
-        raise PermissionDenied("External vendors are not authorized to view the internal approval inbox.")
+
+        raise PermissionDenied(
+            "External vendors are not authorized to view the internal approval inbox."
+        )
 
     if request.method == "POST":
         res = _handle_approval_post(request, role_code)
@@ -359,9 +359,13 @@ def approvals_inbox_view(request):
                     # Include PRs in STATUS_BUDGET_REVIEW as well as any pending PRs that exceed cost center budget allocation
                     today_date = timezone.now().date()
                     overrun_ids = set(
-                        pending_prs.filter(status=PurchaseRequisition.STATUS_BUDGET_REVIEW).values_list("id", flat=True)
+                        pending_prs.filter(
+                            status=PurchaseRequisition.STATUS_BUDGET_REVIEW
+                        ).values_list("id", flat=True)
                     )
-                    other_pending = list(pending_prs.exclude(status=PurchaseRequisition.STATUS_BUDGET_REVIEW))
+                    other_pending = list(
+                        pending_prs.exclude(status=PurchaseRequisition.STATUS_BUDGET_REVIEW)
+                    )
                     cc_ids = [pr.cost_center_id for pr in other_pending if pr.cost_center_id]
                     if cc_ids:
                         from apps.budgets.models import Budget
@@ -383,7 +387,9 @@ def approvals_inbox_view(request):
                                 active_budgets.setdefault(b.cost_center_id, b)
                         for pr in other_pending:
                             b = active_budgets.get(pr.cost_center_id)
-                            if b is not None and (b.available_amount <= 0 or pr.total_amount > b.available_amount):
+                            if b is not None and (
+                                b.available_amount <= 0 or pr.total_amount > b.available_amount
+                            ):
                                 overrun_ids.add(pr.id)
                     pending_prs = pending_prs.filter(id__in=overrun_ids)
                 elif status_filter in valid_pending_statuses:
@@ -427,7 +433,9 @@ def approvals_inbox_view(request):
                             active_budgets.setdefault(b.cost_center_id, b)
                     for pr in pending_prs:
                         b = active_budgets.get(pr.cost_center_id)
-                        if b is not None and (b.available_amount <= 0 or pr.total_amount > b.available_amount):
+                        if b is not None and (
+                            b.available_amount <= 0 or pr.total_amount > b.available_amount
+                        ):
                             has_budget_overrun = True
                             break
 
@@ -477,22 +485,38 @@ def approvals_inbox_view(request):
                 b = active_budgets.get(pr.cost_center_id)
                 pr.is_over_budget = bool(
                     pr.status == PurchaseRequisition.STATUS_BUDGET_REVIEW
-                    or (b is not None and (b.available_amount <= 0 or pr.total_amount > b.available_amount))
+                    or (
+                        b is not None
+                        and (b.available_amount <= 0 or pr.total_amount > b.available_amount)
+                    )
                 )
                 can_decide = False
                 if not is_restricted_role and pr.status == PurchaseRequisition.STATUS_BUDGET_REVIEW:
-                    if user.is_superuser or role_code in [Role.FINANCE_AP, Role.PROC_MGR, Role.SUPER_ADMIN]:
+                    if user.is_superuser or role_code in [
+                        Role.FINANCE_AP,
+                        Role.PROC_MGR,
+                        Role.SUPER_ADMIN,
+                    ]:
                         can_decide = True
-                elif not is_restricted_role and pr.status in [
-                    PurchaseRequisition.STATUS_SUBMITTED,
-                    PurchaseRequisition.STATUS_MANAGER_REVIEW,
-                ] and not (pr.is_over_budget and role_code == Role.DEPT_APPROVER):
+                elif (
+                    not is_restricted_role
+                    and pr.status
+                    in [
+                        PurchaseRequisition.STATUS_SUBMITTED,
+                        PurchaseRequisition.STATUS_MANAGER_REVIEW,
+                    ]
+                    and not (pr.is_over_budget and role_code == Role.DEPT_APPROVER)
+                ):
                     if user.is_superuser:
                         can_decide = True
                     else:
                         pr_org = (
                             getattr(getattr(pr, "department", None), "organization", None)
-                            or getattr(getattr(getattr(pr, "cost_center", None), "department", None), "organization", None)
+                            or getattr(
+                                getattr(getattr(pr, "cost_center", None), "department", None),
+                                "organization",
+                                None,
+                            )
                             or getattr(pr.requester, "effective_organization", None)
                         )
                         chain = evaluate_approval_chain(
@@ -515,12 +539,20 @@ def approvals_inbox_view(request):
                             if spec_app:
                                 can_decide = user == eff_app or user == spec_app
                             else:
-                                approver_role_code = getattr(getattr(user, "role", None), "code", None)
-                                if (getattr(user, "role_id", None) == req_role.id) or (approver_role_code == req_role.code):
+                                approver_role_code = getattr(
+                                    getattr(user, "role", None), "code", None
+                                )
+                                if (getattr(user, "role_id", None) == req_role.id) or (
+                                    approver_role_code == req_role.code
+                                ):
                                     pr_dept = pr.department or (
                                         pr.cost_center.department if pr.cost_center else None
                                     )
-                                    if req_role.code == Role.DEPT_APPROVER and pr_dept and user.department:
+                                    if (
+                                        req_role.code == Role.DEPT_APPROVER
+                                        and pr_dept
+                                        and user.department
+                                    ):
                                         has_own_approver = (
                                             User.objects.filter(
                                                 role__code=Role.DEPT_APPROVER,
@@ -606,14 +638,20 @@ def delegation_view(request):
         approver=user, is_active=True, end_date__gte=timezone.now().date()
     ).order_by("-start_date")
 
-    eligible_delegates = User.objects.filter(
-        role__code__in=[Role.DEPT_APPROVER, Role.PROC_MGR, Role.PROC_EXEC]
-    ).exclude(pk=user.pk).select_related("role")
+    eligible_delegates = (
+        User.objects.filter(role__code__in=[Role.DEPT_APPROVER, Role.PROC_MGR, Role.PROC_EXEC])
+        .exclude(pk=user.pk)
+        .select_related("role")
+    )
 
     base_layout = _get_base_layout(user, role_code)
-    return render(request, "pages/approvals/delegation.html", {
-        "active_delegates": active_delegates,
-        "eligible_delegates": eligible_delegates,
-        "base_layout": base_layout,
-        "role_code": role_code,
-    })
+    return render(
+        request,
+        "pages/approvals/delegation.html",
+        {
+            "active_delegates": active_delegates,
+            "eligible_delegates": eligible_delegates,
+            "base_layout": base_layout,
+            "role_code": role_code,
+        },
+    )

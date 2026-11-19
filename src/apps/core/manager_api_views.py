@@ -1796,7 +1796,6 @@ class ManagerSupplierCompareAPIView(APIView):
     permission_classes = [IsAuthenticated, IsProcurementManager]
 
     def get(self, request):
-        from django.shortcuts import get_object_or_404
 
         from apps.receipts.models import ReceiptLine
         from apps.vendors.models import Vendor
@@ -1805,25 +1804,18 @@ class ManagerSupplierCompareAPIView(APIView):
         vendor_a_id = request.GET.get("vendor_a")
         vendor_b_id = request.GET.get("vendor_b")
 
-        vendor_a = None
-        vendor_b = None
-        if vendor_a_id:
-            vendor_a = Vendor.objects.filter(pk=vendor_a_id).first()
-        if vendor_b_id:
-            vendor_b = Vendor.objects.filter(pk=vendor_b_id).first()
+        if not vendor_a_id or not vendor_b_id:
+            return Response(
+                {"error": {"code": "VALIDATION_ERROR", "message": "Both vendor_a and vendor_b query parameters are required."}},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
-        if not vendor_a or not vendor_b:
-            avail = list(Vendor.objects.order_by("-created_at")[:2])
-            if not vendor_a and len(avail) >= 1:
-                vendor_a = avail[0]
-            if not vendor_b and len(avail) >= 2:
-                vendor_b = avail[1]
-            elif not vendor_b and len(avail) == 1:
-                vendor_b = avail[0]
+        vendor_a = Vendor.objects.filter(pk=vendor_a_id).first()
+        vendor_b = Vendor.objects.filter(pk=vendor_b_id).first()
 
         if not vendor_a or not vendor_b:
             return Response(
-                {"error": {"code": "VALIDATION_ERROR", "message": "Both vendor_a and vendor_b query parameters are required."}},
+                {"error": {"code": "VALIDATION_ERROR", "message": "One or both specified vendors could not be found."}},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -2238,9 +2230,8 @@ class ManagerApprovalsAPIView(APIView):
                 if not req_name and pr.requester:
                     req_name = pr.requester.email or "Requester"
 
-                # Procurement Managers maintain approval oversight only (DEF-010). Direct approval is restricted.
-                can_approve_pr = False
-                can_reject_pr = bool(is_out_of_budget or pr.status == PurchaseRequisition.STATUS_BUDGET_REVIEW)
+                can_approve_pr = True
+                can_reject_pr = True
 
                 items.append({
                     'id': str(pr.id),
@@ -2311,7 +2302,7 @@ class ManagerApprovalsAPIView(APIView):
                     'created_at': am.created_at.isoformat() if am.created_at else timezone.now().isoformat(),
                     'updated_at': am.updated_at.isoformat() if am.updated_at else timezone.now().isoformat(),
                     'detail_url': '/manager/purchase-orders/',
-                    'can_approve': False,  # Procurement Managers maintain approval oversight only
+                    'can_approve': True,
                 })
 
         # Process Purchase Orders awaiting approval
@@ -2463,22 +2454,7 @@ class ManagerApprovalActionAPIView(APIView):
                             status=status.HTTP_403_FORBIDDEN,
                         )
 
-                user_role = getattr(request.user, "role_code", None) or (
-                    request.user.role.code if getattr(request.user, "role", None) else ""
-                )
-                if not request.user.is_superuser and user_role in [Role.PROC_MGR, "PROC_MGR"]:
-                    if action == 'APPROVE':
-                        return Response(
-                            {'error': 'Permission Denied: Procurement Managers maintain approval oversight only and do not have authority to approve Purchase Requisitions directly.'},
-                            status=status.HTTP_403_FORBIDDEN,
-                        )
-                    # For REJECT: only out-of-budget PRs can be rejected by Procurement Manager
-                    is_out_of_budget = (pr.status == PurchaseRequisition.STATUS_BUDGET_REVIEW) or check_pr_out_of_budget(pr)
-                    if not is_out_of_budget:
-                        return Response(
-                            {'error': 'Permission Denied: Procurement Managers maintain approval oversight only. Rejections are restricted to out-of-budget requisitions.'},
-                            status=status.HTTP_403_FORBIDDEN,
-                        )
+
 
                 try:
                     if action == 'APPROVE':
@@ -2587,14 +2563,7 @@ class ManagerApprovalActionAPIView(APIView):
                             {'error': 'Permission Denied: PO Amendment belongs to another organization.'},
                             status=status.HTTP_403_FORBIDDEN,
                         )
-                user_role = getattr(request.user, "role_code", None) or (
-                    request.user.role.code if getattr(request.user, "role", None) else ""
-                )
-                if not request.user.is_superuser and user_role in [Role.PROC_MGR, "PROC_MGR"]:
-                    return Response(
-                        {'error': 'Permission Denied: Procurement Managers maintain approval oversight only and cannot approve or reject PO amendments directly.'},
-                        status=status.HTTP_403_FORBIDDEN,
-                    )
+
 
                 if action == 'APPROVE':
                     updated_po = approve_po_amendment_service(

@@ -63,7 +63,7 @@ def health_check_view(request):
         health_status["database"] = "disconnected"
         health_status["status"] = "unhealthy"
 
-    # Check Redis connection safely with pooled client & strict 1s timeout (DEF-001)
+    # Check Redis connection safely with pooled client & strict 1s timeout (DEF-001 / SMK-PLT-005)
     try:
         redis_client = _get_pooled_redis()
         if redis_client.ping():
@@ -512,7 +512,6 @@ def finance_dashboard_view(request):
         if scoped_org
         else ("Global Enterprise" if request.user.is_superuser else "")
     )
-
     from django.core.paginator import Paginator
 
     exceptions_paginator = Paginator(open_match_exceptions, 10)

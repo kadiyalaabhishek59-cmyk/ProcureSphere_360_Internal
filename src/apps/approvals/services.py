@@ -201,29 +201,14 @@ def evaluate_approval_chain(
     def _policy_rank(policy):
         policy_steps = sorted(policy.steps.all(), key=lambda s: s.step_number)
         has_steps = 1 if policy_steps else 0
-        first_code = getattr(policy_steps[0].approver_role, "code", "") if policy_steps else ""
-        # Step-1 PROC_MGR policies cannot be actioned for PRs (PROC_MGR is read-only on Step 1)
-        # unless a specific_approver is explicitly configured or no actionable fallback exists.
-        first_specific = (
-            getattr(policy_steps[0], "specific_approver_id", None) if policy_steps else None
-        )
-        actionable_pr = (
-            1
-            if (
-                module != ApprovalPolicy.MODULE_PR
-                or first_specific is not None
-                or (first_code and first_code != "PROC_MGR")
-            )
-            else 0
-        )
         is_std_global = 1 if policy.name == "Standard PR Approval — Global" else 0
-        return (has_steps, actionable_pr, policy.min_amount, is_std_global)
+        return (has_steps, policy.min_amount, is_std_global)
 
     def _select_best_policy(candidates, *, require_actionable=True):
         if not candidates:
             return None
         pool = (
-            [p for p in candidates if _policy_rank(p)[0] == 1 and _policy_rank(p)[1] == 1]
+            [p for p in candidates if _policy_rank(p)[0] == 1]
             if require_actionable
             else list(candidates)
         )

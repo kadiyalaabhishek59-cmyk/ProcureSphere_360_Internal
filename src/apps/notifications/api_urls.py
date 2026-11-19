@@ -70,7 +70,7 @@ class NotificationSerializer(serializers.ModelSerializer):
     def get_read_at(self, obj):
         if not obj.is_read:
             return None
-        return obj.updated_at.isoformat()
+        return obj.created_at.isoformat()
 
     def to_internal_value(self, data):
         if not isinstance(data, dict):
@@ -132,7 +132,11 @@ class NotificationViewSet(viewsets.ModelViewSet):
         ).order_by("-created_at")
 
         # Filter by read status
-        is_read_param = self.request.query_params.get("is_read", "").strip().lower()
+        is_read_param = (
+            self.request.query_params.get("is_read")
+            or self.request.query_params.get("read")
+            or ""
+        ).strip().lower()
         if is_read_param in ["true", "1", "yes"]:
             qs = qs.filter(is_read=True)
         elif is_read_param in ["false", "0", "no"]:
@@ -175,13 +179,18 @@ class NotificationViewSet(viewsets.ModelViewSet):
             Notification.objects.filter(recipient=user), user
         )
 
-        total_count = base_qs.count()
-        unread_count = base_qs.filter(is_read=False).count()
-        read_count = total_count - unread_count
-        high_priority_count = base_qs.filter(
-            notification_type__in=HIGH_PRIORITY_TYPES, is_read=False
-        ).count()
-        actionable_count = base_qs.exclude(target_url="").count()
+        agg = base_qs.aggregate(
+            total=Count("id"),
+            unread=Count("id", filter=Q(is_read=False)),
+            read=Count("id", filter=Q(is_read=True)),
+            high_priority=Count("id", filter=Q(notification_type__in=HIGH_PRIORITY_TYPES, is_read=False)),
+            actionable=Count("id", filter=~Q(target_url="")),
+        )
+        total_count = agg["total"] or 0
+        unread_count = agg["unread"] or 0
+        read_count = agg["read"] or 0
+        high_priority_count = agg["high_priority"] or 0
+        actionable_count = agg["actionable"] or 0
 
         type_counts = dict(base_qs.values_list("notification_type").annotate(c=Count("id")))
 

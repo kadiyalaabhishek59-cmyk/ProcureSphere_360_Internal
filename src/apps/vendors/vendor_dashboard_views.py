@@ -150,13 +150,15 @@ def vendor_dashboard_overview_view(request):
     )
 
     # Section B: Upcoming Bid Deadlines (Events closing within 7 days)
-    upcoming_events = SourcingEvent.objects.exclude(
-        status=SourcingEvent.STATUS_DRAFT
-    ).filter(
-        invitations__vendor=vendor,
-        status__in=[SourcingEvent.STATUS_BID_WINDOW, SourcingEvent.STATUS_PUBLISHED],
-        bid_end_date__gte=now,
-    ).order_by("bid_end_date")[:5]
+    upcoming_events = (
+        SourcingEvent.objects.exclude(status=SourcingEvent.STATUS_DRAFT)
+        .filter(
+            invitations__vendor=vendor,
+            status__in=[SourcingEvent.STATUS_BID_WINDOW, SourcingEvent.STATUS_PUBLISHED],
+            bid_end_date__gte=now,
+        )
+        .order_by("bid_end_date")[:5]
+    )
 
     # Section C: Recent Bid Activity
     recent_bids = (
@@ -265,11 +267,17 @@ def vendor_profile_view(request):
                 # Validation 1: All three mandatory documents must be selected
                 missing_fields = []
                 if not pan_file:
-                    missing_fields.append("PAN Document is mandatory. Please select your PAN Card file.")
+                    missing_fields.append(
+                        "PAN Document is mandatory. Please select your PAN Card file."
+                    )
                 if not tax_file:
-                    missing_fields.append("TAX Document is mandatory. Please select your GST or Tax Certificate.")
+                    missing_fields.append(
+                        "TAX Document is mandatory. Please select your GST or Tax Certificate."
+                    )
                 if not bank_file:
-                    missing_fields.append("BANK Document is mandatory. Please select your Bank Account Proof or Cancelled Cheque.")
+                    missing_fields.append(
+                        "BANK Document is mandatory. Please select your Bank Account Proof or Cancelled Cheque."
+                    )
 
                 if missing_fields:
                     for err in missing_fields:
@@ -282,32 +290,41 @@ def vendor_profile_view(request):
                         "PAN Document",
                         pan_file,
                         VendorDocument.DOC_TYPE_PAN,
-                        request.POST.get("pan_title", "").strip() or f"PAN Card - {vendor.legal_name}",
+                        request.POST.get("pan_title", "").strip()
+                        or f"PAN Card - {vendor.legal_name}",
                         request.POST.get("pan_expiry", "").strip() or None,
                     ),
                     (
                         "TAX Document",
                         tax_file,
                         VendorDocument.DOC_TYPE_GST,
-                        request.POST.get("tax_title", "").strip() or f"GST / Tax Certificate - {vendor.legal_name}",
+                        request.POST.get("tax_title", "").strip()
+                        or f"GST / Tax Certificate - {vendor.legal_name}",
                         request.POST.get("tax_expiry", "").strip() or None,
                     ),
                     (
                         "BANK Document",
                         bank_file,
                         VendorDocument.DOC_TYPE_BANK,
-                        request.POST.get("bank_title", "").strip() or f"Bank Proof - {vendor.legal_name}",
+                        request.POST.get("bank_title", "").strip()
+                        or f"Bank Proof - {vendor.legal_name}",
                         request.POST.get("bank_expiry", "").strip() or None,
                     ),
                 ]
 
                 if other_file:
                     other_type = request.POST.get("other_doc_type", VendorDocument.DOC_TYPE_OTHER)
-                    other_title = request.POST.get("other_title", "").strip() or f"Supporting Document - {other_file.name}"
+                    other_title = (
+                        request.POST.get("other_title", "").strip()
+                        or f"Supporting Document - {other_file.name}"
+                    )
                     other_expiry = request.POST.get("other_expiry", "").strip() or None
-                    files_to_process.append(("Other Document", other_file, other_type, other_title, other_expiry))
+                    files_to_process.append(
+                        ("Other Document", other_file, other_type, other_title, other_expiry)
+                    )
 
                 from datetime import datetime
+
                 today_date = timezone.now().date()
 
                 # KYC Policy: Permit secure formats (PDF, PNG, JPG, JPEG, DOC, DOCX); Reject spreadsheets (XLSX, XLS, CSV)
@@ -326,14 +343,20 @@ def vendor_profile_view(request):
                     file_name = getattr(f, "name", "")
                     file_size = getattr(f, "size", 0) or 0
                     ext = os.path.splitext(file_name)[1][1:].lower() if "." in file_name else ""
-                    raw_content_type = (getattr(f, "content_type", "") or "").split(";")[0].strip().lower()
 
                     if file_size == 0:
-                        validation_errors.append(f"{label}: Uploaded file '{file_name}' is empty (0 bytes).")
+                        validation_errors.append(
+                            f"{label}: Uploaded file '{file_name}' is empty (0 bytes)."
+                        )
                     elif file_size > MAX_FILE_SIZE:
-                        validation_errors.append(f"{label}: File '{file_name}' exceeds the maximum allowed limit of 10 MB.")
+                        validation_errors.append(
+                            f"{label}: File '{file_name}' exceeds the maximum allowed limit of 10 MB."
+                        )
 
-                    if (ext in DISALLOWED_SPREADSHEET_EXTENSIONS) or (raw_content_type in DISALLOWED_SPREADSHEET_MIMES):
+                    raw_content_type = getattr(f, "content_type", "") or ""
+                    if (ext in DISALLOWED_SPREADSHEET_EXTENSIONS) or (
+                        raw_content_type in DISALLOWED_SPREADSHEET_MIMES
+                    ):
                         validation_errors.append(
                             f"{label}: Editable spreadsheet files (.{ext or 'spreadsheet'}) are strictly prohibited for KYC verification. "
                             "Please upload a secure document format (PDF, JPG, JPEG, PNG, DOC, DOCX)."
@@ -353,7 +376,9 @@ def vendor_profile_view(request):
                                     f"{label}: Expiry date cannot be in the past ({expiry}). Please select a valid future date."
                                 )
                         except (ValueError, TypeError):
-                            validation_errors.append(f"{label}: Invalid expiry date format ({expiry}). Expected YYYY-MM-DD.")
+                            validation_errors.append(
+                                f"{label}: Invalid expiry date format ({expiry}). Expected YYYY-MM-DD."
+                            )
 
                 if validation_errors:
                     for err in validation_errors:
@@ -374,10 +399,13 @@ def vendor_profile_view(request):
                             )
                     messages.success(
                         request,
-                        "All 3 mandatory KYC documents (PAN, TAX, BANK) uploaded successfully and submitted for compliance verification."
+                        "All 3 mandatory KYC documents (PAN, TAX, BANK) uploaded successfully and submitted for compliance verification.",
                     )
                     if other_file:
-                        messages.success(request, f"Supporting document '{other_file.name}' uploaded successfully.")
+                        messages.success(
+                            request,
+                            f"Supporting document '{other_file.name}' uploaded successfully.",
+                        )
                 except ValidationError as e:
                     msg = (
                         e.message
@@ -403,7 +431,7 @@ def vendor_profile_view(request):
                     try:
                         file_name = getattr(doc_file, "name", "")
                         ext = os.path.splitext(file_name)[1][1:].lower() if "." in file_name else ""
-                        raw_content_type = (getattr(doc_file, "content_type", "") or "").split(";")[0].strip().lower()
+                        raw_content_type = getattr(doc_file, "content_type", "") or ""
 
                         ALLOWED_KYC_EXTENSIONS = {"pdf", "png", "jpg", "jpeg", "doc", "docx"}
                         DISALLOWED_SPREADSHEET_EXTENSIONS = {"xlsx", "xls", "csv"}
@@ -414,7 +442,9 @@ def vendor_profile_view(request):
                             "application/csv",
                         }
 
-                        if (ext in DISALLOWED_SPREADSHEET_EXTENSIONS) or (raw_content_type in DISALLOWED_SPREADSHEET_MIMES):
+                        if (ext in DISALLOWED_SPREADSHEET_EXTENSIONS) or (
+                            raw_content_type in DISALLOWED_SPREADSHEET_MIMES
+                        ):
                             raise ValidationError(
                                 f"Editable spreadsheet files (.{ext or 'spreadsheet'}) are strictly prohibited for KYC verification. "
                                 "Please upload a secure document format (PDF, JPG, JPEG, PNG, DOC, DOCX)."
@@ -430,13 +460,16 @@ def vendor_profile_view(request):
                         if expiry_date_val:
                             try:
                                 from datetime import datetime
+
                                 parsed_exp = datetime.strptime(expiry_date_val, "%Y-%m-%d").date()
                                 if parsed_exp < timezone.now().date():
                                     raise ValidationError(
                                         f"Expiry date cannot be in the past ({expiry_date_val}). Please select a valid future date."
                                     )
                             except (ValueError, TypeError):
-                                raise ValidationError(f"Invalid expiry date format ({expiry_date_val}). Expected YYYY-MM-DD.")
+                                raise ValidationError(
+                                    f"Invalid expiry date format ({expiry_date_val}). Expected YYYY-MM-DD."
+                                )
 
                         upload_vendor_document_service(
                             vendor=vendor,
@@ -447,13 +480,16 @@ def vendor_profile_view(request):
                             expiry_date=expiry_date_val,
                         )
                         messages.success(
-                            request, f"KYC document '{title or doc_file.name}' uploaded successfully."
+                            request,
+                            f"KYC document '{title or doc_file.name}' uploaded successfully.",
                         )
                     except ValidationError as e:
                         msg = (
                             e.message
                             if hasattr(e, "message")
-                            else (e.messages[0] if hasattr(e, "messages") and e.messages else str(e))
+                            else (
+                                e.messages[0] if hasattr(e, "messages") and e.messages else str(e)
+                            )
                         )
                         messages.error(request, f"Upload validation failed: {msg}")
                     except Exception:
@@ -542,10 +578,17 @@ def vendor_profile_view(request):
         .order_by("-created_at")
     )
     doc_pan = documents.filter(document_type=VendorDocument.DOC_TYPE_PAN).first()
-    doc_tax = documents.filter(document_type__in=[VendorDocument.DOC_TYPE_GST, VendorDocument.DOC_TYPE_TAX]).first()
+    doc_tax = documents.filter(
+        document_type__in=[VendorDocument.DOC_TYPE_GST, VendorDocument.DOC_TYPE_TAX]
+    ).first()
     doc_bank = documents.filter(document_type=VendorDocument.DOC_TYPE_BANK).first()
     doc_other_list = documents.exclude(
-        document_type__in=[VendorDocument.DOC_TYPE_PAN, VendorDocument.DOC_TYPE_GST, VendorDocument.DOC_TYPE_TAX, VendorDocument.DOC_TYPE_BANK]
+        document_type__in=[
+            VendorDocument.DOC_TYPE_PAN,
+            VendorDocument.DOC_TYPE_GST,
+            VendorDocument.DOC_TYPE_TAX,
+            VendorDocument.DOC_TYPE_BANK,
+        ]
     )
     has_all_mandatory_docs = bool(doc_pan and doc_tax and doc_bank)
 
@@ -729,9 +772,9 @@ def vendor_sourcing_list_view(request):
         )
 
     # Single aggregate query for all tabs (replaces 4 sequential count queries)
-    base_invites_qs = BidInvite.objects.exclude(
-        event__status=SourcingEvent.STATUS_DRAFT
-    ).filter(vendor=vendor)
+    base_invites_qs = BidInvite.objects.exclude(event__status=SourcingEvent.STATUS_DRAFT).filter(
+        vendor=vendor
+    )
     tab_counts = base_invites_qs.aggregate(
         all=Count("id"),
         active=Count(
@@ -1663,28 +1706,26 @@ def vendor_purchase_order_detail_view(request, po_id):
             "Access Denied: You do not have authorization to view this purchase order."
         )
 
-    can_acknowledge = (po.status == PurchaseOrder.STATUS_ISSUED) and (vendor.status != Vendor.STATUS_SUSPENDED)
+    can_acknowledge = (po.status == PurchaseOrder.STATUS_ISSUED) and (
+        vendor.status != Vendor.STATUS_SUSPENDED
+    )
 
     # Calculate total accepted GRN quantity across all receipt lines for this PO
     all_receipt_lines = [rl for r in po.receipts.all() for rl in r.lines.all()]
     total_accepted_grn_qty = sum(rl.quantity_accepted for rl in all_receipt_lines)
 
     # Calculate total prior invoiced quantity for this PO across all invoices
-    prior_invoiced_qty = (
-        InvoiceLine.objects.filter(
-            po_line__po=po,
-            invoice__status__in=[
-                SupplierInvoice.STATUS_MATCHING,
-                SupplierInvoice.STATUS_EXCEPTION,
-                SupplierInvoice.STATUS_APPROVAL,
-                SupplierInvoice.STATUS_READY_FOR_PAYMENT,
-                SupplierInvoice.STATUS_PAID,
-                SupplierInvoice.STATUS_RECEIVED,
-            ],
-        )
-        .aggregate(total_prior=Sum("quantity"))["total_prior"]
-        or Decimal("0.00")
-    )
+    prior_invoiced_qty = InvoiceLine.objects.filter(
+        po_line__po=po,
+        invoice__status__in=[
+            SupplierInvoice.STATUS_MATCHING,
+            SupplierInvoice.STATUS_EXCEPTION,
+            SupplierInvoice.STATUS_APPROVAL,
+            SupplierInvoice.STATUS_READY_FOR_PAYMENT,
+            SupplierInvoice.STATUS_PAID,
+            SupplierInvoice.STATUS_RECEIVED,
+        ],
+    ).aggregate(total_prior=Sum("quantity"))["total_prior"] or Decimal("0.00")
 
     remaining_to_invoice = max(Decimal("0.00"), total_accepted_grn_qty - prior_invoiced_qty)
 
@@ -1876,11 +1917,13 @@ def vendor_purchase_order_deliver_view(request, po_id):
             try:
                 qty = Decimal(qty_str)
                 if qty > Decimal("0.00"):
-                    delivery_items.append({
-                        "po_line_id": str(po_line.id),
-                        "quantity": qty,
-                        "notes": notes_str,
-                    })
+                    delivery_items.append(
+                        {
+                            "po_line_id": str(po_line.id),
+                            "quantity": qty,
+                            "notes": notes_str,
+                        }
+                    )
             except Exception:
                 messages.error(
                     request, f"Invalid delivery quantity for item: {po_line.item_description}"
@@ -1910,13 +1953,13 @@ def vendor_purchase_order_deliver_view(request, po_id):
         )
     except ValidationError as ve:
         messages.error(
-            request, f"Delivery Dispatch Failed: {ve.message if hasattr(ve, 'message') else str(ve)}"
+            request,
+            f"Delivery Dispatch Failed: {ve.message if hasattr(ve, 'message') else str(ve)}",
         )
     except Exception as e:
         messages.error(request, f"System Error recording delivery: {str(e)}")
 
     return redirect("vendor_purchase_order_detail", po_id=po.id)
-
 
 
 # ==============================================================================
@@ -1967,9 +2010,7 @@ def vendor_invoices_view(request):
     vendor = request.vendor
     # select_related("po") eliminates N+1 query when template renders invoice.po.id and invoice.po.po_number
     invoices_qs = (
-        SupplierInvoice.objects.filter(vendor=vendor)
-        .select_related("po")
-        .order_by("-created_at")
+        SupplierInvoice.objects.filter(vendor=vendor).select_related("po").order_by("-created_at")
     )
 
     tab = request.GET.get("tab", "all").strip().lower()
@@ -1983,15 +2024,12 @@ def vendor_invoices_view(request):
             ]
         )
     elif tab == "approved":
-        filtered_invoices = invoices_qs.filter(
-            status=SupplierInvoice.STATUS_READY_FOR_PAYMENT
-        )
+        filtered_invoices = invoices_qs.filter(status=SupplierInvoice.STATUS_READY_FOR_PAYMENT)
     elif tab == "paid":
         filtered_invoices = invoices_qs.filter(status=SupplierInvoice.STATUS_PAID)
     elif tab == "exceptions":
         filtered_invoices = invoices_qs.filter(
-            Q(status=SupplierInvoice.STATUS_EXCEPTION)
-            | ~Q(correction_request_notes="")
+            Q(status=SupplierInvoice.STATUS_EXCEPTION) | ~Q(correction_request_notes="")
         )
     elif tab == "rejected":
         filtered_invoices = invoices_qs.filter(status=SupplierInvoice.STATUS_REJECTED)
@@ -2012,23 +2050,21 @@ def vendor_invoices_view(request):
                 ]
             ),
         ),
-        approved=Count(
-            "id", filter=Q(status=SupplierInvoice.STATUS_READY_FOR_PAYMENT)
-        ),
+        approved=Count("id", filter=Q(status=SupplierInvoice.STATUS_READY_FOR_PAYMENT)),
         paid=Count("id", filter=Q(status=SupplierInvoice.STATUS_PAID)),
         exceptions=Count(
             "id",
-            filter=Q(status=SupplierInvoice.STATUS_EXCEPTION)
-            | ~Q(correction_request_notes=""),
+            filter=Q(status=SupplierInvoice.STATUS_EXCEPTION) | ~Q(correction_request_notes=""),
         ),
         rejected=Count("id", filter=Q(status=SupplierInvoice.STATUS_REJECTED)),
     )
 
-    eligible_pos = PurchaseOrder.objects.filter(
-        vendor=vendor
-    ).filter(
-        Q(status__in=ELIGIBLE_INVOICE_STATUSES) | Q(receipts__isnull=False)
-    ).distinct().order_by("-created_at")
+    eligible_pos = (
+        PurchaseOrder.objects.filter(vendor=vendor)
+        .filter(Q(status__in=ELIGIBLE_INVOICE_STATUSES) | Q(receipts__isnull=False))
+        .distinct()
+        .order_by("-created_at")
+    )
 
     context = {
         "vendor": vendor,
@@ -2045,8 +2081,9 @@ def vendor_invoices_view(request):
 def vendor_invoice_detail_view(request, invoice_id):
     vendor = request.vendor
     invoice = get_object_or_404(
-        SupplierInvoice.objects.select_related("po", "vendor")
-        .prefetch_related("lines__po_line", "exceptions"),
+        SupplierInvoice.objects.select_related("po", "vendor").prefetch_related(
+            "lines__po_line", "exceptions"
+        ),
         id=invoice_id,
         vendor=vendor,
     )
@@ -2077,21 +2114,17 @@ def vendor_invoice_submit_view(request, po_id=None):
     if po:
         all_receipt_lines = [rl for r in po.receipts.all() for rl in r.lines.all()]
         total_accepted_grn_qty = sum(rl.quantity_accepted for rl in all_receipt_lines)
-        prior_invoiced_qty = (
-            InvoiceLine.objects.filter(
-                po_line__po=po,
-                invoice__status__in=[
-                    SupplierInvoice.STATUS_MATCHING,
-                    SupplierInvoice.STATUS_EXCEPTION,
-                    SupplierInvoice.STATUS_APPROVAL,
-                    SupplierInvoice.STATUS_READY_FOR_PAYMENT,
-                    SupplierInvoice.STATUS_PAID,
-                    SupplierInvoice.STATUS_RECEIVED,
-                ],
-            )
-            .aggregate(total_prior=Sum("quantity"))["total_prior"]
-            or Decimal("0.00")
-        )
+        prior_invoiced_qty = InvoiceLine.objects.filter(
+            po_line__po=po,
+            invoice__status__in=[
+                SupplierInvoice.STATUS_MATCHING,
+                SupplierInvoice.STATUS_EXCEPTION,
+                SupplierInvoice.STATUS_APPROVAL,
+                SupplierInvoice.STATUS_READY_FOR_PAYMENT,
+                SupplierInvoice.STATUS_PAID,
+                SupplierInvoice.STATUS_RECEIVED,
+            ],
+        ).aggregate(total_prior=Sum("quantity"))["total_prior"] or Decimal("0.00")
         remaining_to_invoice = max(Decimal("0.00"), total_accepted_grn_qty - prior_invoiced_qty)
         if total_accepted_grn_qty > Decimal("0.00") and remaining_to_invoice <= Decimal("0.00"):
             messages.info(
@@ -2101,11 +2134,13 @@ def vendor_invoice_submit_view(request, po_id=None):
             return redirect("vendor_purchase_order_detail", po_id=po.id)
 
     from django.db.models import Q
-    eligible_pos = PurchaseOrder.objects.filter(
-        vendor=vendor
-    ).filter(
-        Q(status__in=ELIGIBLE_INVOICE_STATUSES) | Q(receipts__isnull=False)
-    ).distinct().order_by("-created_at")
+
+    eligible_pos = (
+        PurchaseOrder.objects.filter(vendor=vendor)
+        .filter(Q(status__in=ELIGIBLE_INVOICE_STATUSES) | Q(receipts__isnull=False))
+        .distinct()
+        .order_by("-created_at")
+    )
 
     if request.method == "GET":
         if not po and eligible_pos.exists():
@@ -2146,18 +2181,24 @@ def vendor_invoice_submit_view(request, po_id=None):
                 qty = Decimal(str(qty_str))
                 price = Decimal(str(price_str))
                 if qty > 0:
-                    line_items.append({
-                        "po_line": po_line,
-                        "quantity": qty,
-                        "unit_price": price,
-                        "item_description": po_line.item_description,
-                    })
+                    line_items.append(
+                        {
+                            "po_line": po_line,
+                            "quantity": qty,
+                            "unit_price": price,
+                            "item_description": po_line.item_description,
+                        }
+                    )
             except Exception:
-                messages.error(request, f"Invalid quantity or price for line item: {po_line.item_description}")
+                messages.error(
+                    request, f"Invalid quantity or price for line item: {po_line.item_description}"
+                )
                 return redirect("vendor_purchase_order_detail", po_id=po.id)
 
     if not line_items:
-        messages.error(request, "You must include at least one line item with a quantity greater than 0.")
+        messages.error(
+            request, "You must include at least one line item with a quantity greater than 0."
+        )
         return redirect("vendor_purchase_order_detail", po_id=po.id)
 
     try:
@@ -2185,9 +2226,7 @@ def vendor_invoice_submit_view(request, po_id=None):
         err_msg = (
             e.message
             if hasattr(e, "message")
-            else "; ".join(e.messages)
-            if hasattr(e, "messages")
-            else str(e)
+            else "; ".join(e.messages) if hasattr(e, "messages") else str(e)
         )
         messages.error(request, f"Invoice validation error: {err_msg}")
     except Exception as e:
@@ -2231,23 +2270,18 @@ def vendor_payments_view(request):
             | Q(invoice__po__po_number__icontains=search_query)
         )
         pending_qs = pending_qs.filter(
-            Q(invoice_number__icontains=search_query)
-            | Q(po__po_number__icontains=search_query)
+            Q(invoice_number__icontains=search_query) | Q(po__po_number__icontains=search_query)
         )
 
     # Compute key metrics
     all_payments = PaymentStatus.objects.filter(invoice__vendor=vendor)
-    total_disbursed = (
-        all_payments.aggregate(total=Sum("amount_paid"))["total"] or Decimal("0.00")
-    )
+    total_disbursed = all_payments.aggregate(total=Sum("amount_paid"))["total"] or Decimal("0.00")
 
     all_pending = SupplierInvoice.objects.filter(
         vendor=vendor,
         status__in=[SupplierInvoice.STATUS_READY_FOR_PAYMENT, SupplierInvoice.STATUS_APPROVAL],
     )
-    pending_amount = (
-        all_pending.aggregate(total=Sum("total_amount"))["total"] or Decimal("0.00")
-    )
+    pending_amount = all_pending.aggregate(total=Sum("total_amount"))["total"] or Decimal("0.00")
     settled_invoices_count = SupplierInvoice.objects.filter(
         vendor=vendor, status=SupplierInvoice.STATUS_PAID
     ).count()
@@ -2290,15 +2324,14 @@ def vendor_contracts_view(request):
 
     if search_query:
         qs = qs.filter(
-            Q(contract_number__icontains=search_query)
-            | Q(title__icontains=search_query)
+            Q(contract_number__icontains=search_query) | Q(title__icontains=search_query)
         )
 
     all_contracts = Contract.objects.filter(vendor=vendor)
     active_contracts = all_contracts.filter(status=Contract.STATUS_ACTIVE)
-    total_active_value = (
-        active_contracts.aggregate(total=Sum("contract_value"))["total"] or Decimal("0.00")
-    )
+    total_active_value = active_contracts.aggregate(total=Sum("contract_value"))[
+        "total"
+    ] or Decimal("0.00")
     renewal_due_count = all_contracts.filter(status=Contract.STATUS_RENEWAL_DUE).count()
 
     context = {
@@ -2325,8 +2358,9 @@ def vendor_contract_detail_view(request, contract_id):
     """
     vendor = request.vendor
     contract = get_object_or_404(
-        Contract.objects.select_related("po", "sourcing_event", "contract_owner")
-        .prefetch_related("versions", "milestones", "obligations", "documents"),
+        Contract.objects.select_related("po", "sourcing_event", "contract_owner").prefetch_related(
+            "versions", "milestones", "obligations", "documents"
+        ),
         id=contract_id,
         vendor=vendor,
     )
@@ -2453,9 +2487,15 @@ def vendor_document_download_view(request, doc_type, doc_id):
     AuditLog.objects.create(
         actor=request.user,
         action=AuditLog.ACTION_EXPORT,
-        target_model="ContractDocument"
-        if doc_type == "contract"
-        else ("PRAttachment" if doc_type == "event" else ("BidAttachment" if doc_type == "bid" else "VendorDocument")),
+        target_model=(
+            "ContractDocument"
+            if doc_type == "contract"
+            else (
+                "PRAttachment"
+                if doc_type == "event"
+                else ("BidAttachment" if doc_type == "bid" else "VendorDocument")
+            )
+        ),
         target_object_id=str(doc_id),
         new_state={
             "document_type": doc_type,
@@ -2608,8 +2648,12 @@ def vendor_notifications_view(request):
     for notif in notifications:
         if notif.target_url:
             if notif.target_url.startswith("/orders/"):
-                notif.target_url = notif.target_url.replace("/orders/", "/vendor/purchase-orders/", 1)
-            elif notif.target_url.startswith("/sourcing/") and not notif.target_url.startswith("/vendor/sourcing/"):
+                notif.target_url = notif.target_url.replace(
+                    "/orders/", "/vendor/purchase-orders/", 1
+                )
+            elif notif.target_url.startswith("/sourcing/") and not notif.target_url.startswith(
+                "/vendor/sourcing/"
+            ):
                 notif.target_url = notif.target_url.replace("/sourcing/", "/vendor/sourcing/", 1)
 
     context = {
@@ -2638,10 +2682,13 @@ def vendor_support_view(request):
         reference_no = request.POST.get("reference_no", "").strip()
 
         if not subject or not message_text:
-            messages.error(request, "Please provide both a subject and message description for your inquiry.")
+            messages.error(
+                request, "Please provide both a subject and message description for your inquiry."
+            )
             return redirect("vendor_support")
 
         import uuid
+
         ticket_ref = f"TKT-{uuid.uuid4().hex[:8].upper()}"
 
         # Record ticket into AuditLog
@@ -2671,7 +2718,7 @@ def vendor_support_view(request):
 
         messages.success(
             request,
-            f"Support ticket #{ticket_ref} submitted successfully. Our procurement team will respond shortly."
+            f"Support ticket #{ticket_ref} submitted successfully. Our procurement team will respond shortly.",
         )
         return redirect("vendor_support")
 
@@ -2686,37 +2733,47 @@ def vendor_support_view(request):
     parsed_inquiries = []
     for log in recent_inquiries:
         state = log.new_state if isinstance(log.new_state, dict) else {}
-        parsed_inquiries.append({
-            "ticket_ref": state.get("ticket_ref", f"TKT-{str(log.id)[:8]}"),
-            "category": state.get("category", "General"),
-            "priority": state.get("priority", "NORMAL"),
-            "subject": state.get("subject", "Support Inquiry"),
-            "reference_no": state.get("reference_no", ""),
-            "message": state.get("message", ""),
-            "created_at": log.timestamp,
-        })
+        parsed_inquiries.append(
+            {
+                "ticket_ref": state.get("ticket_ref", f"TKT-{str(log.id)[:8]}"),
+                "category": state.get("category", "General"),
+                "priority": state.get("priority", "NORMAL"),
+                "subject": state.get("subject", "Support Inquiry"),
+                "reference_no": state.get("reference_no", ""),
+                "message": state.get("message", ""),
+                "created_at": log.timestamp,
+            }
+        )
 
     # Internal procurement contacts from vendor POs and contracts
     assigned_owners = []
     seen_user_ids = set()
 
-    for po in PurchaseOrder.objects.filter(vendor=vendor).exclude(created_by__isnull=True).select_related("created_by")[:5]:
+    for po in (
+        PurchaseOrder.objects.filter(vendor=vendor)
+        .exclude(created_by__isnull=True)
+        .select_related("created_by")[:5]
+    ):
         if po.created_by_id not in seen_user_ids:
             seen_user_ids.add(po.created_by_id)
-            assigned_owners.append({
-                "name": po.created_by.get_full_name() or po.created_by.username,
-                "role": "Procurement Officer",
-                "email": po.created_by.email or "procurement@procuresphere.com",
-            })
+            assigned_owners.append(
+                {
+                    "name": po.created_by.get_full_name() or po.created_by.username,
+                    "role": "Procurement Officer",
+                    "email": po.created_by.email or "procurement@procuresphere.com",
+                }
+            )
 
     for c in Contract.objects.filter(vendor=vendor).select_related("contract_owner")[:5]:
         if c.contract_owner_id not in seen_user_ids:
             seen_user_ids.add(c.contract_owner_id)
-            assigned_owners.append({
-                "name": c.contract_owner.get_full_name() or c.contract_owner.username,
-                "role": "Contract Administrator",
-                "email": c.contract_owner.email or "contracts@procuresphere.com",
-            })
+            assigned_owners.append(
+                {
+                    "name": c.contract_owner.get_full_name() or c.contract_owner.username,
+                    "role": "Contract Administrator",
+                    "email": c.contract_owner.email or "contracts@procuresphere.com",
+                }
+            )
 
     context = {
         "vendor": vendor,
