@@ -24,11 +24,12 @@
                     {% endfor %}
                 {% endif %}
                 
-                <form action="{% url 'generate_report' %}" method="POST" id="reportGenerateForm" onsubmit="const btn=this.querySelector('button[type=submit]'); btn.disabled=true; btn.innerHTML='<i class=\'fa-solid fa-spinner fa-spin me-2\'></i> Generating Report...';">
+                <form action="{% url 'generate_report' %}" method="POST" id="reportGenerateForm">
                     {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ request.path }}">
                     <div class="mb-4">
-                        <label class="form-label fw-bold text-muted small text-uppercase">Select Report Module <span class="text-danger ms-1">*</span></label>
-                        <select name="report_type" class="form-select bg-light" required>
+                        <label for="reportTypeSelect" class="form-label fw-bold text-muted small text-uppercase">Select Report Module <span class="text-danger ms-1">*</span></label>
+                        <select name="report_type" id="reportTypeSelect" class="form-select bg-white border" required>
                             <option value="">-- Choose a report --</option>
                             {% for r in reports %}
                                 <option value="{{ r.id }}">{{ r.name }} - {{ r.desc }}</option>
@@ -36,15 +37,15 @@
                         </select>
                     </div>
                     <div class="mb-4">
-                        <label class="form-label fw-bold text-muted small text-uppercase">Export Format <span class="text-danger ms-1">*</span></label>
-                        <select name="format_type" class="form-select bg-light" required>
+                        <label for="formatTypeSelect" class="form-label fw-bold text-muted small text-uppercase">Export Format <span class="text-danger ms-1">*</span></label>
+                        <select name="format_type" id="formatTypeSelect" class="form-select bg-white border" required>
                             <option value="CSV">CSV (Comma Separated Values)</option>
                             <option value="XLSX">Excel Spreadsheet (.xlsx)</option>
                             <option value="PDF">PDF Document (.pdf)</option>
                         </select>
                         <div class="form-text mt-2"><i class="fa-solid fa-info-circle me-1"></i> Generated in real-time. Large datasets may take a moment.</div>
                     </div>
-                    <button type="submit" class="btn btn-primary fw-bold px-4 rounded-pill shadow-sm">
+                    <button type="submit" id="btnGenerateReport" class="btn btn-primary fw-bold px-4 rounded-pill shadow-sm">
                         <i class="fa-solid fa-wand-magic-sparkles me-2"></i> Generate Report
                     </button>
                 </form>
@@ -103,12 +104,48 @@
 
 <script>
     (function () {
-        // Auto-refresh if any export job is currently in Processing or Pending state
+        const form = document.getElementById('reportGenerateForm');
+        if (form) {
+            form.addEventListener('submit', function (e) {
+                const reportSelect = form.querySelector('[name="report_type"]');
+                if (!reportSelect || !reportSelect.value) {
+                    e.preventDefault();
+                    if (reportSelect) {
+                        reportSelect.focus();
+                        reportSelect.classList.add('is-invalid');
+                    }
+                    return false;
+                }
+                const btn = form.querySelector('button[type="submit"]');
+                if (btn) {
+                    setTimeout(function () {
+                        btn.disabled = true;
+                        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i> Generating Report...';
+                    }, 50);
+                }
+            });
+
+            const reportSelect = form.querySelector('[name="report_type"]');
+            if (reportSelect) {
+                reportSelect.addEventListener('change', function () {
+                    this.classList.remove('is-invalid');
+                });
+            }
+        }
+
+        // Auto-refresh only if there is an active processing job AND user is not interacting with the form
         const hasProcessing = document.querySelector('.badge.bg-warning .fa-spinner');
         if (hasProcessing) {
             setTimeout(function () {
-                window.location.reload();
-            }, 3000);
+                const isFormActive = form && (
+                    document.activeElement === form ||
+                    form.contains(document.activeElement) ||
+                    (form.querySelector('[name="report_type"]') && form.querySelector('[name="report_type"]').value !== '')
+                );
+                if (!isFormActive) {
+                    window.location.reload();
+                }
+            }, 5000);
         }
     })();
 </script>

@@ -167,32 +167,39 @@ def dashboard_view(request):
 
     from datetime import timedelta
 
+    from django.db.models import Q
+
     stale_cutoff = timezone.now() - timedelta(minutes=3)
     # Clean up stale/abandoned processing jobs older than 3 minutes so they don't spin indefinitely
     ExportJob.objects.filter(
         requested_by=request.user,
         status__in=[ExportJob.STATUS_PENDING, ExportJob.STATUS_PROCESSING],
         created_at__lt=stale_cutoff,
-        result_file="",
-    ).update(status=ExportJob.STATUS_FAILED, error_message="Export processing timed out.")
+    ).filter(Q(result_file="") | Q(result_file__isnull=True)).update(
+        status=ExportJob.STATUS_FAILED, error_message="Export processing timed out."
+    )
 
     jobs = list(ExportJob.objects.filter(requested_by=request.user).order_by("-created_at")[:20])
 
     from apps.reports.services import generate_export_job_service
 
     for j in jobs:
-        if (
-            j.status in [ExportJob.STATUS_PENDING, ExportJob.STATUS_PROCESSING]
-            and not j.result_file
-        ):
-            try:
-                generate_export_job_service(j.id)
-                j.refresh_from_db()
-            except Exception as e:
-                j.status = ExportJob.STATUS_FAILED
-                j.error_message = str(e)
+        if j.status in [ExportJob.STATUS_PENDING, ExportJob.STATUS_PROCESSING]:
+            if not j.result_file:
                 try:
-                    j.save(update_fields=["status", "error_message", "updated_at"])
+                    generate_export_job_service(j.id)
+                    j.refresh_from_db()
+                except Exception as e:
+                    j.status = ExportJob.STATUS_FAILED
+                    j.error_message = str(e)
+                    try:
+                        j.save(update_fields=["status", "error_message", "updated_at"])
+                    except Exception:
+                        pass
+            elif j.created_at < stale_cutoff:
+                j.status = ExportJob.STATUS_COMPLETED
+                try:
+                    j.save(update_fields=["status", "updated_at"])
                 except Exception:
                     pass
 
@@ -254,7 +261,14 @@ def dashboard_view(request):
     if not (getattr(request.user, "is_superuser", False) or role_code in AUDIT_REPORT_ROLES):
         reports = [r for r in reports if r["id"] != "audit_log"]
 
-    base_layout = _resolve_base_layout(role_code)
+    if (
+        request.path.startswith("/superadmin/")
+        or getattr(request.user, "is_superuser", False)
+        or role_code in ("SUPER_ADMIN", "ADMIN")
+    ):
+        base_layout = "layouts/superadmin_base.html"
+    else:
+        base_layout = _resolve_base_layout(role_code)
 
     return render(
         request,
@@ -283,6 +297,19 @@ def generate_view(request):
             "External vendor users are not authorized to access internal reports."
         )
 
+    next_url = (
+        request.POST.get("next")
+        or request.GET.get("next")
+        or request.META.get("HTTP_REFERER")
+        or ""
+    )
+    if not next_url or not next_url.startswith("/") or "/login" in next_url:
+        next_url = (
+            "/superadmin/reports/"
+            if role_code in ("SUPER_ADMIN", "ADMIN") or getattr(request.user, "is_superuser", False)
+            else "reports_hub"
+        )
+
     if request.method == "POST":
 
         from apps.reports.services import REPORT_DISPATCHER
@@ -293,11 +320,11 @@ def generate_view(request):
 
         if not report_type or report_type not in REPORT_DISPATCHER:
             messages.error(request, "Please select a valid report module.")
-            return redirect("reports_hub")
+            return redirect(next_url)
 
         if format_type not in ("CSV", "XLSX", "PDF"):
             messages.error(request, "Please select a valid export format (CSV, XLSX, or PDF).")
-            return redirect("reports_hub")
+            return redirect(next_url)
 
         if report_type == "audit_log" and not (
             getattr(request.user, "is_superuser", False) or role_code in AUDIT_REPORT_ROLES
@@ -316,7 +343,8 @@ def generate_view(request):
 
             generate_export_job_service(job.id)
             messages.success(
-                request, f"{report_type.replace('_', ' ').title()} report generated successfully."
+                request,
+                f"{report_type.replace('_', ' ').title()} ({format_type}) report generated successfully.",
             )
         except Exception as err:
             job.status = ExportJob.STATUS_FAILED
@@ -327,7 +355,9 @@ def generate_view(request):
                 pass
             messages.error(request, f"Error generating report: {str(err)}")
 
-    return redirect("reports_hub")
+        return redirect(next_url)
+
+    return redirect(next_url)
 
 
 @login_required(login_url="/login/")

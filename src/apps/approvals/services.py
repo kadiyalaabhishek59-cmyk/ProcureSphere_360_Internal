@@ -203,15 +203,17 @@ def evaluate_approval_chain(
         has_steps = 1 if policy_steps else 0
         first_code = getattr(policy_steps[0].approver_role, "code", "") if policy_steps else ""
         first_specific = (
-            getattr(policy_steps[0], "specific_approver_id", None) if policy_steps else None
+            getattr(policy_steps[0], "specific_approver_id", None)
+            or getattr(policy_steps[0], "specific_approver", None)
+            if policy_steps
+            else None
         )
         # Step-1 PROC_MGR policies without specific approver from stray testing definitions
         # must not hijack actionable policies.
         is_stray_unactionable = bool(
             module == ApprovalPolicy.MODULE_PR
             and not first_specific
-            and first_code == "PROC_MGR"
-            and "QA Dept PROC_MGR" in policy.name
+            and first_code in [Role.PROC_MGR, "PROC_MGR"]
         )
         actionable_pr = 0 if is_stray_unactionable else 1
         is_std_global = 1 if policy.name == "Standard PR Approval — Global" else 0

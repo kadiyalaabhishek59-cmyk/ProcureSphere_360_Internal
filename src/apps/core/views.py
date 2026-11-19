@@ -1138,7 +1138,7 @@ def protected_media_view(request, file_path):
         return HttpResponseForbidden("Access denied: Invalid file path.")
 
     # 2. RBAC and Ownership Enforcement (evaluated before file existence to prevent enumeration & redirects)
-    if user.is_superuser or role_code == Role.SUPER_ADMIN:
+    if user.is_superuser or role_code in (Role.SUPER_ADMIN, "SUPER_ADMIN", "ADMIN"):
         pass  # Super Admin has full administrative access
     elif role_code == Role.VENDOR_USER:
         vendor = getattr(user, "vendor", None)

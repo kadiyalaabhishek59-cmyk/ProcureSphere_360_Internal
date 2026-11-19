@@ -841,6 +841,28 @@ def detail_view(request, pk):
                             can_approve = True
                     else:
                         can_approve = True
+                elif role_code == Role.DEPT_APPROVER and getattr(req_role, "code", None) in [Role.PROC_MGR, "PROC_MGR"]:
+                    pr_dept = pr.department or (
+                        pr.cost_center.department if pr.cost_center else None
+                    )
+                    if pr_dept and user.department:
+                        has_own_approver = (
+                            User.objects.filter(
+                                role__code=Role.DEPT_APPROVER,
+                                department=pr_dept,
+                                is_active=True,
+                            )
+                            .exclude(id=user.id)
+                            .exists()
+                        )
+                        if (
+                            user.department == pr_dept
+                            or (pr.cost_center and user == pr.cost_center.manager)
+                            or not has_own_approver
+                        ):
+                            can_approve = True
+                    else:
+                        can_approve = True
         elif not chain and role_code in [Role.DEPT_APPROVER, Role.SUPER_ADMIN]:
             can_approve = not user_has_approved
     elif pr.status == PurchaseRequisition.STATUS_BUDGET_REVIEW:
@@ -854,6 +876,11 @@ def detail_view(request, pk):
         can_approve = False
         can_reject = bool(is_budget_exceeded or pr.status == PurchaseRequisition.STATUS_BUDGET_REVIEW)
     elif pr.status == PurchaseRequisition.STATUS_BUDGET_REVIEW and (role_code in [Role.FINANCE_AP, Role.SUPER_ADMIN] or user.is_superuser):
+        can_reject = True
+    elif is_budget_exceeded and role_code in [Role.DEPT_APPROVER, Role.SUPER_ADMIN] and pr.status in [
+        PurchaseRequisition.STATUS_SUBMITTED,
+        PurchaseRequisition.STATUS_MANAGER_REVIEW,
+    ]:
         can_reject = True
     else:
         can_reject = can_approve
