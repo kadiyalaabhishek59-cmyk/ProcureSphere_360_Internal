@@ -24,10 +24,20 @@ def scope_purchase_orders_queryset(qs, user):
     if user.is_superuser or role_code == Role.SUPER_ADMIN:
         return qs
 
-    # Vendor scoping
+    # Vendor scoping: strictly scoped to own vendor, and only issued/active orders (never internal DRAFT/APPROVAL states)
     if getattr(user, "is_vendor", False) or role_code == Role.VENDOR_USER:
         vendor_id = getattr(user, "vendor_id", None)
-        return qs.filter(vendor_id=vendor_id) if vendor_id else qs.none()
+        if not vendor_id:
+            return qs.none()
+        return qs.filter(
+            vendor_id=vendor_id,
+            status__in=[
+                PurchaseOrder.STATUS_ISSUED,
+                PurchaseOrder.STATUS_ACKNOWLEDGED,
+                PurchaseOrder.STATUS_PARTIAL_RECEIPT,
+                PurchaseOrder.STATUS_COMPLETED,
+            ],
+        )
 
     # Requester scoping: only POs originating from own PRs or created by user
     if role_code == Role.REQUESTER:

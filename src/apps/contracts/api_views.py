@@ -67,6 +67,8 @@ class ContractViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated, CanManageContract, CanViewContract]
 
     def create(self, request, *args, **kwargs):
+        if not isinstance(request.data, dict):
+            return super().create(request, *args, **kwargs)
         title = str(request.data.get("title", "")).strip()
         if len(title) >= 250:
             Contract.objects.filter(title__iexact=title).delete()

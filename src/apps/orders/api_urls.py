@@ -79,6 +79,34 @@ class CanManagePurchaseOrder(BasePermission):
             Role.PROC_EXEC,
         ]
 
+    def has_object_permission(self, request, view, obj):
+        if not request.user or not request.user.is_authenticated:
+            return False
+        if request.user.is_superuser:
+            return True
+        role_code = getattr(request.user, "role_code", None) or (
+            request.user.role.code if getattr(request.user, "role", None) else None
+        )
+        is_vendor = (
+            getattr(request.user, "is_vendor", False)
+            or role_code == Role.VENDOR_USER
+        )
+        if is_vendor:
+            user_vendor_id = getattr(request.user, "vendor_id", None)
+            if not user_vendor_id or user_vendor_id != obj.vendor_id:
+                return False
+            if request.method in SAFE_METHODS:
+                return obj.status in [
+                    PurchaseOrder.STATUS_ISSUED,
+                    PurchaseOrder.STATUS_ACKNOWLEDGED,
+                    PurchaseOrder.STATUS_PARTIAL_RECEIPT,
+                    PurchaseOrder.STATUS_COMPLETED,
+                ]
+            if view.action in ("acknowledge", "vendor_reject"):
+                return obj.status == PurchaseOrder.STATUS_ISSUED
+            return False
+        return True
+
 
 class POLineSerializer(serializers.ModelSerializer):
     remaining_quantity = serializers.DecimalField(
@@ -937,16 +965,18 @@ class PurchaseOrderViewSet(viewsets.ModelViewSet):
                 {"error": {"code": "PERMISSION_DENIED", "message": "Only the assigned vendor user can reject this purchase order."}},
                 status=status.HTTP_403_FORBIDDEN,
             )
-        if is_vendor and getattr(request.user, "vendor_id", None) != po.vendor_id and not request.user.is_superuser:
-            return Response(
-                {"error": {"code": "PERMISSION_DENIED", "message": "You can only reject purchase orders issued to your vendor."}},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-        if po.status != PurchaseOrder.STATUS_ISSUED:
-            return Response(
-                {"error": {"code": "INVALID_STATE", "message": f"Cannot reject Purchase Order in status '{po.status}'. PO must be in ISSUED status."}},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        if is_vendor:
+            user_vendor_id = getattr(request.user, "vendor_id", None)
+            if (not user_vendor_id or user_vendor_id != po.vendor_id) and not request.user.is_superuser:
+                return Response(
+                    {"error": {"code": "PERMISSION_DENIED", "message": "You can only reject purchase orders issued to your vendor."}},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+            if po.status != PurchaseOrder.STATUS_ISSUED and not request.user.is_superuser:
+                return Response(
+                    {"error": {"code": "PERMISSION_DENIED", "message": f"Cannot reject Purchase Order in status '{po.status}'. PO must be in ISSUED status."}},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
         reason = str(request.data.get("reason", "")).strip()
         if not reason:
             return Response(
@@ -974,16 +1004,18 @@ class PurchaseOrderViewSet(viewsets.ModelViewSet):
                 {"error": {"code": "PERMISSION_DENIED", "message": "Only the assigned vendor user can acknowledge this purchase order."}},
                 status=status.HTTP_403_FORBIDDEN,
             )
-        if is_vendor and getattr(request.user, "vendor_id", None) != po.vendor_id and not request.user.is_superuser:
-            return Response(
-                {"error": {"code": "PERMISSION_DENIED", "message": "You can only acknowledge purchase orders issued to your vendor."}},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-        if po.status != PurchaseOrder.STATUS_ISSUED:
-            return Response(
-                {"error": {"code": "INVALID_STATE", "message": f"Cannot acknowledge Purchase Order in status '{po.status}'. PO must be in ISSUED status."}},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        if is_vendor:
+            user_vendor_id = getattr(request.user, "vendor_id", None)
+            if (not user_vendor_id or user_vendor_id != po.vendor_id) and not request.user.is_superuser:
+                return Response(
+                    {"error": {"code": "PERMISSION_DENIED", "message": "You can only acknowledge purchase orders issued to your vendor."}},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+            if po.status != PurchaseOrder.STATUS_ISSUED and not request.user.is_superuser:
+                return Response(
+                    {"error": {"code": "PERMISSION_DENIED", "message": f"Cannot acknowledge Purchase Order in status '{po.status}'. PO must be in ISSUED status."}},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
         notes = request.data.get("acknowledgement_notes", request.data.get("notes", ""))
         try:
             updated_po = acknowledge_purchase_order_service(

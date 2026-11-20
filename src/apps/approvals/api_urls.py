@@ -112,6 +112,16 @@ class ApprovalPolicyViewSet(viewsets.ModelViewSet):
     filterset_fields = ["module", "status", "organization", "department", "currency"]
     ordering_fields = ["name", "min_amount", "created_at"]
 
+    def perform_update(self, serializer):
+        instance = serializer.instance
+        old_name = instance.name
+        new_name = serializer.validated_data.get("name")
+        if new_name and old_name and new_name != old_name:
+            current_desc = serializer.validated_data.get("description", instance.description or "")
+            if old_name not in current_desc:
+                serializer.validated_data["description"] = f"{current_desc} (previously {old_name})".strip()
+        serializer.save()
+
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         # Controlled transition: Soft-archive policy on DELETE instead of hard deleting (Rule 5 & 6)
@@ -167,6 +177,28 @@ class ApprovalStepViewSet(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         from django.db import IntegrityError
+        if isinstance(request.data, dict):
+            policy_id = request.data.get("policy")
+            step_number = request.data.get("step_number")
+            if policy_id and step_number is not None:
+                try:
+                    step_num = int(step_number)
+                    from apps.approvals.models import ApprovalStep
+                    if ApprovalStep.objects.filter(policy_id=policy_id, step_number=step_num).exists():
+                        return Response(
+                            {
+                                "error": {
+                                    "code": "VALIDATION_ERROR",
+                                    "message": "Validation failed for one or more fields.",
+                                    "details": {
+                                        "step_number": [f"Step number {step_num} already exists for this policy."]
+                                    },
+                                }
+                            },
+                            status=status.HTTP_400_BAD_REQUEST,
+                        )
+                except (ValueError, TypeError):
+                    pass
         try:
             return super().create(request, *args, **kwargs)
         except IntegrityError:
@@ -182,6 +214,11 @@ class ApprovalStepViewSet(viewsets.ModelViewSet):
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
+
+    def destroy(self, request, *args, **kwargs):
+        # Controlled transition: Preserve step history for governance/audit (Rule 5)
+        # HTTP 204 returned without hard-deleting the underlying step record
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class ApprovalActionViewSet(viewsets.ReadOnlyModelViewSet):

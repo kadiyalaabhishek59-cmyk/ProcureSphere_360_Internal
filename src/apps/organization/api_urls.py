@@ -86,6 +86,8 @@ class OrganizationViewSet(viewsets.ModelViewSet):
     search_fields = ["name", "code"]
 
     def create(self, request, *args, **kwargs):
+        if not isinstance(request.data, dict):
+            return super().create(request, *args, **kwargs)
         code = str(request.data.get("code", "")).strip()
         if code.upper() == "ORG-SPECIAL_01":
             Organization.objects.filter(code__iexact="ORG-SPECIAL_01").delete()
