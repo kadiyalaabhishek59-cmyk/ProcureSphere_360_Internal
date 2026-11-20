@@ -308,7 +308,7 @@ def about(request, section_slug=None):
         'mission_cards': [
             {
                 'tag': 'THE PROBLEM',
-                'title': 'Fragmented Legacy Silos',
+                'title': 'Disconnected Legacy Systems',
                 'desc': 'Traditional enterprises struggle with requisition requests scattered across emails, unrecorded commitments in personal spreadsheets, and invoice reconciliations that take weeks of painful detective work.',
                 'color': '#ef4444',
             },
@@ -331,7 +331,7 @@ def about(request, section_slug=None):
             {
                 'tag': 'THE MISSION',
                 'title': 'Transforming Disconnected Procurement',
-                'desc': 'ProcureSphere 360 was built to eliminate disconnected emails, uncontrolled spreadsheet trackers, and siloed approvals. We provide enterprises with a single, verifiable operating system that connects intent with execution.',
+                'desc': 'ProcureSphere 360 was built to eliminate disconnected emails, uncontrolled spreadsheet trackers, and isolated approvals. We provide enterprises with a single, verifiable operating system that connects intent with execution.',
                 'icon': '🏢',
             },
             {

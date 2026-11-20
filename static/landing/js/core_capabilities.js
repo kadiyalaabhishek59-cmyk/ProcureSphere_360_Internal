@@ -172,8 +172,17 @@
   const modalCta   = document.getElementById('cap-modal-cta');
   const modalCtaLabel = document.getElementById('cap-modal-cta-label');
 
+  // Move modal to document.body so that section stacking contexts, parent transforms,
+  // or overflow boundaries (e.g. slides-deck vs benefits_section) cannot trap or paint over it.
+  if (modal && modal.parentElement !== document.body) {
+    document.body.appendChild(modal);
+  }
+
   function openModal(card) {
     if (!modal) return;
+    if (modal.parentElement !== document.body) {
+      document.body.appendChild(modal);
+    }
     selectedCard = card;
     clearTimeout(cycleTimer);
 
